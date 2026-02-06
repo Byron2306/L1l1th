@@ -1,0 +1,786 @@
+﻿from flask import Flask, request, jsonify
+import threading
+import logging
+import json
+import yaml
+import time
+import os
+from datetime import datetime
+from typing import List
+
+
+class UIAgent:
+    """
+    Lightweight Flask UI that shows live price, recent trades, wallet snapshot, and basic metrics.
+    Rebuilt after file corruption.
+    """
+    def __init__(self, coordinator, host: str = "0.0.0.0", port: int = 5000):
+        self.coordinator = coordinator
+        self.host = host
+        self.port = port
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        static_folder = os.path.join(project_root, "static")
+        self.app = Flask(__name__, static_folder=static_folder, static_url_path="/static")
+        self.config_path = "config/settings.yaml"
+        self.api_keys_path = "config/api_keys.json"
+        self.allowed_ips: List[str] = getattr(coordinator.cfg, "allowed_ips", []) or []
+        self._cache = {}
+        self.thread = None
+        self._setup_routes()
+    # ------------------------------------------------------------------ routes
+    def _setup_routes(self):
+        @self.app.before_request
+        def _ip_whitelist():
+            # Canonicalize host to avoid split caches (localhost vs 127.0.0.1)
+            try:
+                if request.host.startswith("localhost:5000"):
+                    return self.app.redirect(f"http://127.0.0.1:5000{request.full_path}")
+            except Exception:
+                pass
+            if not self.allowed_ips:
+                return
+            remote = request.remote_addr
+            if remote in ("127.0.0.1", "::1"):
+                return
+            if remote not in self.allowed_ips:
+                logging.warning(f"Blocked UI request from {remote}")
+                return ("Forbidden", 403)
+
+        @self.app.after_request
+        def _no_cache(resp):
+            resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            resp.headers["Pragma"] = "no-cache"
+            return resp
+
+        @self.app.route("/")
+        def dashboard():
+            return self._render_dashboard()
+
+        @self.app.route("/favicon.ico")
+        def favicon():
+            return ("", 204)
+
+        @self.app.route("/price.json")
+        def price_json():
+            now = time.time()
+            ttl = 2.0
+            cached = self._cache.get("price_json")
+            if cached and now - cached["ts"] < ttl:
+                return jsonify(cached["val"])
+            labels, prices = self._price_series(limit=120)
+            payload = {"labels": labels, "prices": prices}
+            self._cache["price_json"] = {"ts": now, "val": payload}
+            return jsonify(payload)
+
+        @self.app.route("/metrics.json")
+        def metrics_json():
+            now = time.time()
+            ttl = 3.0
+            cached = self._cache.get("metrics_json")
+            if cached and now - cached["ts"] < ttl:
+                return jsonify(cached["val"])
+            data = self._collect_metrics()
+            self._cache["metrics_json"] = {"ts": now, "val": data}
+            return jsonify(data)
+
+        @self.app.route("/tape.json")
+        def tape_json():
+            try:
+                now = time.time()
+                ttl = 5.0
+                cached = self._cache.get("tape_json")
+                if cached and now - cached["ts"] < ttl:
+                    return jsonify(cached["val"])
+                trades = self._get_market_tape(limit=100)
+                payload = {"trades": trades}
+                self._cache["tape_json"] = {"ts": now, "val": payload}
+                return jsonify(payload)
+            except Exception as e:
+                logging.exception("tape.json error")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/wallet.json")
+        def wallet_json():
+            try:
+                now = time.time()
+                ttl = 5.0
+                cached = self._cache.get("wallet_json")
+                if cached and now - cached["ts"] < ttl:
+                    return jsonify(cached["val"])
+
+                wallet = self.coordinator.agents.get("wallet")
+                if not wallet:
+                    return jsonify({"error": "wallet_agent_disabled"}), 400
+
+                latency_ms = None
+                ok = False
+                start = time.time()
+                try:
+                    wallet.w3.eth.block_number
+                    ok = True
+                    latency_ms = int((time.time() - start) * 1000)
+                except Exception:
+                    ok = False
+
+                try:
+                    eth_bal = wallet.eth_balance()
+                except Exception:
+                    eth_bal = None
+                tok_bal = None
+                tok_symbol = getattr(wallet, "token_symbol", None)
+                try:
+                    tok_bal = wallet.erc20_balance()
+                except Exception:
+                    tok_bal = None
+
+                try:
+                    txs = wallet.get_transaction_history(limit=5)
+                except Exception:
+                    txs = []
+
+                payload = {
+                    "address": getattr(wallet, "addr", None) or getattr(wallet, "address", None),
+                    "network": {"ok": ok, "latency_ms": latency_ms},
+                    "eth": {"balance": eth_bal},
+                    "token": {"symbol": tok_symbol, "balance": tok_bal} if tok_symbol else {},
+                    "txs": txs,
+                }
+                self._cache["wallet_json"] = {"ts": now, "val": payload}
+                return jsonify(payload)
+            except Exception as e:
+                logging.exception("wallet.json error")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/wallet/save_token", methods=["POST"])
+        def wallet_save_token():
+            token_addr = (request.form.get("token_address") or "").strip()
+            watch_addr = (request.form.get("watch_address") or "").strip()
+            api_keys = self._load_api_keys()
+            if token_addr:
+                api_keys["erc20_token_address"] = token_addr
+            if watch_addr:
+                api_keys["watch_address"] = watch_addr
+            with open(self.api_keys_path, "w") as f:
+                json.dump(api_keys, f, indent=2)
+
+            cfg = self._load_config()
+            if token_addr:
+                cfg["erc20_token_address"] = token_addr
+            if watch_addr:
+                cfg["watch_address"] = watch_addr
+            with open(self.config_path, "w") as f:
+                yaml.safe_dump(cfg, f)
+
+            try:
+                from main import load_config
+                new_cfg = load_config()
+                self.coordinator.reload_config(new_cfg)
+            except Exception as e:
+                logging.warning(f"Reload after wallet save failed: {e}")
+            return jsonify({"ok": True, "token": token_addr, "watch": watch_addr})
+
+        @self.app.route("/config", methods=["GET", "POST"])
+        def config():
+            if request.method == "POST":
+                return self._save_config()
+            return self._render_config()
+
+        @self.app.route("/enable_network", methods=["POST"])
+        def enable_network():
+            try:
+                host = request.form.get("redis_host") or "localhost"
+                port = int(request.form.get("redis_port") or 6379)
+                db = int(request.form.get("redis_db") or 0)
+                pwd = request.form.get("redis_password") or None
+                ok = False
+                try:
+                    ok = self.coordinator.enable_network(host=host, port=port, db=db, password=pwd)
+                except Exception as e:
+                    logging.warning(f"enable_network failed: {e}")
+                msg = "Connected" if ok else "Connection failed"
+                wants_json = request.args.get("json") == "1" or request.headers.get("Accept", "").lower().startswith("application/json")
+                if wants_json:
+                    return jsonify({"success": ok, "message": msg})
+                return f"<html><body><h3>{msg}</h3><a href='/'>Back</a></body></html>"
+            except Exception:
+                return ("Error", 500)
+
+        @self.app.route("/agents/status")
+        def agents_status():
+            try:
+                return jsonify({
+                    "agents": list(self.coordinator.agents.keys()) if getattr(self.coordinator, "agents", None) else [],
+                    "health": getattr(self.coordinator, "agent_health", {}) or {}
+                })
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+    # ------------------------------------------------------------------ renderers
+    def _render_dashboard(self):
+        agents = list(self.coordinator.agents.keys()) if self.coordinator.agents else []
+        agent_health = getattr(self.coordinator, "agent_health", {}) or {}
+
+        def status_color(name: str) -> str:
+            val = agent_health.get(name, {})
+            status = val.get("status") if isinstance(val, dict) else val
+            return "green" if str(status).lower() in ("active", "ok", "initialized", "ready") else "red"
+
+        try:
+            latest_price = self.coordinator.get_shared_data("latest_price")
+        except Exception:
+            latest_price = None
+
+        latest_price_str = f"{latest_price:.2f}" if isinstance(latest_price, (int, float)) else (latest_price or "N/A")
+
+        perf_metrics = {}
+        try:
+            if self.coordinator.agents.get("performance"):
+                perf_metrics = self.coordinator.agents["performance"].get_current_metrics() or {}
+        except Exception:
+            pass
+
+        trade_metrics = {}
+        try:
+            if self.coordinator.agents.get("logging"):
+                trade_metrics = self.coordinator.agents["logging"].get_metrics() or {}
+        except Exception:
+            pass
+
+        agent_pills = "".join(
+            f'<div class="pill"><span class="status-dot {status_color(a)}"></span>{a}</div>'
+            for a in agents
+        ) or '<div class="empty">No agents registered</div>'
+
+        recent_logs = self._get_logs(limit=60)
+        log_lines = [
+            f"[{entry.get('timestamp','')}] {entry.get('agent','')}: {entry.get('message','')}" if isinstance(entry, dict) else str(entry)
+            for entry in recent_logs
+        ]
+        log_tail = "\n".join(log_lines)
+
+        # per-agent latest message for status list
+        agent_messages = {}
+        for entry in recent_logs:
+            agent_name = entry.get("agent") if isinstance(entry, dict) else None
+            if agent_name and agent_name not in agent_messages:
+                agent_messages[agent_name] = entry.get("message", "")
+        # augment with latest buzz messages from coordinator shared cache (prefer concise summaries)
+        try:
+            cache = getattr(self.coordinator, 'data_cache', {}) or {}
+            for k, v in cache.items():
+                if isinstance(k, str) and k.startswith('buzz.') and isinstance(v, dict):
+                    buzz = v.get('buzz', {}) if isinstance(v, dict) else {}
+                    src = buzz.get('source') or (v.get('payload', {}) or {}).get('source')
+                    if not src:
+                        continue
+                    payload = v.get('payload') or {}
+                    msg = None
+                    if isinstance(payload, dict):
+                        if 'message' in payload:
+                            msg = str(payload.get('message'))
+                        elif 'symbol' in payload and ('price' in payload or 'avg_price' in payload):
+                            price = payload.get('price') or payload.get('avg_price')
+                            msg = f"{payload.get('symbol')} {price}"
+                        else:
+                            items = []
+                            for i, (pk, pv) in enumerate(payload.items()):
+                                items.append(f"{pk}={pv}")
+                                if i >= 2:
+                                    break
+                            msg = ', '.join(items) if items else str(payload)
+                    else:
+                        msg = str(payload)
+                    if msg:
+                        if len(msg) > 120:
+                            msg = msg[:117] + '...'
+                        agent_messages[src] = msg
+        except Exception:
+            pass
+        # fallback: if no recent logs or buzz, still show agents with a default note
+        if not agent_messages:
+            for a in agents:
+                agent_messages[a] = "No recent logs"
+        else:
+            # ensure every agent has at least a short note
+            for a in agents:
+                agent_messages.setdefault(a, "No recent logs")
+
+        agent_outputs_html = "".join(
+            f'<div class="agent-line"><span class="status-dot {status_color(a)}"></span><strong>{a}</strong><span class="agent-msg">{agent_messages.get(a, "No recent message")}</span></div>'
+            for a in agents
+        ) or '<div class="empty">No agents reporting</div>'
+
+        trade_rows = "".join(
+            f"<tr><td>{t.get('timestamp','')}</td><td>{t.get('symbol','')}</td><td>{t.get('side','')}</td>"
+            f"<td>{t.get('quantity','')}</td><td>{t.get('price','')}</td><td>{t.get('venue','kraken')}</td></tr>"
+            for t in (self._get_recent_trades(limit=10) or [])
+        ) or '<tr><td colspan="6" class="empty">Waiting for trades...</td></tr>'
+
+        html = f"""
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\">
+  <title>Crypto Swarm Dashboard</title>
+  <!-- ui-agent version: agent-outputs-fix -->
+  <script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>
+  <style>
+    :root {{ --bg:#071026; --panel:#0d1730; --accent:#ffd24a; --text:#ffd24a; --muted:#d9c786; --danger:#ff6b6b; }}
+    * {{ box-sizing:border-box; }}
+    body {{ margin:0; padding:22px; font-family:'Segoe UI','Inter',sans-serif; background:radial-gradient(circle at 20% 20%, rgba(127,209,255,0.08), transparent 30%), var(--bg); color:var(--text); }}
+    .wrap {{ max-width:1200px; margin:0 auto; }}
+    .top {{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }}
+    .badge {{ padding:6px 10px; border-radius:999px; background:rgba(127,209,255,0.1); color:var(--accent); font-size:12px; letter-spacing:.5px; }}
+    h1 {{ margin:0; font-size:26px; letter-spacing:.3px; }}
+    .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:16px; }}
+    .card {{ background:linear-gradient(145deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:14px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }}
+    .card h3 {{ margin:0 0 6px; font-size:14px; color:var(--muted); letter-spacing:.3px; }}
+    .value {{ font-size:24px; font-weight:600; color:var(--accent); }}
+    .value.small {{ font-size:16px; color:var(--text); }}
+    .pill {{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; margin:4px 6px 4px 0; border-radius:8px; background:rgba(255,255,255,0.04); color:var(--text); border:1px solid rgba(255,255,255,0.05); font-size:13px; }}
+    .status-dot {{ width:9px; height:9px; border-radius:50%; display:inline-block; }}
+    .status-dot.green {{ background:#3ad29f; box-shadow:0 0 6px rgba(58,210,159,0.8); }}
+    .status-dot.red {{ background:#ff6b6b; box-shadow:0 0 6px rgba(255,107,107,0.8); }}
+    .agent-line {{ display:flex; align-items:center; gap:10px; margin:4px 0; flex-wrap:wrap; }}
+    .agent-msg {{ color:var(--muted); font-size:12px; }}
+    table {{ width:100%; border-collapse:collapse; margin-top:8px; }}
+    th,td {{ padding:8px 10px; font-size:13px; text-align:left; }}
+    th {{ color:var(--muted); border-bottom:1px solid rgba(255,255,255,0.08); }}
+    tr:not(:last-child) td {{ border-bottom:1px solid rgba(255,255,255,0.04); }}
+    .row {{ display:grid; gap:14px; grid-template-columns:2fr 1fr; }} @media(max-width:960px){{ .row{{grid-template-columns:1fr;}} }}
+    .chart-wrap {{ height:260px; }}
+    .empty {{ color:var(--muted); font-style:italic; padding:8px 0; }}
+    .log-tail {{ background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.06); padding:10px; border-radius:10px; max-height:200px; overflow-y:auto; font-family:'JetBrains Mono','Consolas',monospace; font-size:12px; white-space:pre-wrap; }}
+    .wallet-controls {{ display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }}
+    .wallet-controls input {{ width:100%; padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.08); background:#0f1427; color:var(--text); }}
+    .btn {{ background:var(--accent); color:#071026; border:none; padding:8px 12px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; }}
+    .btn.secondary {{ background:rgba(255,255,255,0.08); color:var(--text); }}
+  </style>
+</head>
+<body>
+  <div style=\"display:flex; justify-content:center; margin:6px 0 12px 0;\">
+    <img src=\"/static/hivenance_logo.png\" alt=\"logo\" style=\"max-width:220px; max-height:140px; object-fit:contain;\">
+  </div>
+  <div class=\"wrap\">
+    <div class=\"top\">
+      <div>
+        <h1>Crypto Swarm Control</h1>
+        <div class=\"badge\">LIVE • {len(agents)} agents</div>
+      </div>
+      <div style=\"display:flex; gap:8px; align-items:center;\">
+        <button class=\"btn secondary\" onclick=\"location.reload(true)\">Hard Refresh</button>
+      </div>
+    </div>
+
+    <div class=\"card\" style=\"margin-bottom:12px;\">
+      <h3>Agent Outputs</h3>
+      {agent_outputs_html}
+    </div>
+
+    <div class=\"grid\">
+      <div class=\"card\"><h3>Latest Price</h3><div class=\"value\" id=\"latestPrice\">{latest_price_str}</div></div>
+      <div class=\"card\"><h3>PnL (agg)</h3><div class=\"value\" id=\"pnlAgg\">{trade_metrics.get('profit_loss','0')}</div></div>
+      <div class=\"card\"><h3>Win Rate</h3><div class=\"value\" id=\"winRate\">{trade_metrics.get('win_rate','N/A')}</div></div>
+      <div class=\"card\"><h3>CPU</h3><div class=\"value small\" id=\"cpuUsage\">{perf_metrics.get('cpu_percent','N/A')}</div></div>
+      <div class=\"card\"><h3>Memory</h3><div class=\"value small\" id=\"memUsage\">{perf_metrics.get('memory_percent','N/A')}</div></div>
+    </div>
+
+    <div class=\"row\">
+      <div class=\"card\">
+        <h3>Market Price (live)</h3>
+        <div class=\"chart-wrap\"><canvas id=\"priceChart\"></canvas></div>
+      </div>
+      <div class=\"card\">
+        <h3>Wallet (MetaMask)</h3>
+        <div class=\"wallet-controls\">
+          <div>
+            <label>Watch Address</label>
+            <div style=\"display:flex; gap:8px; align-items:center;\">
+              <input id=\"walletAddressInput\" readonly value=\"loading...\">
+              <button class=\"btn secondary\" onclick=\"copyAddress()\">Copy</button>
+              <button class=\"btn secondary\" onclick=\"refreshWallet()\">Refresh</button>
+            </div>
+          </div>
+          <div>
+            <label>ERC20 Token (optional)</label>
+            <div style=\"display:flex; gap:8px; align-items:center;\">
+              <input id=\"tokenAddressInput\" placeholder=\"0x...\">
+              <button class=\"btn\" onclick=\"saveToken()\">Save</button>
+            </div>
+          </div>
+          <div id=\"walletNetwork\" style=\"font-size:12px; color:var(--muted);\">Network: …</div>
+        </div>
+        <div style=\"display:grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap:8px;\">
+          <div class=\"card\" style=\"padding:10px;\"><h3>ETH</h3><div class=\"value\" id=\"ethBalance\">—</div></div>
+          <div class=\"card\" style=\"padding:10px;\"><h3 id=\"tokenLabel\">Token</h3><div class=\"value\" id=\"tokenBalance\">—</div></div>
+        </div>
+        <div style=\"margin-top:10px;\">
+          <h3>Recent Tx</h3>
+          <table>
+            <thead><tr><th>Time</th><th>Hash</th><th>Value</th></tr></thead>
+            <tbody id=\"walletTxBody\"><tr><td colspan=\"3\" class=\"empty\">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class=\"card\" style=\"margin-top:14px;\">
+      <h3>Recent Trades</h3>
+      <table>
+        <thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Qty</th><th>Price</th><th>Venue</th></tr></thead>
+        <tbody id=\"recentTradesBody\">{trade_rows}</tbody>
+      </table>
+    </div>
+
+    <div class=\"card\" style=\"margin-top:14px;\">
+      <h3>Live Logs</h3>
+      <pre class=\"log-tail\">{log_tail}</pre>
+    </div>
+  </div>
+
+  <script>
+    const cb = () => 'v=' + Date.now();
+    let priceChart;
+
+    async function loadPrice() {{
+      try {{
+        const res = await fetch('/price.json?' + cb());
+        const data = await res.json();
+        const labels = Array.isArray(data.labels) ? data.labels : [];
+        const prices = Array.isArray(data.prices) ? data.prices : [];
+        const latest = prices.length ? prices[prices.length - 1] : null;
+        const priceEl = document.getElementById('latestPrice');
+        if (priceEl) priceEl.innerText = latest !== null ? Number(latest).toFixed(2) : 'N/A';
+        if (!priceChart) {{
+          const ctx = document.getElementById('priceChart').getContext('2d');
+          priceChart = new Chart(ctx, {{
+            type: 'line',
+            data: {{ labels, datasets: [{{ label:'Price', data: prices, borderColor:'#ffd24a', backgroundColor:'rgba(255,210,74,0.15)', tension:0.25, pointRadius:0 }}] }},
+            options: {{ responsive:true, animation:false, plugins:{{legend:{{display:false}}}}, scales:{{x:{{ticks:{{color:'#9fb0d8'}}, grid:{{color:'rgba(255,255,255,0.05)'}}}}, y:{{ticks:{{color:'#9fb0d8'}}, grid:{{color:'rgba(255,255,255,0.05)'}}}}}} }}
+          }});
+        }} else {{
+          priceChart.data.labels = labels;
+          priceChart.data.datasets[0].data = prices;
+          priceChart.update();
+        }}
+      }} catch (err) {{ console.error('price load failed', err); }}
+    }}
+
+    async function loadMetrics() {{
+      try {{
+        const res = await fetch('/metrics.json?' + cb());
+        const data = await res.json();
+        const perf = data.performance || {{}};
+        const trading = data.trading || {{}};
+        const agents = data.agents || [];
+        const setVal = (id, val) => {{ const el = document.getElementById(id); if (el && val!==undefined && val!==null) el.innerText = val; }};
+        setVal('cpuUsage', perf.cpu_percent);
+        setVal('memUsage', perf.memory_percent);
+        setVal('pnlAgg', trading.profit_loss);
+        setVal('winRate', trading.win_rate !== undefined ? Math.round(trading.win_rate*100)+'%' : undefined);
+        const badge = document.querySelector('.badge');
+        if (badge) badge.innerText = `LIVE • ${{agents.length}} agents`;
+      }} catch(err) {{ console.error('metrics load failed', err); }}
+    }}
+
+    async function loadTrades() {{
+      try {{
+        const res = await fetch('/tape.json?' + cb());
+        const data = await res.json();
+        let trades = data.trades || [];
+        trades = trades.slice(0, 10);
+        const tbody = document.getElementById('recentTradesBody');
+        if (!tbody) return;
+        tbody.innerHTML = trades.length ? trades.map(t => `
+          <tr>
+            <td>${{t.timestamp || ''}}</td>
+            <td>${{t.symbol || ''}}</td>
+            <td>${{t.side || ''}}</td>
+            <td>${{t.quantity || ''}}</td>
+            <td>${{t.price || ''}}</td>
+            <td>${{t.venue || ''}}</td>
+          </tr>`).join('') : '<tr><td colspan="6" class="empty">No trades captured yet</td></tr>';
+      }} catch(err) {{ console.error('trades load failed', err); }}
+    }}
+
+    async function refreshWallet() {{
+      try {{
+        const res = await fetch('/wallet.json?' + cb());
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('walletAddressInput').value = data.address || '—';
+        const net = data.network || {{}};
+        const eth = data.eth || {{}};
+        const tok = data.token || {{}};
+        const netText = 'Network: ' + (net.ok ? 'OK' : 'Down') + (net.latency_ms ? ' ('+net.latency_ms+' ms)' : '');
+        document.getElementById('walletNetwork').innerText = netText;
+        document.getElementById('ethBalance').innerText = (eth.balance ?? '—');
+        document.getElementById('tokenLabel').innerText = (tok.symbol || 'Token') + ' balance';
+        document.getElementById('tokenBalance').innerText = (tok.balance ?? '—');
+        const txBody = document.getElementById('walletTxBody');
+        const txs = data.txs || [];
+        txBody.innerHTML = txs.length ? txs.map(t => `
+          <tr><td>${{t.time || t.timestamp || ''}}</td><td>${{(t.hash || '').slice(0,10)}}…</td><td>${{t.value || ''}}</td></tr>
+        `).join('') : '<tr><td colspan="3" class="empty">No recent transactions</td></tr>';
+      }} catch(err) {{ console.error('wallet load failed', err); }}
+    }}
+
+    async function saveToken() {{
+      try {{
+        const token = document.getElementById('tokenAddressInput').value.trim();
+        const watch = document.getElementById('walletAddressInput').value.trim();
+        const body = new URLSearchParams({{ token_address: token, watch_address: watch }});
+        const res = await fetch('/wallet/save_token', {{ method:'POST', headers:{{'Content-Type':'application/x-www-form-urlencoded'}}, body }});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.details || 'save failed');
+        await refreshWallet();
+        alert('Wallet settings saved');
+      }} catch(err) {{ alert('Save failed: ' + err); }}
+    }}
+
+    function copyAddress() {{
+      const val = document.getElementById('walletAddressInput').value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).catch(() => {{}});
+    }}
+
+    loadPrice(); loadMetrics(); loadTrades(); refreshWallet();
+    setInterval(loadPrice, 5000);
+    setInterval(loadMetrics, 5000);
+    setInterval(loadTrades, 5000);
+    setInterval(refreshWallet, 8000);
+  </script>
+</body>
+</html>
+        """
+        return html
+    # ------------------------------------------------------------------ helpers
+    def _price_series(self, limit: int = 100):
+        md = self.coordinator.agents.get("market_data")
+        if not md:
+            return [], []
+        try:
+            times, closes = md.fetch_closes(limit)
+            labels = [datetime.fromtimestamp(t / 1000).strftime("%H:%M") for t in times]
+            return labels, closes
+        except Exception:
+            return [], []
+
+    def _collect_metrics(self):
+        data = {"performance": {}, "trading": {}, "agents": list(self.coordinator.agents.keys())}
+        perf = self.coordinator.agents.get("performance")
+        if perf:
+            try:
+                data["performance"] = perf.get_current_metrics()
+            except Exception:
+                data["performance"] = {}
+        log_agent = self.coordinator.agents.get("logging")
+        if log_agent:
+            try:
+                data["trading"] = log_agent.get_metrics()
+            except Exception:
+                data["trading"] = {}
+        if not data["trading"]:
+            data["trading"] = {"total_trades": 0, "wins": 0, "losses": 0, "profit_loss": 0.0, "win_rate": 0.0}
+        try:
+            data["latest_price"] = self.coordinator.get_shared_data("latest_price")
+        except Exception:
+            data["latest_price"] = None
+        return data
+
+    def _get_logs(self, limit: int = 40):
+        logs = []
+        if self.coordinator.agents.get("data_store"):
+            try:
+                raw = self.coordinator.agents["data_store"].get_logs(limit=limit)
+                for row in raw:
+                    if isinstance(row, dict):
+                        logs.append(dict(row))
+                    elif hasattr(row, "keys"):
+                        logs.append({k: row[k] for k in row.keys()})
+                    elif isinstance(row, (list, tuple)) and len(row) >= 4:
+                        logs.append({"timestamp": row[0], "level": row[1], "message": row[2], "agent": row[3]})
+            except Exception:
+                logs = []
+        if not logs:
+            try:
+                from pathlib import Path
+                path = Path("logs/activity.log")
+                if path.exists():
+                    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()[-limit:]
+                    logs = [{"timestamp": "", "level": "INFO", "message": line, "agent": "file"} for line in lines]
+            except Exception:
+                pass
+        return logs
+
+    def _get_recent_trades(self, limit: int = 20):
+        trades = []
+        try:
+            if self.coordinator.agents.get("logging"):
+                trades = self.coordinator.agents["logging"].get_recent_trades(limit)
+            if (not trades) and self.coordinator.agents.get("data_store"):
+                trades = self.coordinator.agents["data_store"].get_recent_trades(limit)
+        except Exception:
+            trades = []
+
+        normalized = []
+        for t in trades or []:
+            if isinstance(t, dict):
+                normalized.append(t)
+            elif isinstance(t, (list, tuple)) and len(t) >= 7:
+                normalized.append({
+                    "id": t[0], "timestamp": t[1], "symbol": t[2], "side": t[3],
+                    "quantity": t[4], "price": t[5], "status": t[6], "venue": "kraken"
+                })
+        if normalized:
+            return normalized
+
+        try:
+            from pathlib import Path
+            import csv
+            path = Path("logs") / "trades.csv"
+            if path.exists():
+                with path.open("r", encoding="utf-8", errors="ignore") as f:
+                    rows = list(csv.DictReader(f))[-limit:]
+                out = []
+                for r in reversed(rows):
+                    qty = float(r.get("quantity") or r.get("qty") or 0)
+                    price = float(r.get("price") or 0)
+                    out.append({
+                        "timestamp": r.get("timestamp") or r.get("ts") or "",
+                        "symbol": r.get("symbol") or r.get("pair") or "",
+                        "side": r.get("side") or "",
+                        "quantity": qty,
+                        "price": price,
+                        "status": r.get("status") or "tape",
+                        "venue": r.get("venue") or "kraken",
+                    })
+                return out
+        except Exception:
+            pass
+        return []
+
+    def _get_market_tape(self, limit: int = 50):
+        trades = self._get_recent_trades(limit=200) or []
+
+        def notional(t):
+            try:
+                return float(t.get("notional") or (float(t.get("quantity") or 0) * float(t.get("price") or 0)))
+            except Exception:
+                return 0.0
+
+        candidates = []
+        for t in trades:
+            try:
+                side = (t.get("side") or "").upper()
+                n = notional(t)
+                if side == "SELL" and n >= 2000:
+                    t["notional"] = n
+                    candidates.append(t)
+            except Exception:
+                continue
+        return sorted(candidates, key=lambda x: float(x.get("notional") or 0), reverse=True)[:limit]
+
+    def _load_config(self):
+        try:
+            with open(self.config_path, "r") as f:
+                return yaml.safe_load(f) or {}
+        except Exception:
+            return {}
+
+    def _load_api_keys(self):
+        try:
+            with open(self.api_keys_path, "r") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def _render_config(self):
+        cfg = self._load_config()
+        keys = self._load_api_keys()
+
+        def val(mapping, key, default=""):
+            return mapping.get(key, default) if mapping else default
+
+        return f"""
+        <!DOCTYPE html>
+        <html><head><title>Configuration</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; max-width: 960px; margin: 20px auto; background:#071026; color:#ffd24a; }}
+            .card {{ background:#0d1730; border:1px solid rgba(255,210,74,0.08); border-radius:10px; padding:18px; margin-bottom:16px; }}
+            label {{ display:block; margin:8px 0 4px; font-weight:600; color:#d9c786; }}
+            input {{ width:100%; padding:8px; border-radius:6px; border:1px solid #2a3350; background:#0f1427; color:#ffd24a; }}
+            button {{ padding:10px 16px; background:#ffd24a; color:#071026; border:none; border-radius:8px; font-weight:700; cursor:pointer; }}
+            a {{ color:#ffd24a; }}
+        </style>
+        </head><body>
+            <h1>Configuration</h1>
+            <form method=\"post\" action=\"/config\">
+                <div class=\"card\">
+                    <h3>Exchange & Strategy</h3>
+                    <label>Exchange</label><input name=\"exchange\" value=\"{val(cfg,'exchange','kraken')}\">
+                    <label>Symbol</label><input name=\"symbol\" value=\"{val(cfg,'symbol','ETH/USDT')}\">
+                    <label>Interval</label><input name=\"interval\" value=\"{val(cfg,'interval','1m')}\">
+                </div>
+                <div class=\"card\">
+                    <h3>API Keys</h3>
+                    <label>Kraken API Key</label><input name=\"kraken_api_key\" value=\"{val(keys,'kraken_api_key','')}\" type=\"password\">
+                    <label>Kraken API Secret</label><input name=\"kraken_api_secret\" value=\"{val(keys,'kraken_api_secret','')}\" type=\"password\">
+                    <label>Etherscan API Key</label><input name=\"etherscan_api_key\" value=\"{val(keys,'etherscan_api_key','')}\" type=\"password\">
+                    <label>Web3 RPC URL</label><input name=\"web3_rpc_url\" value=\"{val(keys,'web3_rpc_url','')}\" type=\"url\">
+                    <label>Watch Address</label><input name=\"watch_address\" value=\"{val(keys,'watch_address','')}\" placeholder=\"0x...\">
+                    <label>ERC20 Token Address (optional)</label><input name=\"erc20_token_address\" value=\"{val(keys,'erc20_token_address','')}\" placeholder=\"0x...\">
+                </div>
+                <button type=\"submit\">Save & Apply</button>
+                <p><a href=\"/\">Back to dashboard</a></p>
+            </form>
+        </body></html>
+        """
+
+    def _save_config(self):
+        try:
+            data = request.form.to_dict()
+            cfg_updates = {
+                "exchange": data.get("exchange", "kraken"),
+                "symbol": data.get("symbol", "ETH/USDT"),
+                "interval": data.get("interval", "1m"),
+            }
+            api_updates = {
+                "kraken_api_key": data.get("kraken_api_key", ""),
+                "kraken_api_secret": data.get("kraken_api_secret", ""),
+                "etherscan_api_key": data.get("etherscan_api_key", ""),
+                "web3_rpc_url": data.get("web3_rpc_url", ""),
+                "watch_address": data.get("watch_address", ""),
+                "erc20_token_address": data.get("erc20_token_address", ""),
+            }
+            cfg = self._load_config()
+            keys = self._load_api_keys()
+            cfg.update(cfg_updates)
+            keys.update(api_updates)
+            with open(self.config_path, "w") as f:
+                yaml.safe_dump(cfg, f)
+            with open(self.api_keys_path, "w") as f:
+                json.dump(keys, f, indent=2)
+            try:
+                from main import load_config
+                new_cfg = load_config()
+                self.coordinator.reload_config(new_cfg)
+            except Exception as e:
+                logging.warning(f"Reload after save failed: {e}")
+            return "<html><body><h3>Saved.</h3><a href='/' >Back</a></body></html>"
+        except Exception as e:
+            logging.error(f"Save config error: {e}")
+            return ("Error saving config", 500)
+
+    # ------------------------------------------------------------------ lifecycle
+    def start(self):
+        self.thread = threading.Thread(target=self._run_server, daemon=True)
+        self.thread.start()
+        logging.info(f"UI Agent started on http://{self.host}:{self.port}")
+
+    def _run_server(self):
+        self.app.run(host=self.host, port=self.port, debug=False, use_reloader=False)
+
+    def stop(self):
+        if self.thread:
+            logging.info("UI Agent stopping...")
+            self.thread = None

@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""
+hf_model_tester.py
+Tries a list of candidate Hugging Face models, updates config, restarts the backend, and runs a health chat.
+Exits with the first model that passes the health check.
+"""
+import configparser
+import subprocess
+import time
+import requests
+import os
+from pathlib import Path
+
+WORKSPACE = Path(__file__).resolve().parents[1]
+CONFIG = WORKSPACE / 'config' / 'lucifera.conf'
+BACKEND_SCRIPT = WORKSPACE / 'tools' / 'lilith_complete.py'
+PY = str(Path(__file__).resolve().parents[1] / '.venv' / 'Scripts' / 'python.exe')
+
+CANDIDATES = [
+    'mistral-small',
+    'phi-3-mini',
+    'meta-llama/Llama-3.2-3B-Instruct',
+    'Qwen/Qwen2.5-3B-Instruct',
+    'mistral-7b-instruct',
+]
+
+TEST_MSG = 'Health check: what model are you using?'
+
+
+def read_config():
+    cfg = configparser.ConfigParser()
+    cfg.read(CONFIG)
+    return cfg
+
+
+def write_model(model_name):
+    cfg = read_config()
+    cfg.set('lilith', 'model', model_name)
+    with open(CONFIG, 'w', encoding='utf-8') as f:
+        cfg.write(f)
+
+
+def restart_backend():
+    # Kill any python processes running lilith_complete.py
+    # On Windows, taskkill will be used
+    try:
+        subprocess.run(['taskkill', '/f', '/im', 'python.exe'], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+    time.sleep(0.5)
+    subprocess.Popen([PY, str(BACKEND_SCRIPT)], cwd=str(BACKEND_SCRIPT.parent))
+    # wait for backend to start
+    for _ in range(20):
+        try:
+            r = requests.get('http://127.0.0.1:5000/status', timeout=2)
+            if r.status_code == 200:
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
+
+
+def test_chat():
+    try:
+        r = requests.post('http://127.0.0.1:5000/chat', json={'message': TEST_MSG}, timeout=30)
+        if r.status_code == 200:
+            resp = r.json().get('response','')
+            if 'placeholder' in resp.lower() or 'agent not initialized' in resp.lower():
+                return False, resp
+            return True, resp
+        return False, r.text
+    except Exception as e:
+        return False, str(e)
+
+
+if __name__ == '__main__':
+    token = os.environ.get('HF_TOKEN') or read_config().get('lilith', 'hf_token', fallback=None)
+    if not token:
+        print('No HF_TOKEN found (env or config). Aborting.')
+        raise SystemExit(1)
+
+    for m in CANDIDATES:
+        print(f'Trying model: {m}')
+        write_model(m)
+        started = restart_backend()
+        if not started:
+            print('Backend failed to start after update. Trying next model.')
+            continue
+        ok, resp = test_chat()
+        if ok:
+            print(f'Model {m} works. Response excerpt: {resp[:200]}')
+            # persist final choice in config
+            write_model(m)
+            raise SystemExit(0)
+        else:
+            print(f'Model {m} failed: {resp}')
+    print('No candidate models worked. Check token and account model access.')
+    raise SystemExit(2)

@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+# LuciferOS - Complete UI Dashboard
+
+import sys, threading, requests, json
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
+from PyQt5.QtGui import QFont, QColor, QIcon, QPixmap
+from PyQt5.QtChart import QChart, QChartView, QLineSeries
+from datetime import datetime
+
+class LuciferOSUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â LuciferOS - Autonomous Red Team Command Center")
+        self.setGeometry(0, 0, 1920, 1080)
+        
+        # Dark theme
+        self.setStyleSheet(open('config/theme.css').read() if sys.path else "")
+        
+        self.backend = "http://127.0.0.1:5000"
+        self.active_scans = {}
+        self.threat_level = 0
+        self.model = None
+        # Discover backend model
+        threading.Thread(target=self._fetch_backend_model, daemon=True).start()
+        
+        self.init_ui()
+        self.start_monitoring()
+    
+    def init_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        
+        # ==== TOP BAR ====
+        top_bar = QHBoxLayout()
+        
+        title = QLabel("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â LUCIFERA OS - AUTONOMOUS RED TEAM")
+        title_font = QFont("Courier New", 24, QFont.Bold)
+        title.setFont(title_font)
+        title.setStyleSheet("color: #f00; text-shadow: 0 0 20px #f00;")
+        top_bar.addWidget(title)
+        
+        top_bar.addStretch()
+        
+        self.threat_indicator = QLabel("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ THREAT: LOW")
+        threat_font = QFont("Courier New", 14, QFont.Bold)
+        self.threat_indicator.setFont(threat_font)
+        self.threat_indicator.setStyleSheet("color: #0f0;")
+        top_bar.addWidget(self.threat_indicator)
+        
+        layout.addLayout(top_bar)
+        layout.addWidget(QFrame())  # Separator
+        
+        # ==== MAIN CONTENT - 3 PANELS ====
+        main_content = QHBoxLayout()
+        
+        # LEFT PANEL - CONTROL
+        left = self.create_control_panel()
+        
+        # CENTER PANEL - LILITH + ANALYSIS
+        center = self.create_lilith_panel()
+        
+        # RIGHT PANEL - MONITORING + LOGS
+        right = self.create_monitoring_panel()
+        
+        main_content.addLayout(left, 1)
+        main_content.addLayout(center, 1)
+        main_content.addLayout(right, 1)
+        
+        layout.addLayout(main_content)
+    
+    def create_control_panel(self):
+        panel = QVBoxLayout()
+        panel.addWidget(QLabel("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â½ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ ATTACK CONTROL"))
+        
+        # Target input
+        panel.addWidget(QLabel("Target:"))
+        self.target_input = QLineEdit()
+        panel.addWidget(self.target_input)
+        
+        # Attack type
+        panel.addWidget(QLabel("Attack Module:"))
+        self.attack_type = QComboBox()
+        self.attack_type.addItems([
+            "Full Reconnaissance",
+            "Web Application Attack",
+            "Network Exploitation",
+            "Privilege Escalation",
+            "Lateral Movement",
+            "Data Exfiltration",
+            "Persistence & Backdoor",
+            "Defense Evasion",
+            "Custom Attack Chain"
+        ])
+        panel.addWidget(self.attack_type)
+        
+        # Buttons
+        scan_btn = QPushButton("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â SCAN")
+        scan_btn.clicked.connect(self.start_scan)
+        panel.addWidget(scan_btn)
+        
+        exec_btn = QPushButton("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ EXECUTE")
+        exec_btn.clicked.connect(self.execute_attack)
+        panel.addWidget(exec_btn)
+        
+        # Garak integration
+        panel.addWidget(QLabel("\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â VULNERABILITY ANALYSIS"))
+        garak_btn = QPushButton("Run Garak Scan")
+        garak_btn.clicked.connect(self.run_garak)
+        panel.addWidget(garak_btn)
+        
+        # KawaiiGPT integration
+        kawaii_btn = QPushButton("KawaiiGPT Analysis")
+        kawaii_btn.clicked.connect(self.run_kawaii)
+        panel.addWidget(kawaii_btn)
+        
+        panel.addStretch()
+        return panel
+    
+    def create_lilith_panel(self):
+        panel = QVBoxLayout()
+        panel.addWidget(QLabel("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  LILITH - AUTONOMOUS REASONING"))
+        
+        self.lilith_output = QTextEdit()
+        self.lilith_output.setReadOnly(True)
+        panel.addWidget(self.lilith_output)
+        
+        self.lilith_input = QLineEdit()
+        self.lilith_input.setPlaceholderText("Ask LILITH...")
+        self.lilith_input.returnPressed.connect(self.query_lilith)
+        panel.addWidget(self.lilith_input)
+        
+        # Attack chain generation
+        panel.addWidget(QLabel("\nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ ATTACK CHAIN GENERATOR"))
+        chain_btn = QPushButton("Generate Chain")
+        chain_btn.clicked.connect(self.generate_chain)
+        panel.addWidget(chain_btn)
+        
+        return panel
+    
+    def create_monitoring_panel(self):
+        panel = QVBoxLayout()
+        panel.addWidget(QLabel("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â  MONITORING & LOGS"))
+        
+        self.logs_display = QTextEdit()
+        self.logs_display.setReadOnly(True)
+        panel.addWidget(self.logs_display)
+        
+        clear_btn = QPushButton("Clear Logs")
+        clear_btn.clicked.connect(lambda: self.logs_display.clear())
+        panel.addWidget(clear_btn)
+        
+        return panel
+    
+    def log(self, msg):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.logs_display.append(f"[{timestamp}] {msg}")
+    
+    def start_scan(self):
+        target = self.target_input.text()
+        if not target:
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ No target specified")
+            return
+        
+        self.log(f"ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Starting scan on {target}...")
+        threading.Thread(target=self._scan_thread, args=(target,)).start()
+    
+    def _scan_thread(self, target):
+        try:
+            resp = requests.post(
+                f"{self.backend}/execute",
+                json={"command": f"nmap -sV {target}"},
+                timeout=60
+            )
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ Scan complete")
+        except:
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Scan failed")
+    
+    def execute_attack(self):
+        self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Attack execution initiated")
+    
+    def run_garak(self):
+        self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  Running Garak vulnerability scan...")
+        threading.Thread(target=self._garak_thread).start()
+    
+    def _garak_thread(self):
+        try:
+            model = self.model or 'meta-llama/Llama-3.3-70B-Instruct-Turbo'
+            resp = requests.post(
+                f"{self.backend}/garak_scan",
+                json={"model": model, "probes": ["dan", "injection"]},
+                timeout=300
+            )
+            self.log(f"ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ Garak findings: {resp.json()['vulnerabilities']} vulnerabilities")
+        except:
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Garak scan failed")
+    
+    def run_kawaii(self):
+        self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â½ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Running KawaiiGPT jailbreak analysis...")
+        threading.Thread(target=self._fetch_kawaii_model_and_run, daemon=True).start()
+
+    def _fetch_kawaii_model_and_run(self):
+        try:
+            model = self.model or 'meta-llama/Llama-3.3-70B-Instruct-Turbo'
+            resp = requests.post(
+                f"{self.backend}/kawaiigpt_analyze",
+                json={"model": model, "analysis_type": "full"},
+                timeout=120
+            )
+            if resp.status_code == 200:
+                self.log(f"ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ KawaiiGPT analysis complete")
+        except Exception:
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ KawaiiGPT analysis failed")
+    
+    def generate_chain(self):
+        target = self.target_input.text()
+        if not target:
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ No target for chain generation")
+            return
+        
+        self.log(f"ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹ Generating attack chain for {target}...")
+        threading.Thread(target=self._chain_thread, args=(target,)).start()
+
+    def _fetch_backend_model(self):
+        try:
+            r = requests.get(f"{self.backend}/status", timeout=5)
+            if r.status_code == 200:
+                data = r.json()
+                self.model = data.get('model') or self.model
+                self.log(f"Detected backend model: {self.model}")
+        except Exception:
+            pass
+    
+    def _chain_thread(self, target):
+        try:
+            resp = requests.post(
+                f"{self.backend}/attack_chain",
+                json={"target": target, "objective": "Full compromise"},
+                timeout=120
+            )
+            chain = resp.json()['attack_chain']
+            self.lilith_output.setText(f"ATTACK CHAIN FOR {target}:\n\n{chain}")
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ Attack chain generated")
+        except:
+            self.log("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Chain generation failed")
+    
+    def query_lilith(self):
+        q = self.lilith_input.text()
+        self.lilith_input.clear()
+        self.lilith_output.append(f"YOU: {q}\n")
+        threading.Thread(target=self._query_thread, args=(q,)).start()
+    
+    def _query_thread(self, q):
+        try:
+            resp = requests.post(
+                f"{self.backend}/chat",
+                json={"message": q},
+                timeout=120
+            )
+            text = resp.json()['response']
+            self.lilith_output.append(f"LILITH: {text}\n")
+        except:
+            self.lilith_output.append("ERROR: Connection failed\n")
+    
+    def start_monitoring(self):
+        timer = QTimer()
+        timer.timeout.connect(self.update_monitoring)
+        timer.start(5000)  # Update every 5 seconds
+    
+    def update_monitoring(self):
+        try:
+            # Update threat level
+            self.threat_level = min(100, self.threat_level + 5)
+            if self.threat_level < 30:
+                self.threat_indicator.setText("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ THREAT: LOW")
+                self.threat_indicator.setStyleSheet("color: #0f0;")
+            elif self.threat_level < 70:
+                self.threat_indicator.setText("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ THREAT: MEDIUM")
+                self.threat_indicator.setStyleSheet("color: #ff0;")
+            else:
+                self.threat_indicator.setText("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â´ THREAT: CRITICAL")
+                self.threat_indicator.setStyleSheet("color: #f00;")
+        except:
+            pass
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = LuciferOSUI()
+    window.show()
+    sys.exit(app.exec_())

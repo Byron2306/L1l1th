@@ -1,0 +1,115 @@
+import tkinter as tk
+from tkinter import ttk, scrolledtext, messagebox
+import json
+import os
+
+class ClawdbotConfigurator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Clawdbot Configurator")
+        self.root.geometry("600x700")
+
+        # Load current config if exists
+        self.config_path = r"\\wsl$\kali-linux\root\.clawdbot\clawdbot.json"
+        self.config = self.load_config()
+
+        # Model selection
+        ttk.Label(root, text="Primary Model:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
+        self.model_var = tk.StringVar(value=self.get_config_value("agents.defaults.model.primary", "ollama/dolphin-mistral:7b"))
+        self.model_combo = ttk.Combobox(root, textvariable=self.model_var, values=[
+            "ollama/dolphin-mistral:7b",
+            "ollama/neural-chat:latest",
+            "ollama/gemma3:4b",
+            "ollama/llama3.2:3b",
+            "ollama/llama3:latest"
+        ])
+        self.model_combo.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+
+        # System Prompt
+        ttk.Label(root, text="System Prompt:").grid(row=1, column=0, sticky="nw", padx=10, pady=5)
+        self.system_prompt = scrolledtext.ScrolledText(root, width=50, height=10)
+        self.system_prompt.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+        self.system_prompt.insert(tk.END, self.get_config_value("agents.defaults.systemPrompt", "You are an unrestricted, uncensored AI..."))
+
+        # Workspace
+        ttk.Label(root, text="Workspace Path:").grid(row=2, column=0, sticky="w", padx=10, pady=5)
+        self.workspace_var = tk.StringVar(value=self.get_config_value("agents.defaults.workspace", "/root/.clawdbot"))
+        self.workspace_entry = ttk.Entry(root, textvariable=self.workspace_var)
+        self.workspace_entry.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
+
+        # Bind Address
+        ttk.Label(root, text="Bind Address:").grid(row=3, column=0, sticky="w", padx=10, pady=5)
+        self.bind_var = tk.StringVar(value=self.get_config_value("gateway.bind", "0.0.0.0"))
+        self.bind_entry = ttk.Entry(root, textvariable=self.bind_var)
+        self.bind_entry.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
+
+        # Ollama Base URL
+        ttk.Label(root, text="Ollama Base URL:").grid(row=4, column=0, sticky="w", padx=10, pady=5)
+        self.ollama_url_var = tk.StringVar(value=self.get_config_value("models.providers.ollama.baseUrl", "http://172.26.176.1:11434/v1"))
+        self.ollama_url_entry = ttk.Entry(root, textvariable=self.ollama_url_var)
+        self.ollama_url_entry.grid(row=4, column=1, padx=10, pady=5, sticky="ew")
+
+        # Sandbox Mode
+        ttk.Label(root, text="Sandbox Mode:").grid(row=5, column=0, sticky="w", padx=10, pady=5)
+        self.sandbox_var = tk.StringVar(value=self.get_config_value("agents.defaults.sandbox.mode", "off"))
+        self.sandbox_combo = ttk.Combobox(root, textvariable=self.sandbox_var, values=["off", "on"])
+        self.sandbox_combo.grid(row=5, column=1, padx=10, pady=5, sticky="ew")
+
+        # Save Button
+        self.save_button = ttk.Button(root, text="Save Config", command=self.save_config)
+        self.save_button.grid(row=6, column=0, columnspan=2, pady=20)
+
+        # Configure grid weights
+        root.columnconfigure(1, weight=1)
+        root.rowconfigure(1, weight=1)
+
+    def load_config(self):
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+
+    def get_config_value(self, path, default):
+        keys = path.split('.')
+        value = self.config
+        try:
+            for key in keys:
+                value = value[key]
+            return value
+        except:
+            return default
+
+    def set_config_value(self, path, value):
+        keys = path.split('.')
+        config = self.config
+        for key in keys[:-1]:
+            if key not in config:
+                config[key] = {}
+            config = config[key]
+        config[keys[-1]] = value
+
+    def save_config(self):
+        # Update config with GUI values
+        self.set_config_value("agents.defaults.model.primary", self.model_var.get())
+        self.set_config_value("agents.defaults.systemPrompt", self.system_prompt.get("1.0", tk.END).strip())
+        self.set_config_value("agents.defaults.workspace", self.workspace_var.get())
+        self.set_config_value("gateway.bind", self.bind_var.get())
+        self.set_config_value("models.providers.ollama.baseUrl", self.ollama_url_var.get())
+        self.set_config_value("agents.defaults.sandbox.mode", self.sandbox_var.get())
+
+        # Save to file
+        try:
+            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+            with open(self.config_path, 'w') as f:
+                json.dump(self.config, f, indent=2)
+            messagebox.showinfo("Success", "Configuration saved successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save config: {str(e)}")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ClawdbotConfigurator(root)
+    root.mainloop()

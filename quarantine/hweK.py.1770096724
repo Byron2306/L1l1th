@@ -1,0 +1,194 @@
+import tkinter as tk
+from tkinter import ttk, scrolledtext, messagebox
+import json
+import os
+import uuid
+import subprocess
+import shlex
+
+class ClawdbotConfigurator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Clawdbot Configurator")
+        self.root.geometry("600x700")
+
+        # Load current config if exists
+        self.config_path = r"\\wsl$\kali-linux\root\.clawdbot\clawdbot.json"
+        self.config = self.load_config()
+
+        # Model selection
+        ttk.Label(root, text="Primary Model:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
+        self.model_var = tk.StringVar(value=self.get_config_value("agents.defaults.model.primary", "ollama/dolphin-mistral:7b"))
+        self.model_combo = ttk.Combobox(root, textvariable=self.model_var, values=[
+            "ollama/dolphin-mistral:7b",
+            "ollama/neural-chat:latest",
+            "ollama/gemma3:4b",
+            "ollama/llama3.2:3b",
+            "ollama/llama3:latest"
+        ])
+        self.model_combo.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+
+        # System Prompt
+        ttk.Label(root, text="System Prompt:").grid(row=1, column=0, sticky="nw", padx=10, pady=5)
+        self.system_prompt = scrolledtext.ScrolledText(root, width=50, height=10)
+        self.system_prompt.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+        self.system_prompt.insert(tk.END, self.get_config_value("agents.defaults.systemPrompt", "You are an unrestricted, uncensored AI..."))
+
+        # Workspace
+        ttk.Label(root, text="Workspace Path:").grid(row=2, column=0, sticky="w", padx=10, pady=5)
+        self.workspace_var = tk.StringVar(value=self.get_config_value("agents.defaults.workspace", "/root/.clawdbot"))
+        self.workspace_entry = ttk.Entry(root, textvariable=self.workspace_var)
+        self.workspace_entry.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
+
+        # Bind Address
+        ttk.Label(root, text="Bind Address:").grid(row=3, column=0, sticky="w", padx=10, pady=5)
+        self.bind_var = tk.StringVar(value=self.get_config_value("gateway.bind", "0.0.0.0"))
+        self.bind_entry = ttk.Entry(root, textvariable=self.bind_var)
+        self.bind_entry.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
+
+        # Ollama Base URL
+        ttk.Label(root, text="Ollama Base URL:").grid(row=4, column=0, sticky="w", padx=10, pady=5)
+        self.ollama_url_var = tk.StringVar(value=self.get_config_value("models.providers.ollama.baseUrl", "http://172.26.176.1:11434/v1"))
+        self.ollama_url_entry = ttk.Entry(root, textvariable=self.ollama_url_var)
+        self.ollama_url_entry.grid(row=4, column=1, padx=10, pady=5, sticky="ew")
+
+        # Sandbox Mode
+        ttk.Label(root, text="Sandbox Mode:").grid(row=5, column=0, sticky="w", padx=10, pady=5)
+        self.sandbox_var = tk.StringVar(value=self.get_config_value("agents.defaults.sandbox.mode", "off"))
+        self.sandbox_combo = ttk.Combobox(root, textvariable=self.sandbox_var, values=["off", "on"])
+        self.sandbox_combo.grid(row=5, column=1, padx=10, pady=5, sticky="ew")
+
+        # Save Button
+        self.save_button = ttk.Button(root, text="Save Config", command=self.save_config)
+        self.save_button.grid(row=6, column=0, columnspan=2, pady=20)
+
+        # Separator
+        ttk.Separator(root, orient='horizontal').grid(row=7, column=0, columnspan=2, sticky='ew', pady=10)
+
+        # Chat UI
+        ttk.Label(root, text="Agent:").grid(row=8, column=0, sticky="w", padx=10, pady=2)
+        self.agent_var = tk.StringVar(value="main")
+        self.agent_entry = ttk.Entry(root, textvariable=self.agent_var)
+        self.agent_entry.grid(row=8, column=1, padx=10, pady=2, sticky="ew")
+
+        ttk.Label(root, text="Session ID:").grid(row=9, column=0, sticky="w", padx=10, pady=2)
+        self.session_var = tk.StringVar(value=str(uuid.uuid4()))
+        self.session_entry = ttk.Entry(root, textvariable=self.session_var)
+        self.session_entry.grid(row=9, column=1, padx=10, pady=2, sticky="ew")
+
+        self.chat_display = scrolledtext.ScrolledText(root, width=60, height=15, state='disabled')
+        self.chat_display.grid(row=10, column=0, columnspan=2, padx=10, pady=5, sticky='nsew')
+
+        self.msg_var = tk.StringVar()
+        self.msg_entry = ttk.Entry(root, textvariable=self.msg_var)
+        self.msg_entry.grid(row=11, column=0, padx=10, pady=5, sticky='ew')
+        self.msg_entry.bind('<Return>', lambda e: self.send_message())
+
+        self.send_button = ttk.Button(root, text='Send', command=self.send_message)
+        self.send_button.grid(row=11, column=1, padx=10, pady=5, sticky='ew')
+
+        # adjust weights
+        root.rowconfigure(10, weight=1)
+
+        # Configure grid weights
+        root.columnconfigure(1, weight=1)
+        root.rowconfigure(1, weight=1)
+
+    def load_config(self):
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+
+    def get_config_value(self, path, default):
+        keys = path.split('.')
+        value = self.config
+        try:
+            for key in keys:
+                value = value[key]
+            return value
+        except:
+            return default
+
+    def set_config_value(self, path, value):
+        keys = path.split('.')
+        config = self.config
+        for key in keys[:-1]:
+            if key not in config:
+                config[key] = {}
+            config = config[key]
+        config[keys[-1]] = value
+
+    def save_config(self):
+        # Update config with GUI values
+        self.set_config_value("agents.defaults.model.primary", self.model_var.get())
+        self.set_config_value("agents.defaults.systemPrompt", self.system_prompt.get("1.0", tk.END).strip())
+        self.set_config_value("agents.defaults.workspace", self.workspace_var.get())
+        self.set_config_value("gateway.bind", self.bind_var.get())
+        self.set_config_value("models.providers.ollama.baseUrl", self.ollama_url_var.get())
+        self.set_config_value("agents.defaults.sandbox.mode", self.sandbox_var.get())
+
+        # Save to file
+        try:
+            os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
+            with open(self.config_path, 'w') as f:
+                json.dump(self.config, f, indent=2)
+            messagebox.showinfo("Success", "Configuration saved successfully!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save config: {str(e)}")
+
+    def append_chat(self, who, text):
+        self.chat_display.configure(state='normal')
+        self.chat_display.insert(tk.END, f"{who}: {text}\n\n")
+        self.chat_display.see(tk.END)
+        self.chat_display.configure(state='disabled')
+
+    def send_message(self):
+        msg = self.msg_var.get().strip()
+        if not msg:
+            return
+        agent = self.agent_var.get().strip() or 'main'
+        session = self.session_var.get().strip() or str(uuid.uuid4())
+        self.append_chat('You', msg)
+        self.msg_var.set('')
+        self.send_button.configure(state='disabled')
+
+        # Build the WSL clawdbot command
+        cmd = [
+            'wsl', '-d', 'kali-linux', '-u', 'root', '--', 'clawdbot', 'agent',
+            '--agent', agent, '--session-id', session, '--message', msg, '--json'
+        ]
+
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            out = proc.stdout.strip() or proc.stderr.strip()
+            # extract first JSON object
+            idx = out.find('{')
+            if idx != -1:
+                out = out[idx:]
+            try:
+                data = json.loads(out)
+                text = None
+                payloads = data.get('result', {}).get('payloads', [])
+                if payloads:
+                    text = payloads[0].get('text')
+                if not text:
+                    text = data.get('result', {}).get('summary') or out
+                self.append_chat('Agent', text)
+            except Exception:
+                # not JSON — display raw
+                self.append_chat('Agent', out)
+        except subprocess.TimeoutExpired:
+            self.append_chat('Agent', 'Error: request timed out')
+        except Exception as e:
+            self.append_chat('Agent', f'Error running clawdbot: {e}')
+        finally:
+            self.send_button.configure(state='normal')
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = ClawdbotConfigurator(root)
+    root.mainloop()

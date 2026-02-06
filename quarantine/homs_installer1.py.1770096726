@@ -1,0 +1,680 @@
+#!/usr/bin/env python3
+'''
+HOMS V3.0 COMPLETE SYSTEM - SINGLE FILE INSTALLER
+Creates the project scaffold and immediately installs all Python dependencies into a local venv.
+
+Author: NWU HOMS Team
+Date: 2026-01-30
+'''
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+BANNER = r'''
+╔════════════════════════════════════════════════════════════╗
+║   HOMS V3.0 - HYBRID OFFLINE MARKING SYSTEM INSTALLER     ║
+║   Complete Automated Assessment Platform                   ║
+╚════════════════════════════════════════════════════════════╝
+'''
+
+
+def write_file(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding='utf-8', newline='\n')
+
+
+def try_chmod_exec(path: Path) -> None:
+    try:
+        os.chmod(path, 0o755)
+    except Exception:
+        pass
+
+
+def run_cmd(cmd: list[str], cwd: Path | None = None, retries: int = 2, delay_seconds: float = 1.5) -> tuple[bool, str]:
+    '''
+    Runs a command, captures combined stdout/stderr, retries on failure.
+    Returns (ok, output).
+    '''
+    last_out = ''
+    for attempt in range(1, retries + 2):
+        try:
+            p = subprocess.run(
+                cmd,
+                cwd=str(cwd) if cwd else None,
+                capture_output=True,
+                text=True,
+                shell=False,
+            )
+            last_out = (p.stdout or '') + (p.stderr or '')
+            if p.returncode == 0:
+                return True, last_out
+        except Exception as e:
+            last_out = str(e)
+
+        if attempt <= retries:
+            time.sleep(delay_seconds * attempt)
+
+    return False, last_out
+
+
+def venv_python_path(venv_dir: Path) -> Path:
+    if os.name == 'nt':
+        return venv_dir / 'Scripts' / 'python.exe'
+    return venv_dir / 'bin' / 'python'
+
+
+def ensure_venv(base: Path) -> tuple[bool, Path, str]:
+    '''
+    Creates venv in base/venv if missing.
+    Returns (ok, venv_python, log).
+    '''
+    venv_dir = base / 'venv'
+    py = venv_python_path(venv_dir)
+
+    if py.exists():
+        return True, py, 'venv already exists'
+
+    ok, out = run_cmd([sys.executable, '-m', 'venv', str(venv_dir)], cwd=base)
+    if not ok:
+        return False, py, out
+
+    py = venv_python_path(venv_dir)
+    if not py.exists():
+        return False, py, 'venv created but python executable not found'
+
+    return True, py, out
+
+
+def self_heal_pip(venv_py: Path, base: Path) -> list[str]:
+    '''
+    Best-effort self-heal steps to get pip into a working state.
+    Returns log lines.
+    '''
+    logs: list[str] = []
+
+    ok, out = run_cmd([str(venv_py), '-m', 'ensurepip', '--upgrade'], cwd=base, retries=1)
+    logs.append('[self-heal] ensurepip --upgrade: ' + ('ok' if ok else 'failed'))
+    if out.strip():
+        logs.append(out.strip())
+
+    ok, out = run_cmd([str(venv_py), '-m', 'pip', 'install', '--upgrade', 'pip', 'setuptools', 'wheel'], cwd=base, retries=2)
+    logs.append('[self-heal] pip/setuptools/wheel upgrade: ' + ('ok' if ok else 'failed'))
+    if out.strip():
+        logs.append(out.strip())
+
+    return logs
+
+
+def install_deps(venv_py: Path, base: Path) -> tuple[bool, list[str]]:
+    '''
+    Installs deps immediately into the venv and installs the project editable.
+    Returns (ok, log_lines).
+    '''
+    logs: list[str] = []
+
+    ok, out = run_cmd([str(venv_py), '-m', 'pip', '--version'], cwd=base, retries=1)
+    if not ok:
+        logs.append('[deps] pip not ready, attempting self-heal')
+        logs.extend(self_heal_pip(venv_py, base))
+
+    ok, out = run_cmd([str(venv_py), '-m', 'pip', 'install', '-e', '.'], cwd=base, retries=2)
+    logs.append('[deps] pip install -e .: ' + ('ok' if ok else 'failed'))
+    if out.strip():
+        logs.append(out.strip())
+
+    if ok:
+        return True, logs
+
+    logs.append('[deps] editable install failed, attempting self-heal then retry')
+    logs.extend(self_heal_pip(venv_py, base))
+    ok2, out2 = run_cmd([str(venv_py), '-m', 'pip', 'install', '-e', '.'], cwd=base, retries=1)
+    logs.append('[deps] retry pip install -e .: ' + ('ok' if ok2 else 'failed'))
+    if out2.strip():
+        logs.append(out2.strip())
+
+    return ok2, logs
+
+
+def main() -> int:
+    print(BANNER)
+
+    script_dir = Path(__file__).resolve().parent
+    base = script_dir / 'homs_production'
+    base.mkdir(parents=True, exist_ok=True)
+    os.chdir(base)
+
+    dirs = [
+        'homs',
+        'homs/core',
+        'homs/utils',
+        'homs/config',
+        'homs/integrations',
+        'data/submissions',
+        'data/references',
+        'logs',
+        'output/reports',
+        'scripts',
+    ]
+    for d in dirs:
+        Path(d).mkdir(parents=True, exist_ok=True)
+
+    print('✓ Directory structure created')
+
+    write_file(
+        Path('pyproject.toml'),
+        __import__('textwrap').dedent("""\
+        [build-system]
+        requires = ["setuptools>=61.0"]
+        build-backend = "setuptools.build_meta"
+
+        [project]
+        name = "homs"
+        version = "3.0.0"
+        description = "Hybrid Offline Marking System - NWU UTEW221"
+        requires-python = ">=3.8"
+        dependencies = [
+            "pybryt>=0.7.0",
+            "numpy>=1.21.0",
+            "pandas>=1.3.0",
+            "pyyaml>=5.4.0",
+            "nbformat>=5.0.0",
+            "nbconvert>=6.0.0",
+            "jupyter_client>=6.0.0"
+        ]
+
+        [project.scripts]
+        homs = "main:main"
+
+        [tool.setuptools.packages.find]
+        where = ["."]
+        include = ["homs*"]
+        """),
+    )
+    print('✓ pyproject.toml created')
+
+    write_file(
+        Path('requirements.txt'),
+        __import__('textwrap').dedent("""\
+        pybryt>=0.7.0
+        numpy>=1.21.0
+        pandas>=1.3.0
+        pyyaml>=5.4.0
+        nbformat>=5.0.0
+        nbconvert>=6.0.0
+        jupyter_client>=6.0.0
+        """),
+    )
+    print('✓ requirements.txt created')
+
+    write_file(
+        Path('config.json'),
+        json.dumps(
+            {
+                'assessment': {'timeout_seconds': 1200, 'max_memory_mb': 512},
+                'moderation': {'low_score_threshold': 40, 'high_score_threshold': 95},
+                'data': {'data_dir': './data'},
+                'git': {'enabled': True, 'repo_path': '.'},
+            },
+            indent=2,
+        )
+        + '\n',
+    )
+    print('✓ config.json created')
+
+    write_file(
+        Path('homs/__init__.py'),
+        __import__('textwrap').dedent("""\
+        __version__ = "3.0.0"
+
+        from homs.core.assessment_agent import AssessmentAgent
+        from homs.core.moderation_agent import ModerationAgent
+        from homs.core.learning_agent import LearningAgent
+        from homs.core.workflow_engine import WorkflowEngine
+        """),
+    )
+    write_file(Path('homs/core/__init__.py'), '# core package\n')
+    write_file(Path('homs/utils/__init__.py'), '# utils package\n')
+    write_file(Path('homs/config/__init__.py'), '# config package\n')
+    write_file(Path('homs/integrations/__init__.py'), '# integrations package\n')
+    print('✓ Package __init__.py files created')
+
+    write_file(
+        Path('homs/core/assessment_agent.py'),
+        __import__('textwrap').dedent("""\
+        from __future__ import annotations
+
+        import json
+        from datetime import datetime
+        from pathlib import Path
+        from typing import Any, Dict, List, Union
+
+        import numpy as np
+        import pybryt
+
+
+        class AssessmentAgent:
+            def __init__(self, config: Dict[str, Any]):
+                self.config = config
+                self.references: Dict[str, Any] = {}
+                self.history: List[Dict[str, Any]] = []
+
+            def load_reference(self, name: str, path: Union[str, Path]) -> None:
+                path = Path(path)
+                try:
+                    self.references[name] = pybryt.ReferenceImplementation.load(str(path))
+                    print(f"Loaded reference: {name} ({path.name})")
+                except Exception as e:
+                    print(f"Error loading reference '{name}' from {path}: {e}")
+
+            def _make_harness_notebook(self, submission_py: Path, harness_path: Path) -> None:
+                nb = {
+                    "cells": [
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "import runpy\\n",
+                                f"runpy.run_path(r\\\"{str(submission_py)}\\\")\\n",
+                            ],
+                        }
+                    ],
+                    "metadata": {
+                        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+                        "language_info": {"name": "python"},
+                    },
+                    "nbformat": 4,
+                    "nbformat_minor": 5,
+                }
+                harness_path.parent.mkdir(parents=True, exist_ok=True)
+                harness_path.write_text(json.dumps(nb, indent=2) + "\\n", encoding="utf-8", newline="\\n")
+
+            def assess_submission(self, path: Union[str, Path], ref_name: str, student_id: str) -> Dict[str, Any]:
+                path = Path(path)
+
+                if ref_name not in self.references:
+                    result = {"student_id": student_id, "status": "error", "error": "Reference not found"}
+                    self.history.append(result)
+                    return result
+
+                timeout = self.config.get("timeout_seconds", 1200)
+
+                try:
+                    if path.suffix.lower() == ".ipynb":
+                        stu = pybryt.StudentImplementation(str(path), timeout=timeout)
+                    elif path.suffix.lower() == ".py":
+                        harness_dir = Path("logs") / "harness"
+                        harness_path = harness_dir / f"{student_id}_harness.ipynb"
+                        self._make_harness_notebook(path.resolve(), harness_path)
+                        stu = pybryt.StudentImplementation(
+                            str(harness_path),
+                            addl_filenames=[str(path.resolve())],
+                            timeout=timeout,
+                        )
+                    else:
+                        result = {"student_id": student_id, "status": "error", "error": "Unsupported file type"}
+                        self.history.append(result)
+                        return result
+
+                    rr = stu.check(self.references[ref_name])
+                    rr_dict = rr.to_dict() if hasattr(rr, "to_dict") else {"repr": repr(rr)}
+
+                    ann_blob = (
+                        rr_dict.get("results")
+                        or rr_dict.get("annotation_results")
+                        or rr_dict.get("annotations")
+                        or rr_dict.get("checks")
+                    )
+
+                    satisfied = 0
+                    total = 0
+
+                    if isinstance(ann_blob, dict):
+                        total = len(ann_blob)
+                        for v in ann_blob.values():
+                            if isinstance(v, dict) and v.get("satisfied") is True:
+                                satisfied += 1
+                    elif isinstance(ann_blob, list):
+                        total = len(ann_blob)
+                        for v in ann_blob:
+                            if isinstance(v, dict) and (v.get("satisfied") is True or v.get("is_satisfied") is True):
+                                satisfied += 1
+
+                    if total > 0:
+                        score = (satisfied / total) * 100.0
+                    else:
+                        score = 100.0 if rr_dict.get("satisfied") is True else 0.0
+
+                    result = {
+                        "student_id": student_id,
+                        "status": "success",
+                        "final_score": float(score),
+                        "reference_satisfied": rr_dict.get("satisfied"),
+                        "reference_result": rr_dict,
+                        "timestamp": datetime.now().isoformat(timespec="seconds"),
+                    }
+                    self.history.append(result)
+                    return result
+
+                except Exception as e:
+                    result = {"student_id": student_id, "status": "error", "error": str(e)}
+                    self.history.append(result)
+                    return result
+
+            def batch_assess(self, submissions_dir: Union[str, Path], ref_name: str) -> List[Dict[str, Any]]:
+                submissions_dir = Path(submissions_dir)
+                results: List[Dict[str, Any]] = []
+
+                files = list(submissions_dir.rglob("*.ipynb")) + list(submissions_dir.rglob("*.py"))
+                files = sorted(set(files))
+
+                for f in files:
+                    results.append(self.assess_submission(f, ref_name, f.stem))
+
+                return results
+
+            def get_statistics(self) -> Dict[str, Any]:
+                success = [a for a in self.history if a.get("status") == "success"]
+                scores = [a.get("final_score", 0) for a in success]
+                return {
+                    "total": len(self.history),
+                    "success": len(success),
+                    "mean": float(np.mean(scores)) if scores else 0.0,
+                    "std": float(np.std(scores)) if scores else 0.0,
+                }
+        """),
+    )
+    print('✓ assessment_agent.py created')
+
+    write_file(
+        Path('homs/core/moderation_agent.py'),
+        __import__('textwrap').dedent("""\
+        from __future__ import annotations
+
+        from typing import Any, Dict, List
+
+
+        class ModerationAgent:
+            def __init__(self, config: Dict[str, Any]):
+                self.config = config
+                self.thresholds = {
+                    "low": config.get("low_score_threshold", 40),
+                    "high": config.get("high_score_threshold", 95),
+                }
+
+            def moderate_assessment(self, assessment: Dict[str, Any]) -> Dict[str, Any]:
+                flags: List[str] = []
+                score = float(assessment.get("final_score", 0) or 0)
+
+                if assessment.get("status") != "success":
+                    flags.append("assessment_error")
+                    return {
+                        "student_id": assessment.get("student_id"),
+                        "action": "review_required",
+                        "flags": flags,
+                    }
+
+                if score < self.thresholds["low"]:
+                    flags.append("low_score")
+                if score > self.thresholds["high"]:
+                    flags.append("high_score")
+
+                return {
+                    "student_id": assessment.get("student_id"),
+                    "action": "review_required" if flags else "approved",
+                    "flags": flags,
+                }
+
+            def batch_moderate(self, assessments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+                return [self.moderate_assessment(a) for a in assessments]
+        """),
+    )
+    print('✓ moderation_agent.py created')
+
+    write_file(
+        Path('homs/core/learning_agent.py'),
+        __import__('textwrap').dedent("""\
+        from __future__ import annotations
+
+        from collections import Counter
+        from typing import Any, Dict, List
+
+
+        class LearningAgent:
+            def __init__(self, config: Dict[str, Any]):
+                self.config = config
+                self.knowledge_base: Counter[str] = Counter()
+
+            def learn_from_assessments(self, assessments: List[Dict[str, Any]]) -> None:
+                for a in assessments:
+                    if a.get("status") != "success":
+                        continue
+
+                    rr = a.get("reference_result") or {}
+                    ann_blob = (
+                        rr.get("results")
+                        or rr.get("annotation_results")
+                        or rr.get("annotations")
+                        or rr.get("checks")
+                    )
+
+                    if isinstance(ann_blob, dict):
+                        for name, v in ann_blob.items():
+                            if isinstance(v, dict) and v.get("satisfied") is False:
+                                self.knowledge_base[str(name)] += 1
+                    elif isinstance(ann_blob, list):
+                        for v in ann_blob:
+                            if isinstance(v, dict) and v.get("satisfied") is False:
+                                self.knowledge_base[str(v.get("name", "unnamed"))] += 1
+
+            def get_insights(self) -> Dict[str, Any]:
+                top = self.knowledge_base.most_common(10)
+                return {"most_common_failed_checks": [{"name": k, "count": v} for k, v in top]}
+        """),
+    )
+    print('✓ learning_agent.py created')
+
+    write_file(
+        Path('homs/core/workflow_engine.py'),
+        __import__('textwrap').dedent("""\
+        from __future__ import annotations
+
+        import json
+        from datetime import datetime
+        from pathlib import Path
+        from typing import Any, Dict, Union
+
+        from homs.core.assessment_agent import AssessmentAgent
+        from homs.core.learning_agent import LearningAgent
+        from homs.core.moderation_agent import ModerationAgent
+
+
+        class WorkflowEngine:
+            def __init__(self, config_path: Union[str, Path]):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    self.config = json.load(f)
+
+                self.assessment = AssessmentAgent(self.config.get("assessment", {}))
+                self.moderation = ModerationAgent(self.config.get("moderation", {}))
+                self.learning = LearningAgent(self.config.get("learning", {}))
+
+            def load_reference(self, reference_name: str, reference_path: Union[str, Path]) -> None:
+                self.assessment.load_reference(reference_name, reference_path)
+
+            def run_complete_workflow(self, submissions_dir: Union[str, Path], reference_name: str, output_dir: Union[str, Path]) -> Dict[str, Any]:
+                print("\\n" + "=" * 60)
+                print(f"Starting workflow: {datetime.now().isoformat(timespec='seconds')}")
+                print("=" * 60 + "\\n")
+
+                print("[1/4] Running assessments...")
+                assessments = self.assessment.batch_assess(submissions_dir, reference_name)
+
+                print("[2/4] Moderating results...")
+                moderations = self.moderation.batch_moderate(assessments)
+
+                print("[3/4] Learning from patterns...")
+                self.learning.learn_from_assessments(assessments)
+
+                print("[4/4] Saving results...")
+                output_dir = Path(output_dir)
+                output_dir.mkdir(parents=True, exist_ok=True)
+
+                results = {
+                    "assessments": assessments,
+                    "moderations": moderations,
+                    "insights": self.learning.get_insights(),
+                    "statistics": self.assessment.get_statistics(),
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                }
+
+                with open(output_dir / "results.json", "w", encoding="utf-8") as f:
+                    json.dump(results, f, indent=2)
+
+                print("\\n" + "=" * 60)
+                print(f"Workflow complete. Results saved to {output_dir}")
+                print("=" * 60 + "\\n")
+
+                return {"status": "success", "output_dir": str(output_dir)}
+        """),
+    )
+    print('✓ workflow_engine.py created')
+
+    write_file(
+        Path('main.py'),
+        __import__('textwrap').dedent("""\
+        #!/usr/bin/env python3
+
+        from __future__ import annotations
+
+        import argparse
+        from pathlib import Path
+
+        from homs.core.workflow_engine import WorkflowEngine
+
+
+        def main() -> None:
+            parser = argparse.ArgumentParser(description="HOMS - Hybrid Offline Marking System")
+            sub = parser.add_subparsers(dest="command", required=True)
+
+            run = sub.add_parser("run", help="Run full workflow on a submissions directory")
+            run.add_argument("submissions", type=Path, help="Submissions directory")
+            run.add_argument("reference_name", type=str, help="Reference name (label)")
+            run.add_argument("--reference-path", type=Path, default=Path("data/references/reference.pkl"), help="Path to reference .pkl")
+            run.add_argument("--output", type=Path, default=Path("./output"), help="Output directory")
+            run.add_argument("--config", type=Path, default=Path("config.json"), help="Config file")
+
+            args = parser.parse_args()
+
+            engine = WorkflowEngine(args.config)
+            engine.load_reference(args.reference_name, args.reference_path)
+            engine.run_complete_workflow(args.submissions, args.reference_name, args.output)
+
+
+        if __name__ == "__main__":
+            main()
+        """),
+    )
+    try_chmod_exec(Path('main.py'))
+    print('✓ main.py created')
+
+    write_file(Path('scripts/compile_reference.py'), __import__('textwrap').dedent("""\
+        #!/usr/bin/env python3
+        from __future__ import annotations
+
+        import argparse
+        from pathlib import Path
+
+        import pybryt
+
+
+        def main() -> None:
+            p = argparse.ArgumentParser()
+            p.add_argument("--notebook", required=True, type=Path, help="Annotated reference notebook (.ipynb)")
+            p.add_argument("--out", required=True, type=Path, help="Output .pkl path")
+            p.add_argument("--display-name", default=None, help="Optional display name for reference")
+            args = p.parse_args()
+
+            refs = pybryt.ReferenceImplementation.compile(str(args.notebook), display_name=args.display_name)
+            if not isinstance(refs, list):
+                refs = [refs]
+
+            if len(refs) == 1:
+                args.out.parent.mkdir(parents=True, exist_ok=True)
+                refs[0].dump(str(args.out))
+                print(f"Saved reference to {args.out}")
+                return
+
+            stem = args.out.stem
+            for i, r in enumerate(refs, start=1):
+                out_i = args.out.with_name(f"{stem}_{i}.pkl")
+                out_i.parent.mkdir(parents=True, exist_ok=True)
+                r.dump(str(out_i))
+                print(f"Saved reference {i} to {out_i}")
+
+
+        if __name__ == "__main__":
+            main()
+        """))
+    try_chmod_exec(Path('scripts/compile_reference.py'))
+    print('✓ scripts/compile_reference.py created')
+
+    write_file(Path('README.md'), __import__('textwrap').dedent("""\
+        # HOMS V3.0 - Hybrid Offline Marking System
+
+        Installer behaviour
+        - Creates homs_production next to the installer file.
+        - Creates venv and installs dependencies immediately.
+
+        Compile reference
+        venv\\Scripts\\python scripts\\compile_reference.py --notebook reference.ipynb --out data\\references\\reference.pkl
+
+        Run workflow
+        venv\\Scripts\\python main.py run <DROP_FOLDER> reference_name --reference-path data/references/reference.pkl --output output
+        """))
+    print('✓ README.md created')
+
+    write_file(Path('data/submissions/.gitkeep'), '')
+    write_file(Path('data/references/.gitkeep'), '')
+    print('✓ Sample placeholders created')
+
+    print('\n[deps] Creating venv and installing dependencies now...')
+    venv_ok, venv_py, venv_log = ensure_venv(base)
+    if not venv_ok:
+        print('[deps] venv creation failed. Installer will continue, but you must create a venv manually.')
+        if venv_log.strip():
+            print(venv_log.strip())
+    else:
+        ok, logs = install_deps(venv_py, base)
+        for line in logs[-10:]:
+            if line.strip():
+                print(line.strip()[:1200])
+
+        if not ok:
+            print('[deps] Dependency install did not complete cleanly. The scaffold exists, but you must fix pip/connectivity and rerun: venv\\Scripts\\python -m pip install -e .')
+        else:
+            print('[deps] Dependencies installed successfully in local venv')
+
+    print('\n' + '=' * 60)
+    print('✅ HOMS V3.0 SYSTEM GENERATED')
+    print('=' * 60)
+    print(f'Location: {base.resolve()}')
+    print('Next steps:')
+    print('1. Put annotated reference notebook at: homs_production\\reference.ipynb')
+    print('2. Compile reference: venv\\Scripts\\python scripts\\compile_reference.py --notebook reference.ipynb --out data\\references\\reference.pkl')
+    print('3. Run workflow with your drag-and-drop batch folder:')
+    print('   venv\\Scripts\\python main.py run "E:\\HOMS_DROP\\Batch_01" reference_name --reference-path data\\references\\reference.pkl --output "output\\Batch_01"')
+    print('=' * 60 + '\n')
+
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

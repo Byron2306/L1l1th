@@ -1,0 +1,246 @@
+import os
+import json
+import logging
+from cryptography.fernet import Fernet
+from typing import Dict, Any, Optional, List
+import hashlib
+import time
+
+
+class SecurityAgent:
+    """Security Agent: manages secrets, authorizes UI commands, emits security events.
+
+    Enforces safe defaults (DRY_RUN/PAUSED) until explicitly armed. Validates
+    incoming `buzz.system.command` messages and emits `buzz.system.command.authorized`
+    when valid; otherwise emits `buzz.security.event` and records an audit.
+    """
+
+    def __init__(self, coordinator: Optional[Any] = None, key_file: str = "config/encryption.key"):
+        self.coordinator = coordinator
+        self.key_file = key_file
+        self.fernet = self._load_or_generate_key()
+        self.api_keys = {}  # Encrypted storage
+        self.users = {}  # Simple user store (in prod, use DB)
+        self.fraud_alerts = []
+        self.armed = False
+        # operator token used to authorize dangerous commands (env or cfg)
+        self.operator_token = os.environ.get('OPERATOR_TOKEN') if os.environ.get('OPERATOR_TOKEN') else None
+        try:
+            if coordinator and getattr(coordinator, 'cfg', None):
+                self.operator_token = self.operator_token or getattr(coordinator.cfg, 'operator_token', None)
+        except Exception:
+            pass
+
+        # Safe defaults: ensure coordinator starts in DRY_RUN and PAUSED until armed
+        try:
+            if self.coordinator and getattr(self.coordinator, 'cfg', None):
+                setattr(self.coordinator.cfg, 'dry_run', True)
+                # signal pause via coordinator share_data so UI displays status
+                try:
+                    self.coordinator.share_data('buzz.security.policy', {'armed': False, 'dry_run': True, 'paused': True})
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        logging.info("Security Agent initialized")
+
+    def _load_or_generate_key(self) -> Fernet:
+        """Load or generate encryption key."""
+        if os.path.exists(self.key_file):
+            with open(self.key_file, 'rb') as f:
+                key = f.read()
+        else:
+            key = Fernet.generate_key()
+            with open(self.key_file, 'wb') as f:
+                f.write(key)
+            logging.info(f"Generated new encryption key: {self.key_file}")
+        return Fernet(key)
+
+    def encrypt_data(self, data: str) -> str:
+        """Encrypt string data."""
+        return self.fernet.encrypt(data.encode()).decode()
+
+    def decrypt_data(self, encrypted_data: str) -> str:
+        """Decrypt string data."""
+        return self.fernet.decrypt(encrypted_data.encode()).decode()
+
+    def store_api_key(self, service: str, key: str, secret: Optional[str] = None):
+        """Store encrypted API key."""
+        data = {"key": key}
+        if secret:
+            data["secret"] = secret
+        encrypted = self.encrypt_data(json.dumps(data))
+        self.api_keys[service] = encrypted
+        logging.info(f"API key for {service} stored securely")
+
+    def get_api_key(self, service: str) -> Optional[Dict[str, str]]:
+        """Retrieve decrypted API key."""
+        if service in self.api_keys:
+            decrypted = self.decrypt_data(self.api_keys[service])
+            return json.loads(decrypted)
+        return None
+
+    def authenticate_user(self, username: str, password: str) -> bool:
+        """Simple authentication (hash password)."""
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        if username in self.users and self.users[username] == hashed:
+            logging.info(f"User {username} authenticated")
+            return True
+        logging.warning(f"Authentication failed for {username}")
+        return False
+
+    def add_user(self, username: str, password: str, role: str = "user"):
+        """Add a user (for demo)."""
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        self.users[username] = {"password": hashed, "role": role}
+        logging.info(f"User {username} added with role {role}")
+
+    def check_permissions(self, username: str, action: str) -> bool:
+        """Check if user has permission for action."""
+        if username in self.users:
+            role = self.users[username].get("role", "user")
+            # Simple role-based: admin can do anything, user limited
+            if role == "admin" or action in ["view", "monitor"]:
+                return True
+        return False
+
+    def detect_fraud(self, trade: Dict[str, Any], recent_trades: List[Dict[str, Any]]) -> Optional[str]:
+        """Detect potential fraud in trades."""
+        # Check for duplicate orders in short time
+        current_time = time.time()
+        duplicates = [t for t in recent_trades if t.get('symbol') == trade.get('symbol') and
+                      t.get('side') == trade.get('side') and
+                      abs(current_time - time.mktime(time.strptime(t.get('timestamp', ''), '%Y-%m-%dT%H:%M:%S.%f'))) < 10]
+        if duplicates:
+            alert = f"Duplicate trade detected: {trade}"
+            self.fraud_alerts.append(alert)
+            logging.warning(alert)
+            return alert
+
+        # Check for rapid trading (spoofing)
+        if len(recent_trades) > 10:  # More than 10 trades in window
+            alert = "Rapid trading detected, possible spoofing"
+            self.fraud_alerts.append(alert)
+            logging.warning(alert)
+            return alert
+
+        return None
+
+    def encrypt_file(self, file_path: str, output_path: Optional[str] = None):
+        """Encrypt a file."""
+        if not output_path:
+            output_path = file_path + ".enc"
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        encrypted = self.fernet.encrypt(data)
+        with open(output_path, 'wb') as f:
+            f.write(encrypted)
+        logging.info(f"File {file_path} encrypted to {output_path}")
+
+    def decrypt_file(self, file_path: str, output_path: str):
+        """Decrypt a file."""
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        decrypted = self.fernet.decrypt(data)
+        with open(output_path, 'wb') as f:
+            f.write(decrypted)
+        logging.info(f"File {file_path} decrypted to {output_path}")
+
+    def get_security_report(self) -> Dict[str, Any]:
+        """Generate security report."""
+        return {
+            "encryption_key_status": "Loaded" if os.path.exists(self.key_file) else "Generated",
+            "stored_api_keys": list(self.api_keys.keys()),
+            "users": list(self.users.keys()),
+            "fraud_alerts": self.fraud_alerts[-10:],
+            "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+        }
+
+    # ------------------ event handling / command authorization ------------------
+    def is_armed(self) -> bool:
+        return bool(self.armed)
+
+    def _emit_security_event(self, severity: str, etype: str, details: Dict[str, Any], recommended_action: str = 'ALERT'):
+        evt = {'buzz': {'type': 'buzz.security.event', 'source': 'SECURITY', 'ts': int(time.time()*1000)}, 'payload': {'severity': severity, 'type': etype, 'details': details, 'recommended_action': recommended_action}}
+        try:
+            if self.coordinator:
+                self.coordinator.share_data('buzz.security.event', evt)
+        except Exception:
+            logging.exception('Failed to share security.event')
+        # persist audit
+        try:
+            if self.coordinator and self.coordinator.agents.get('data_store'):
+                try:
+                    self.coordinator.agents['data_store'].store_security_audit(evt['payload'])
+                except Exception:
+                    logging.exception('Failed to persist security audit')
+        except Exception:
+            pass
+
+    def handle_event(self, evt: Dict[str, Any]):
+        """Handle incoming buzz events for security checks (commands, wallet activity, exec health)."""
+        try:
+            buzz = evt.get('buzz', {}) if isinstance(evt, dict) else {}
+            typ = buzz.get('type')
+            payload = evt.get('payload') or {}
+
+            if typ == 'buzz.system.command':
+                # validate token
+                auth = payload.get('auth') or {}
+                token = auth.get('token') if isinstance(auth, dict) else None
+                cmd = payload.get('command')
+                requester = payload.get('requested_by') or payload.get('by')
+                if token and self.operator_token and token == self.operator_token:
+                    # authorized
+                    out = {'buzz': {'type': 'buzz.system.command.authorized', 'source': 'SECURITY', 'ts': int(time.time()*1000)}, 'payload': {'command': cmd, 'scope': payload.get('scope'), 'requested_by': requester}}
+                    try:
+                        if self.coordinator:
+                            self.coordinator.share_data('buzz.system.command.authorized', out)
+                    except Exception:
+                        logging.exception('Failed to forward authorized command')
+                    # audit
+                    self._emit_security_event('INFO', 'AUTHORIZED_COMMAND', {'command': cmd, 'requested_by': requester}, recommended_action='NONE')
+                    # special handling: ARM_LIVE
+                    if cmd == 'ARM_LIVE':
+                        self.armed = True
+                        try:
+                            self.coordinator.share_data('buzz.security.policy', {'armed': True, 'dry_run': False, 'paused': False})
+                        except Exception:
+                            pass
+                    return
+                else:
+                    # unauthorized
+                    details = {'command': cmd, 'requested_by': requester}
+                    self._emit_security_event('HIGH', 'UNAUTHORIZED_COMMAND', details, recommended_action='HALT')
+                    return
+
+            # detect auth failures from exchange exec health
+            if typ == 'buzz.exec.health':
+                # payload may include failure counts
+                failures = payload.get('auth_failures_1m') or payload.get('auth_failures') or 0
+                if failures and int(failures) >= 3:
+                    self._emit_security_event('CRITICAL', 'EXCHANGE_AUTH_FAILURE', {'count_1m': failures}, recommended_action='HALT')
+
+            # detect wallet withdrawals
+            if typ == 'buzz.wallet.activity':
+                # payload expected to include 'type' like 'withdrawal'
+                act = payload.get('type')
+                if act and act.lower() == 'withdrawal':
+                    self._emit_security_event('CRITICAL', 'WALLET_WITHDRAWAL', {'details': payload}, recommended_action='HALT')
+
+            # detect config updates that increase risk
+            if typ == 'buzz.config.update':
+                # payload may include before/after; simple heuristic: larger max_notional
+                params = payload.get('params') or {}
+                if params.get('max_notional') and self.coordinator:
+                    try:
+                        prev = getattr(self.coordinator.cfg, 'max_notional', None)
+                        new = float(params.get('max_notional'))
+                        if prev is not None and new > prev * 2:
+                            self._emit_security_event('HIGH', 'CONFIG_DRIFT', {'param': 'max_notional', 'prev': prev, 'new': new}, recommended_action='HALT')
+                    except Exception:
+                        pass
+
+        except Exception:
+            logging.exception('SecurityAgent.handle_event failed')

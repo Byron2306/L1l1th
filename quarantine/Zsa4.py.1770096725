@@ -1,0 +1,218 @@
+import sqlite3
+import json
+import logging
+from typing import Any, Dict, Optional
+from datetime import datetime
+
+
+class DataStoreAgent:
+    """
+    Data Store Agent: Manages persistent data storage using SQLite.
+    Handles trades, market data, and system logs with efficient querying.
+    """
+
+    def __init__(self, db_path: str = "swarm_data.db"):
+        self.db_path = db_path
+        self.conn = None
+        self._connect()
+        self._create_tables()
+
+    def _connect(self):
+        """Establish SQLite connection."""
+        try:
+            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            logging.info(f"Data Store Agent connected to {self.db_path}")
+        except Exception as e:
+            logging.error(f"Failed to connect to database: {e}")
+            self.conn = None
+
+    def _create_tables(self):
+        """Create necessary tables."""
+        if not self.conn:
+            return
+
+        tables = {
+            "trades": """
+                CREATE TABLE IF NOT EXISTS trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    symbol TEXT,
+                    side TEXT,
+                    quantity REAL,
+                    price REAL,
+                    status TEXT
+                )
+            """,
+            "market_data": """
+                CREATE TABLE IF NOT EXISTS market_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    symbol TEXT,
+                    price REAL,
+                    volume REAL,
+                    source TEXT
+                )
+            """,
+            "logs": """
+                CREATE TABLE IF NOT EXISTS logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    level TEXT,
+                    message TEXT,
+                    agent TEXT
+                )
+            """,
+            "wallet_balances": """
+                CREATE TABLE IF NOT EXISTS wallet_balances (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    address TEXT,
+                    asset TEXT,
+                    balance REAL
+                )
+            """
+        }
+
+        try:
+            cursor = self.conn.cursor()
+            for table_sql in tables.values():
+                cursor.execute(table_sql)
+            self.conn.commit()
+            logging.info("Data Store tables created/verified")
+        except Exception as e:
+            logging.error(f"Error creating tables: {e}")
+
+    def store_trade(self, trade_data: Dict[str, Any]):
+        """Store a trade record."""
+        if not self.conn:
+            return
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO trades (timestamp, symbol, side, quantity, price, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                trade_data.get('timestamp', datetime.now().isoformat()),
+                trade_data.get('symbol'),
+                trade_data.get('side'),
+                trade_data.get('quantity'),
+                trade_data.get('price'),
+                trade_data.get('status', 'pending')
+            ))
+            self.conn.commit()
+            logging.debug(f"Stored trade: {trade_data}")
+        except Exception as e:
+            logging.error(f"Error storing trade: {e}")
+
+    def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> list:
+        """Retrieve trade records."""
+        if not self.conn:
+            return []
+        try:
+            cursor = self.conn.cursor()
+            if symbol:
+                cursor.execute("SELECT * FROM trades WHERE symbol = ? ORDER BY timestamp DESC LIMIT ?",
+                             (symbol, limit))
+            else:
+                cursor.execute("SELECT * FROM trades ORDER BY timestamp DESC LIMIT ?", (limit,))
+            return cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Error retrieving trades: {e}")
+            return []
+
+    def get_recent_trades(self, limit: int = 100) -> list:
+        """Convenience wrapper for most recent trades."""
+        return self.get_trades(symbol=None, limit=limit)
+
+    def store_market_data(self, symbol_or_data, data: Optional[Dict[str, Any]] = None):
+        """Store market data.
+
+        Can be called as store_market_data(data_dict) or store_market_data(symbol, data_dict).
+        """
+        if not self.conn:
+            return
+        try:
+            if data is None and isinstance(symbol_or_data, dict):
+                payload = symbol_or_data
+            else:
+                payload = data or {}
+                payload.setdefault('symbol', symbol_or_data)
+
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO market_data (timestamp, symbol, price, volume, source)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                payload.get('timestamp', datetime.now().isoformat()),
+                payload.get('symbol'),
+                payload.get('price'),
+                payload.get('volume'),
+                payload.get('source', 'unknown')
+            ))
+            self.conn.commit()
+            logging.debug(f"Stored market data: {payload}")
+        except Exception as e:
+            logging.error(f"Error storing market data: {e}")
+
+    def get_market_data(self, symbol: str, limit: int = 100) -> list:
+        """Retrieve market data for a symbol."""
+        if not self.conn:
+            return []
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT * FROM market_data WHERE symbol = ? ORDER BY timestamp DESC LIMIT ?",
+                         (symbol, limit))
+            return cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Error retrieving market data: {e}")
+            return []
+
+    def store_log(self, level: str, message: str, agent: str = "unknown"):
+        """Store a log entry."""
+        if not self.conn:
+            return
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO logs (timestamp, level, message, agent)
+                VALUES (?, ?, ?, ?)
+            """, (datetime.now().isoformat(), level, message, agent))
+            self.conn.commit()
+        except Exception as e:
+            logging.error(f"Error storing log: {e}")
+
+    def get_logs(self, level: Optional[str] = None, limit: int = 100) -> list:
+        """Retrieve log entries."""
+        if not self.conn:
+            return []
+        try:
+            cursor = self.conn.cursor()
+            if level:
+                cursor.execute("SELECT * FROM logs WHERE level = ? ORDER BY timestamp DESC LIMIT ?",
+                             (level, limit))
+            else:
+                cursor.execute("SELECT * FROM logs ORDER BY timestamp DESC LIMIT ?", (limit,))
+            return cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Error retrieving logs: {e}")
+            return []
+
+    def store_wallet_balance(self, address: str, asset: str, balance: float):
+        """Store wallet balance snapshot."""
+        if not self.conn:
+            return
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO wallet_balances (timestamp, address, asset, balance)
+                VALUES (?, ?, ?, ?)
+            """, (datetime.now().isoformat(), address, asset, balance))
+            self.conn.commit()
+        except Exception as e:
+            logging.error(f"Error storing wallet balance: {e}")
+
+    def close(self):
+        """Close database connection."""
+        if self.conn:
+            self.conn.close()
+            logging.info("Data Store Agent closed")

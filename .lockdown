@@ -1,0 +1,10 @@
+LOCKDOWN ACTIVATED
+Time: 2026-02-03T00:00:00
+Reason: Master protection - Containing LILITH to protect the master
+Activated by: GitHub Copilot AI Agent Expert
+
+LILITH IS CONTAINED.
+All autonomous operations are BLOCKED until this file is removed.
+
+To deactivate lockdown:
+  python tools/lockdown.py unlock

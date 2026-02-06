@@ -1,0 +1,340 @@
+from typing import List, Optional, Tuple
+import math
+
+
+def sma(values: List[float], window: int) -> List[Optional[float]]:
+    """Simple moving average. Returns list aligned with input; leading Nones."""
+    if window <= 0:
+        raise ValueError("window must be > 0")
+    out: List[Optional[float]] = [None] * len(values)
+    if len(values) < window:
+        return out
+
+    running = sum(values[:window])
+    out[window - 1] = running / window
+    for i in range(window, len(values)):
+        running += values[i] - values[i - window]
+        out[i] = running / window
+    return out
+
+
+def ema(values: List[float], window: int) -> List[Optional[float]]:
+    """Exponential moving average."""
+    if window <= 0:
+        raise ValueError("window must be > 0")
+    out: List[Optional[float]] = [None] * len(values)
+    if len(values) < window:
+        return out
+
+    multiplier = 2 / (window + 1)
+    out[window - 1] = sum(values[:window]) / window
+    for i in range(window, len(values)):
+        out[i] = (values[i] - out[i-1]) * multiplier + out[i-1]
+    return out
+
+
+def rsi(values: List[float], window: int = 14) -> List[Optional[float]]:
+    """Relative Strength Index."""
+    if len(values) < window + 1:
+        return [None] * len(values)
+    gains = []
+    losses = []
+    for i in range(1, len(values)):
+        change = values[i] - values[i-1]
+        gains.append(max(change, 0))
+        losses.append(max(-change, 0))
+    
+    avg_gain = sma(gains, window)
+    avg_loss = sma(losses, window)
+    
+    rsi_values = [None] * len(values)
+    for i in range(window, len(values)):
+        if avg_loss[i] == 0:
+            rsi_values[i] = 100
+        else:
+            rs = avg_gain[i] / avg_loss[i]
+            rsi_values[i] = 100 - (100 / (1 + rs))
+    return rsi_values
+
+
+def macd(values: List[float], fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[List[Optional[float]], List[Optional[float]], List[Optional[float]]]:
+    """MACD: returns (macd_line, signal_line, histogram)"""
+    fast_ema = ema(values, fast)
+    slow_ema = ema(values, slow)
+    macd_line = [f - s if f is not None and s is not None else None for f, s in zip(fast_ema, slow_ema)]
+    signal_line = ema([m for m in macd_line if m is not None], signal)
+    # Align signal_line
+    signal_aligned = [None] * len(macd_line)
+    for i in range(len(signal_line)):
+        if signal_line[i] is not None:
+            signal_aligned[i + len(macd_line) - len(signal_line)] = signal_line[i]
+    histogram = [m - s if m is not None and s is not None else None for m, s in zip(macd_line, signal_aligned)]
+    return macd_line, signal_aligned, histogram
+
+
+class BaseStrategy:
+    def __init__(self, **params):
+        self.params = params
+
+    def signal(self, closes: List[float], volumes: List[float] = None) -> str:
+        raise NotImplementedError
+
+    def position_size(self, wallet_balance: float, current_price: float, risk_pct: float = 0.01) -> float:
+        """Calculate position size based on risk percentage."""
+        risk_amount = wallet_balance * risk_pct
+        return risk_amount / current_price
+
+    def risk_assessment(self, closes: List[float]) -> dict:
+        """Basic risk metrics."""
+        if not closes:
+            return {}
+        max_price = max(closes)
+        min_price = min(closes)
+        volatility = (max_price - min_price) / min_price
+        return {"volatility": volatility, "max_drawdown": (max_price - closes[-1]) / max_price}
+
+
+class SMACrossoverStrategy(BaseStrategy):
+    """
+    Signal rules:
+      - BUY when fast SMA crosses above slow SMA
+      - SELL when fast SMA crosses below slow SMA
+    """
+    def __init__(self, fast: int, slow: int, **kwargs):
+        super().__init__(fast=fast, slow=slow, **kwargs)
+        if fast >= slow:
+            raise ValueError("SMA_FAST must be < SMA_SLOW for crossover logic.")
+        self.fast = fast
+        self.slow = slow
+
+    def signal(self, closes: List[float], volumes: List[float] = None) -> str:
+        if len(closes) < self.slow + 2:
+            return "HOLD"
+
+        fast_s = sma(closes, self.fast)
+        slow_s = sma(closes, self.slow)
+
+        # Use last two points to detect cross
+        f1, f2 = fast_s[-2], fast_s[-1]
+        s1, s2 = slow_s[-2], slow_s[-1]
+        if f1 is None or f2 is None or s1 is None or s2 is None:
+            return "HOLD"
+
+        crossed_up = (f1 <= s1) and (f2 > s2)
+        crossed_down = (f1 >= s1) and (f2 < s2)
+
+        if crossed_up:
+            return "BUY"
+        if crossed_down:
+            return "SELL"
+        return "HOLD"
+
+
+class RSIStrategy(BaseStrategy):
+    def __init__(self, overbought: int = 70, oversold: int = 30, window: int = 14, **kwargs):
+        super().__init__(overbought=overbought, oversold=oversold, window=window, **kwargs)
+        self.overbought = overbought
+        self.oversold = oversold
+        self.window = window
+
+    def signal(self, closes: List[float], volumes: List[float] = None) -> str:
+        rsi_vals = rsi(closes, self.window)
+        if len(rsi_vals) < 2 or rsi_vals[-1] is None:
+            return "HOLD"
+        prev_rsi = rsi_vals[-2]
+        curr_rsi = rsi_vals[-1]
+        if prev_rsi <= self.oversold and curr_rsi > self.oversold:
+            return "BUY"
+        if prev_rsi >= self.overbought and curr_rsi < self.overbought:
+            return "SELL"
+        return "HOLD"
+
+
+class MACDStrategy(BaseStrategy):
+    def __init__(self, fast: int = 12, slow: int = 26, signal: int = 9, **kwargs):
+        super().__init__(fast=fast, slow=slow, signal=signal, **kwargs)
+        self.fast = fast
+        self.slow = slow
+        self.signal_window = signal
+
+    def signal(self, closes: List[float], volumes: List[float] = None) -> str:
+        macd_line, signal_line, hist = macd(closes, self.fast, self.slow, self.signal_window)
+        if len(macd_line) < 2 or macd_line[-1] is None or signal_line[-1] is None:
+            return "HOLD"
+        prev_hist = hist[-2]
+        curr_hist = hist[-1]
+        if prev_hist <= 0 and curr_hist > 0:
+            return "BUY"
+        if prev_hist >= 0 and curr_hist < 0:
+            return "SELL"
+        return "HOLD"
+
+
+class StrategyAgent:
+    """High-level strategy agent wrapper that emits structured signals and maintains state.
+
+    It composes a simple SMA crossover rule and publishes a `buzz.strategy.signal` proposal
+    via the coordinator when appropriate. It is deterministic, event-driven (candle close),
+    and applies cooldown and sizing rules.
+    """
+    def __init__(self, fast: int = 10, slow: int = 30, tf: str = "5m", coordinator: Optional[Any] = None, 
+                 risk_pct: float = 0.005, max_position_pct: float = 0.2, confirm_candles: int = 1, cooldown_sec: int = 120):
+        self.fast = fast
+        self.slow = slow
+        self.tf = tf
+        self.coordinator = coordinator
+        self.risk_pct = risk_pct
+        self.max_position_pct = max_position_pct
+        self.confirm_candles = confirm_candles
+        self.cooldown_sec = cooldown_sec
+
+        self._last_emitted = None  # {'action','ts'}
+        self._last_direction = None
+        self._last_processed_len = 0
+
+    def _compute_stop_take(self, closes: List[float], action: str, lookback: int = 10):
+        if not closes:
+            return None, None
+        entry = float(closes[-1])
+        # swing low/high over lookback candles (exclude latest)
+        window = min(len(closes)-1, lookback)
+        if window <= 0:
+            # fallback small buffer
+            if action == 'BUY':
+                stop = entry * 0.995
+            else:
+                stop = entry * 1.005
+        else:
+            slice_vals = closes[-(window+1):-1]
+            if not slice_vals:
+                if action == 'BUY':
+                    stop = entry * 0.995
+                else:
+                    stop = entry * 1.005
+            else:
+                if action == 'BUY':
+                    stop = min(slice_vals)
+                else:
+                    stop = max(slice_vals)
+        # take profit as R-multiple
+        dist = abs(entry - stop)
+        if dist <= 0:
+            tp = entry * (1.01 if action == 'BUY' else 0.99)
+        else:
+            tp = entry + (dist * 1.5) if action == 'BUY' else entry - (dist * 1.5)
+        return float(stop), float(tp)
+
+    def _compute_position_size(self, entry: float, stop: float) -> dict:
+        # get equity estimate from coordinator shared wallet snapshot
+        equity = None
+        try:
+            if self.coordinator:
+                wb = self.coordinator.get_shared_data('wallet.balance') or {}
+                equity = wb.get('equity_usd_est') if isinstance(wb, dict) else None
+                # try compute from balances
+                if not equity and isinstance(wb, dict) and wb.get('balances'):
+                    s = 0.0
+                    for b in wb.get('balances', []):
+                        a = b.get('asset','').upper()
+                        if a in ('USDT','USDC','USD'):
+                            s += float(b.get('free') or 0) + float(b.get('locked') or 0)
+                    equity = s
+        except Exception:
+            equity = None
+
+        if not equity or equity <= 0:
+            # fallback to small notional using coordinator cfg if present
+            try:
+                equity = float(getattr(self.coordinator, 'cfg', {}).quote_order_size)
+            except Exception:
+                equity = 100.0
+
+        risk_budget = equity * float(self.risk_pct)
+        stop_dist = abs(entry - stop)
+        if stop_dist <= 0:
+            position_base = 0.0
+        else:
+            position_usd = min(risk_budget / stop_dist, equity * self.max_position_pct)
+            position_base = position_usd / max(entry, 1e-8)
+
+        pct_of_equity = min((position_base * entry) / equity if equity else 0.0, self.max_position_pct)
+        return {"position_base": position_base, "position_usd": position_base * entry, "pct_of_equity": pct_of_equity}
+
+    def signal(self, closes: List[float], volumes: List[float] = None) -> str:
+        # Keep compatibility: return simple string BUY/SELL/HOLD for coordinator
+        if len(closes) < self.slow + 2:
+            return "HOLD"
+
+        fast_s = sma(closes, self.fast)
+        slow_s = sma(closes, self.slow)
+        f1, f2 = fast_s[-2], fast_s[-1]
+        s1, s2 = slow_s[-2], slow_s[-1]
+        if f1 is None or f2 is None or s1 is None or s2 is None:
+            return "HOLD"
+
+        crossed_up = (f1 <= s1) and (f2 > s2)
+        crossed_down = (f1 >= s1) and (f2 < s2)
+
+        action = "HOLD"
+        if crossed_up:
+            action = "BUY"
+        elif crossed_down:
+            action = "SELL"
+
+        # cooldown check
+        now = int(time.time())
+        if action in ("BUY", "SELL"):
+            if self._last_emitted and (now - int(self._last_emitted.get('ts', 0))) < self.cooldown_sec:
+                return "HOLD"
+
+            # confirmation candles (optional): ensure signal persists for confirm_candles
+            # Here coordinator calls per candle close so a single confirmation is checking prior
+            if self.confirm_candles > 0:
+                # naive: require previous candle also showed same direction
+                prev_dir = self._last_direction
+                # allow through without extra confirmation if no previous dir
+
+            # compute stops and sizing
+            stop, tp = self._compute_stop_take(closes, action)
+            entry = float(closes[-1])
+            sizing = self._compute_position_size(entry, stop)
+
+            confidence = 0.8
+            # reduce confidence if spread info is available
+            try:
+                sd = self.coordinator.get_shared_data('market.data') if self.coordinator else None
+                if isinstance(sd, dict) and sd.get('spread_pct'):
+                    sp = float(sd.get('spread_pct') or 0)
+                    if sp > 0.001:
+                        confidence *= 0.7
+            except Exception:
+                pass
+
+            payload = {
+                "strategy": "SMA_CROSS",
+                "symbol": getattr(self.coordinator.cfg, 'symbol', 'ETHUSDT') if getattr(self.coordinator, 'cfg', None) else 'ETHUSDT',
+                "tf": self.tf,
+                "action": action,
+                "confidence": round(confidence, 2),
+                "position_size_pct": round(float(sizing.get('pct_of_equity', 0)), 4),
+                "position_size_base": round(float(sizing.get('position_base', 0)), 8),
+                "stop_loss": round(stop, 6) if stop else None,
+                "take_profit": round(tp, 6) if tp else None,
+                "cooldown_sec": int(self.cooldown_sec),
+                "notes": f"fast={self.fast} slow={self.slow} crossover {action} on candle close"
+            }
+
+            # publish structured signal via coordinator
+            try:
+                if self.coordinator:
+                    self.coordinator.share_data('buzz.strategy.signal', payload)
+            except Exception:
+                pass
+
+            # update state
+            self._last_emitted = {"action": action, "ts": now}
+            self._last_direction = action
+            return action
+
+        # no crossover
+        return "HOLD"

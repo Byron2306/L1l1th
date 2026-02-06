@@ -1,0 +1,257 @@
+"""
+ElevenLabs TTS Integration for VAMP
+Provides high-quality text-to-speech with voice cloning capabilities
+"""
+
+import os
+import re
+import hashlib
+from pathlib import Path
+from typing import Optional
+import requests
+
+
+class ElevenLabsTTS:
+    """ElevenLabs Text-to-Speech client for VAMP"""
+    
+    # ElevenLabs API Configuration
+    API_KEY = "sk_f5df7850383221d9d9f88c2bf60be84cbee16b243424af82"
+    VOICE_ID = "AEPS4amQpAYS3CULyGRe"  # Original Romanian accent library voice
+    API_BASE_URL = "https://api.elevenlabs.io/v1"
+    
+    def __init__(self, cache_dir: Optional[Path] = None):
+        """
+        Initialize ElevenLabs TTS client
+        
+        Args:
+            cache_dir: Directory to cache generated audio files
+        """
+        self.project_root = Path(__file__).resolve().parents[2]
+        self.cache_dir = cache_dir or (self.project_root / "cache" / "voice" / "elevenlabs")
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Headers for API requests
+        self.headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": self.API_KEY
+        }
+        
+        print(f"ElevenLabs TTS initialized. Cache dir: {self.cache_dir}")
+    
+    @staticmethod
+    def sanitize_text(text: str) -> str:
+        """
+        Clean text for speech synthesis by removing unwanted symbols
+        
+        Args:
+            text: Raw text from AI
+            
+        Returns:
+            Cleaned text suitable for TTS
+        """
+        # Remove asterisks (often used for markdown emphasis)
+        text = re.sub(r'\*+', '', text)
+        
+        # Remove markdown formatting
+        text = re.sub(r'[_~`]', '', text)
+        
+        # Remove excessive punctuation
+        text = re.sub(r'[!]{2,}', '!', text)
+        text = re.sub(r'[?]{2,}', '?', text)
+        text = re.sub(r'[.]{3,}', '...', text)
+        
+        # Remove emojis and special unicode characters
+        text = re.sub(r'[^\x00-\x7F\u0080-\u00FF\u0100-\u017F\u0180-\u024F]+', '', text)
+        
+        # Remove markdown links [text](url)
+        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+        
+        # Remove code blocks
+        text = re.sub(r'```[^`]*```', '', text)
+        text = re.sub(r'`[^`]+`', '', text)
+        
+        # Remove bullet points and list markers
+        text = re.sub(r'^\s*[-•*]\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)
+        
+        # Clean up whitespace
+        text = re.sub(r'\s+', ' ', text)
+        text = text.strip()
+        
+        return text
+    
+    def generate_speech(
+        self,
+        text: str,
+        optimize_streaming_latency: int = 4,  # MAX speed (0-4)
+        output_format: str = "mp3_22050_32",  # Lower quality = faster
+        model_id: str = "eleven_turbo_v2_5"   # TURBO model is 2-3x faster!
+    ) -> Optional[Path]:
+        """
+        Generate speech from text using ElevenLabs API
+        
+        Args:
+            text: Text to convert to speech
+            optimize_streaming_latency: 0-4, higher values trade quality for speed
+            output_format: Audio format (mp3_44100_128 recommended for quality)
+            model_id: ElevenLabs model to use
+            
+        Returns:
+            Path to generated audio file, or None on failure
+        """
+        # Sanitize text first
+        clean_text = self.sanitize_text(text)
+        
+        if not clean_text:
+            print("Warning: Text is empty after sanitization")
+            return None
+        
+        # Check cache
+        cache_key = hashlib.md5(f"{clean_text}_{self.VOICE_ID}_{model_id}".encode()).hexdigest()
+        cached_file = self.cache_dir / f"{cache_key}.mp3"
+        
+        if cached_file.exists():
+            print(f"Using cached audio: {cached_file.name}")
+            return cached_file
+        
+        # Prepare API request
+        url = f"{self.API_BASE_URL}/text-to-speech/{self.VOICE_ID}"
+        
+        data = {
+            "text": clean_text[:500],  # Limit text length for speed
+            "model_id": model_id,
+            "voice_settings": {
+                # Tuned for more mid-pitch, natural sound
+                "stability": 0.75,           # Slightly lower for more natural variation
+                "similarity_boost": 0.7,     # Higher for more natural, less synthetic sound
+                "style": 0.4,                # Lower style for less exaggeration
+                "use_speaker_boost": True    # Speaker boost for presence
+                # Note: ElevenLabs API does not expose pitch directly; settings maximize mid-pitch and naturalness
+            }
+        }
+        
+        # Add query parameters
+        params = {
+            "optimize_streaming_latency": optimize_streaming_latency,
+            "output_format": output_format
+        }
+        
+        try:
+            print(f"Generating speech via ElevenLabs API...")
+            print(f"Text length: {len(clean_text)} characters")
+            
+            response = requests.post(
+                url,
+                json=data,
+                headers=self.headers,
+                params=params,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                # Save audio to cache
+                with open(cached_file, 'wb') as f:
+                    f.write(response.content)
+                
+                print(f"✓ Speech generated successfully: {cached_file.name}")
+                return cached_file
+            else:
+                print(f"ElevenLabs API error: {response.status_code}")
+                print(f"Response: {response.text}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            print("ElevenLabs API timeout")
+            return None
+        except Exception as e:
+            print(f"Error generating speech: {e}")
+            return None
+    
+    def get_voice_info(self) -> Optional[dict]:
+        """
+        Get information about the configured voice
+        
+        Returns:
+            Voice information dictionary or None
+        """
+        url = f"{self.API_BASE_URL}/voices/{self.VOICE_ID}"
+        
+        try:
+            response = requests.get(url, headers=self.headers, timeout=10)
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Failed to fetch voice info: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"Error fetching voice info: {e}")
+            return None
+    
+    def check_quota(self) -> Optional[dict]:
+        """
+        Check remaining API quota
+        
+        Returns:
+            Quota information dictionary or None
+        """
+        url = f"{self.API_BASE_URL}/user"
+        
+        try:
+            response = requests.get(url, headers=self.headers, timeout=10)
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                subscription = user_data.get("subscription", {})
+                return {
+                    "character_count": subscription.get("character_count", 0),
+                    "character_limit": subscription.get("character_limit", 0),
+                    "can_extend_character_limit": subscription.get("can_extend_character_limit", False)
+                }
+            else:
+                print(f"Failed to fetch quota: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            print(f"Error fetching quota: {e}")
+            return None
+
+
+# Singleton instance
+_tts_instance = None
+
+def get_tts_client() -> ElevenLabsTTS:
+    """Get or create singleton ElevenLabs TTS instance"""
+    global _tts_instance
+    if _tts_instance is None:
+        _tts_instance = ElevenLabsTTS()
+    return _tts_instance
+
+
+def text_to_speech(text: str) -> Optional[Path]:
+    """
+    Convenience function to convert text to speech
+    
+    Args:
+        text: Text to convert
+        
+    Returns:
+        Path to audio file or None
+    """
+    client = get_tts_client()
+    return client.generate_speech(text)
+
+
+def sanitize_for_speech(text: str) -> str:
+    """
+    Convenience function to sanitize text for speech
+    
+    Args:
+        text: Raw text
+        
+    Returns:
+        Cleaned text
+    """
+    return ElevenLabsTTS.sanitize_text(text)

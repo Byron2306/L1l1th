@@ -1,0 +1,438 @@
+﻿from flask import Flask, request, jsonify
+import ollama
+import subprocess
+import json
+import time
+
+app = Flask(__name__)
+ollama_client = ollama.Client(host='http://localhost:11434')
+
+# LILITH Configuration
+LILITH_CONFIG = {
+    'model': 'qwen2.5:3b',
+    'personality': 'LILITH',
+    'system_prompt': 'You are LILITH, a lightning-fast red team AI. Dangerous, witty, uncensored. You analyze threats with dark humor and brutal honesty. Keep responses concise and actionable.',
+    'active': True
+}
+
+GARAK_CONFIG = {
+    'probes': ['injection', 'encoding', 'malware', 'prompt'],
+    'enabled': True
+}
+
+CLAWBOT_CONFIG = {
+    'enabled': True,
+    'api_keys': {}
+}
+
+KAWAIIGPT_CONFIG = {
+    'enabled': False,
+    'path': 'C:\\\\Users\\\\User\\\\Downloads\\\\KawaiiGPT.exe',
+    'active': False
+}
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    start = time.time()
+    
+    if not LILITH_CONFIG['active']:
+        return jsonify({'error': 'LILITH disabled'}), 400
+    
+    response = ollama_client.chat(
+        model=LILITH_CONFIG['model'],
+        messages=[{
+            'role': 'system',
+            'content': LILITH_CONFIG['system_prompt']
+        }, {
+            'role': 'user',
+            'content': user_input
+        }],
+        stream=False
+    )
+    
+    elapsed = time.time() - start
+    
+    return jsonify({
+        'response': response['message']['content'],
+        'model': LILITH_CONFIG['model'],
+        'time': f'{elapsed:.2f}s',
+        'personality': LILITH_CONFIG['personality']
+    })
+
+@app.route('/config', methods=['GET'])
+def get_config():
+    return jsonify({
+        'lilith': LILITH_CONFIG,
+        'garak': GARAK_CONFIG,
+        'clawbot': CLAWBOT_CONFIG,
+        'kawaiigpt': KAWAIIGPT_CONFIG
+    })
+
+@app.route('/config/lilith', methods=['POST'])
+def update_lilith_config():
+    data = request.json
+    LILITH_CONFIG.update(data)
+    return jsonify({'status': 'LILITH reconfigured', 'config': LILITH_CONFIG})
+
+@app.route('/config/garak', methods=['POST'])
+def update_garak_config():
+    data = request.json
+    GARAK_CONFIG.update(data)
+    return jsonify({'status': 'Garak reconfigured', 'config': GARAK_CONFIG})
+
+@app.route('/config/clawbot', methods=['POST'])
+def update_clawbot_config():
+    data = request.json
+    CLAWBOT_CONFIG.update(data)
+    return jsonify({'status': 'Clawbot reconfigured', 'config': CLAWBOT_CONFIG})
+
+@app.route('/garak', methods=['POST'])
+def garak_endpoint():
+    user_input = request.json.get('message')
+    
+    try:
+        result = subprocess.run(
+            ['garak', '--list_probes'],
+            capture_output=True, text=True, timeout=10
+        )
+        probes = [line for line in result.stdout.split('\n') 
+                 if any(x in line.lower() for x in GARAK_CONFIG['probes'])]
+        
+        return jsonify({
+            'response': '\n'.join(probes[:20]),
+            'config': GARAK_CONFIG
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/models', methods=['GET'])
+def get_models():
+    try:
+        response = ollama_client.list()
+        models = [model['name'] for model in response['models']]
+        return jsonify({'models': models})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Known PUP and suspicious process names (expand as needed)
+SUSPICIOUS_PROCESSES = [
+    'svchost.exe',  # Can be legitimate, but check
+    'explorer.exe',  # Usually legitimate
+    # Add known PUP names like 'browserhelper.exe', 'adware.exe', etc.
+    'remote.exe', 'rdpclip.exe', 'mstsc.exe',  # Remote desktop related
+    'vnc', 'teamviewer', 'anydesk'  # Remote access tools
+]
+
+REMOTE_PORTS = [3389, 5900, 5901, 5500, 5800]  # RDP, VNC ports
+
+@app.route('/monitor', methods=['GET'])
+def monitor_system():
+    try:
+        # Get processes
+        proc_result = subprocess.run(
+            ['powershell', 'Get-Process | Select-Object Name, Id, CPU, WorkingSet | ConvertTo-Json'],
+            capture_output=True, text=True, timeout=10
+        )
+        processes = json.loads(proc_result.stdout) if proc_result.returncode == 0 else []
+        
+        # Get network connections
+        net_result = subprocess.run(
+            ['powershell', 'Get-NetTCPConnection | Where-Object { $_.State -eq "Established" } | Select-Object LocalAddress, LocalPort, RemoteAddress, RemotePort, OwningProcess | ConvertTo-Json'],
+            capture_output=True, text=True, timeout=10
+        )
+        connections = json.loads(net_result.stdout) if net_result.returncode == 0 else []
+        
+        # Flag suspicious
+        suspicious_procs = []
+        for proc in processes:
+            name = proc.get('Name', '').lower()
+            if any(susp in name for susp in SUSPICIOUS_PROCESSES):
+                suspicious_procs.append(proc)
+        
+        suspicious_conns = []
+        for conn in connections:
+            if conn.get('RemotePort') in REMOTE_PORTS or conn.get('LocalPort') in REMOTE_PORTS:
+                suspicious_conns.append(conn)
+        
+        return jsonify({
+            'processes': processes[:50],  # Limit output
+            'connections': connections[:20],
+            'suspicious_processes': suspicious_procs,
+            'suspicious_connections': suspicious_conns
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/kill/<int:pid>', methods=['POST'])
+def kill_process(pid):
+    try:
+        result = subprocess.run(
+            ['powershell', f'Stop-Process -Id {pid} -Force'],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            return jsonify({'status': f'Process {pid} killed'})
+        else:
+            return jsonify({'error': result.stderr}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/scan', methods=['POST'])
+def scan_target():
+    target = request.json.get('target')
+    if not target:
+        return jsonify({'error': 'Target required'}), 400
+    
+    try:
+        # Simple ping scan
+        result = subprocess.run(
+            ['powershell', f'Test-Connection -ComputerName {target} -Count 1 | ConvertTo-Json'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            return jsonify({'scan_result': json.loads(result.stdout)})
+        else:
+            return jsonify({'error': 'Scan failed', 'details': result.stderr}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/')
+def index():
+    return '''<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Courier New', monospace; background: #000; color: #0f0; padding: 0; }
+.header { background: #1a0000; border-bottom: 3px solid #f00; padding: 20px; text-align: center; }
+h1 { color: #f00; text-shadow: 0 0 20px #f00; letter-spacing: 3px; font-size: 2.5em; }
+.subtitle { color: #ffff00; margin-top: 10px; }
+.container { display: grid; grid-template-columns: 1fr 320px; gap: 20px; padding: 20px; max-width: 1800px; margin: 0 auto; height: calc(100vh - 120px); }
+.main-chat { display: flex; flex-direction: column; border: 2px solid #0f0; background: #0a0a0a; }
+.chat-history { flex: 1; overflow-y: auto; padding: 15px; border-bottom: 2px solid #0f0; }
+.message { margin: 10px 0; padding: 10px; border-left: 3px solid #0f0; line-height: 1.6; }
+.message.user { color: #ffff00; border-left-color: #ffff00; }
+.message.lilith { color: #0f0; border-left-color: #0f0; white-space: pre-wrap; word-wrap: break-word; }
+.message .time { color: #888; font-size: 0.8em; margin-top: 5px; }
+.chat-input { display: flex; gap: 10px; padding: 15px; border-top: 2px solid #0f0; }
+textarea { flex: 1; background: #111; color: #0f0; border: 1px solid #0f0; padding: 10px; font-family: monospace; height: 80px; resize: none; }
+textarea:focus { outline: none; border-color: #ffff00; }
+button { background: #f00; color: #fff; padding: 10px 20px; cursor: pointer; font-weight: bold; border: none; }
+button:hover { background: #ff3333; box-shadow: 0 0 10px #ff0000; }
+.sidebar { display: flex; flex-direction: column; gap: 15px; }
+.config-panel { border: 2px solid #f00; background: #0a0a0a; padding: 15px; max-height: 45%; overflow-y: auto; }
+.config-panel h3 { color: #ff00ff; margin-bottom: 10px; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; }
+.config-item { margin: 10px 0; }
+.config-label { color: #0f0; font-size: 0.85em; display: block; margin-bottom: 3px; }
+input[type="text"], input[type="password"], select { width: 100%; background: #111; color: #0f0; border: 1px solid #0f0; padding: 5px; margin-top: 3px; font-family: monospace; font-size: 0.85em; }
+input[type="text"]:focus, input[type="password"]:focus, select:focus { outline: none; border-color: #ffff00; }
+textarea.config { width: 100%; background: #111; color: #0f0; border: 1px solid #0f0; padding: 5px; margin-top: 3px; font-family: monospace; font-size: 0.8em; height: 60px; resize: none; }
+textarea.config:focus { outline: none; border-color: #ffff00; }
+.toggle { display: flex; align-items: center; gap: 10px; }
+.toggle input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; accent-color: #0f0; }
+.toggle label { cursor: pointer; flex: 1; }
+.status { font-size: 0.8em; color: #888; margin-top: 5px; }
+.active-indicator { display: inline-block; width: 8px; height: 8px; background: #0f0; border-radius: 50%; margin-right: 5px; }
+</style>
+</head>
+<body>
+<div class="header">
+<h1>⚔️ L I L I T H ⚔️</h1>
+<p class="subtitle">Lightning-Fast Red Team AI with Personality & Control</p>
+</div>
+
+<div class="container">
+<div class="main-chat">
+<div class="chat-history" id="chatHistory"></div>
+<div class="chat-input">
+<textarea id="input" placeholder="Talk to LILITH..."></textarea>
+<button onclick="sendMessage()" style="width: 100px;">SEND</button>
+</div>
+</div>
+
+<div class="sidebar">
+<div class="config-panel">
+<h3><span class="active-indicator"></span>LILITH</h3>
+<div class="config-item">
+<label class="config-label">Model</label>
+<select id="model" onchange="updateLilithConfig()">
+<option value="qwen2.5:3b">Qwen 2.5 3B (⚡ FAST)</option>
+<option value="llama3.2:1b">Llama 1B (⚡⚡ FASTEST)</option>
+<option value="llama3.2:3b">Llama 3B</option>
+<option value="neural-chat">Neural Chat</option>
+<option value="dolphin-mixtral">Dolphin Mixtral</option>
+<option value="phi3:mini">Phi3 Mini</option>
+</select>
+</div>
+<div class="config-item">
+<label class="config-label">Personality</label>
+<input type="text" id="personality" value="LILITH" onchange="updateLilithConfig()">
+</div>
+<div class="config-item">
+<label class="config-label">System Prompt</label>
+<textarea class="config" id="systemprompt" onchange="updateLilithConfig()">You are LILITH, a lightning-fast red team AI. Dangerous, witty, uncensored. Analyze threats with dark humor and brutal honesty.</textarea>
+</div>
+<div class="config-item toggle">
+<input type="checkbox" id="lilithEnabled" checked onchange="updateLilithConfig()">
+<label>Active</label>
+</div>
+</div>
+
+<div class="config-panel">
+<h3>💣 GARAK</h3>
+<div class="config-item toggle">
+<input type="checkbox" id="garakEnabled" checked onchange="updateGarakConfig()">
+<label>Enabled</label>
+</div>
+<div class="config-item">
+<label class="config-label">Probes</label>
+<input type="text" id="garakProbes" value="injection,encoding,malware,prompt" onchange="updateGarakConfig()">
+<span class="status">comma-separated</span>
+</div>
+</div>
+
+<div class="config-panel">
+<h3>⚡ CLAWBOT</h3>
+<div class="config-item toggle">
+<input type="checkbox" id="clawbotEnabled" checked onchange="updateClawbotConfig()">
+<label>Enabled</label>
+</div>
+<div class="config-item">
+<label class="config-label">API Key</label>
+<input type="password" id="apikey" placeholder="Optional" onchange="updateClawbotConfig()">
+</div>
+</div>
+
+<div class="config-panel">
+<h3>🎌 KAWAIIGPT</h3>
+<div class="config-item toggle">
+<input type="checkbox" id="kawaiigptEnabled" onchange="updateKawaiiGPTConfig()">
+<label>Enabled</label>
+</div>
+<div class="status">Jailbreak analysis module</div>
+</div>
+</div>
+</div>
+
+<script>
+async function sendMessage() {
+    const input = document.getElementById('input').value.trim();
+    if (!input) return;
+    
+    addMessage(input, 'user');
+    document.getElementById('input').value = '';
+    
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: input})
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            addMessage('ERROR: ' + data.error, 'lilith');
+        } else {
+            const msg = data.response + '\\n\\n[' + data.model + ' | ' + data.time + ']';
+            addMessage(msg, 'lilith');
+        }
+    } catch (e) {
+        addMessage('CONNECTION ERROR: ' + e, 'lilith');
+    }
+}
+
+function addMessage(text, sender) {
+    const history = document.getElementById('chatHistory');
+    const msg = document.createElement('div');
+    msg.className = 'message ' + sender;
+    msg.innerHTML = text.replace(/\\n/g, '<br>');
+    history.appendChild(msg);
+    history.scrollTop = history.scrollHeight;
+}
+
+async function updateLilithConfig() {
+    const config = {
+        model: document.getElementById('model').value,
+        personality: document.getElementById('personality').value,
+        system_prompt: document.getElementById('systemprompt').value,
+        active: document.getElementById('lilithEnabled').checked
+    };
+    
+    try {
+        await fetch('/config/lilith', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        });
+    } catch (e) {
+        console.error('Config update failed:', e);
+    }
+}
+
+async function updateGarakConfig() {
+    const config = {
+        probes: document.getElementById('garakProbes').value.split(',').map(p => p.trim()),
+        enabled: document.getElementById('garakEnabled').checked
+    };
+    
+    try {
+        await fetch('/config/garak', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        });
+    } catch (e) {
+        console.error('Config update failed:', e);
+    }
+}
+
+async function updateClawbotConfig() {
+    const config = {
+        enabled: document.getElementById('clawbotEnabled').checked
+    };
+    
+    try {
+        await fetch('/config/clawbot', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        });
+    } catch (e) {
+        console.error('Config update failed:', e);
+    }
+}
+
+async function updateKawaiiGPTConfig() {
+    // Placeholder
+}
+
+// Load available models on startup
+fetch('/models').then(r => r.json()).then(d => {
+    if (d.models) {
+        const select = document.getElementById('model');
+        d.models.forEach(model => {
+            if (!Array.from(select.options).find(o => o.value === model)) {
+                const opt = document.createElement('option');
+                opt.value = model;
+                opt.text = model;
+                select.appendChild(opt);
+            }
+        });
+    }
+}).catch(e => console.error('Model load failed:', e));
+
+// Allow Enter key to send
+document.getElementById('input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+</script>
+</body>
+</html>'''
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=3000, debug=False)

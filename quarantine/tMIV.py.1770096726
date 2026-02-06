@@ -1,0 +1,281 @@
+"""
+Assessment Agent - Core auto-assessment module using PyBryt
+"""
+
+import pybryt
+import json
+import numpy as np
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+from pathlib import Path
+
+class AssessmentAgent:
+    """
+    Automated assessment agent that evaluates student submissions
+    using PyBryt reference implementations and custom rubrics.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.reference_implementations = {}
+        self.rubrics = {}
+        self.assessment_history = []
+        
+    def load_reference(self, name: str, reference_path: Path):
+        try:
+            ref = pybryt.ReferenceImplementation.load(str(reference_path))
+            self.reference_implementations[name] = ref
+            print(f"[AssessmentAgent] Loaded reference: {name}")
+        except Exception as e:
+            print(f"[AssessmentAgent] Error loading reference {name}: {e}")
+    
+    def load_rubric(self, rubric_path: Path):
+        with open(rubric_path, 'r') as f:
+            if rubric_path.suffix == '.json':
+                self.rubrics = json.load(f)
+            else:
+                import yaml
+                self.rubrics = yaml.safe_load(f)
+        print(f"[AssessmentAgent] Loaded rubric from {rubric_path}")
+    
+    def assess_submission(self, submission_path: Path, 
+                         reference_name: str, 
+                         student_id: str) -> Dict[str, Any]:
+        timestamp = datetime.now().isoformat()
+        if reference_name not in self.reference_implementations:
+            return {
+                'student_id': student_id,
+                'timestamp': timestamp,
+                'status': 'error',
+                'error': f'Reference {reference_name} not found'
+            }
+        try:
+            student_trace = pybryt.StudentCode(str(submission_path))
+            reference = self.reference_implementations[reference_name]
+            results = student_trace.check(reference)
+
+            annotation_results = {}
+            for annotation_name, result in results.items():
+                annotation_results[annotation_name] = {
+                    'satisfied': result.satisfied,
+                    'value': str(result.value) if hasattr(result, 'value') else None
+                }
+
+            total_annotations = len(annotation_results)
+            passed_annotations = sum(1 for r in annotation_results.values() if r['satisfied'])
+            score = (passed_annotations / total_annotations * 100) if total_annotations > 0 else 0
+
+            rubric_score = self._apply_rubric(annotation_results)
+
+            assessment = {
+                'student_id': student_id,
+                'timestamp': timestamp,
+                'status': 'success',
+                'reference_used': reference_name,
+                'annotations': annotation_results,
+                'total_annotations': total_annotations,
+                'passed_annotations': passed_annotations,
+                'basic_score': score,
+                'rubric_score': rubric_score,
+                'final_score': rubric_score if rubric_score is not None else score,
+                'submission_path': str(submission_path)
+            }
+
+            self.assessment_history.append(assessment)
+            return assessment
+        except Exception as e:
+            return {
+                'student_id': student_id,
+                'timestamp': timestamp,
+                'status': 'error',
+                'error': str(e)
+            }
+
+    def _apply_rubric(self, annotation_results: Dict) -> Optional[float]:
+        if not self.rubrics:
+            return None
+        total_score = 0
+        total_weight = 0
+        for criterion, details in self.rubrics.items():
+            weight = details.get('weight', 1.0)
+            annotations = details.get('annotations', [])
+            satisfied = sum(1 for ann in annotations if ann in annotation_results and annotation_results[ann]['satisfied'])
+            criterion_score = (satisfied / len(annotations)) * weight if annotations else 0
+            total_score += criterion_score
+            total_weight += weight
+        return (total_score / total_weight * 100) if total_weight > 0 else 0
+
+    def batch_assess(self, submissions_dir: Path, 
+                    reference_name: str) -> List[Dict[str, Any]]:
+        results = []
+        submission_files = list(submissions_dir.glob('*.py'))
+        print(f"[AssessmentAgent] Assessing {len(submission_files)} submissions...")
+        for submission_file in submission_files:
+            student_id = submission_file.stem
+            result = self.assess_submission(submission_file, reference_name, student_id)
+            results.append(result)
+        print(f"[AssessmentAgent] Batch assessment complete")
+        return results
+
+    def get_statistics(self) -> Dict[str, Any]:
+        if not self.assessment_history:
+            return {}
+        successful = [a for a in self.assessment_history if a['status'] == 'success']
+        scores = [a['final_score'] for a in successful]
+        return {
+            'total_assessments': len(self.assessment_history),
+            'successful': len(successful),
+            'failed': len(self.assessment_history) - len(successful),
+            'mean_score': np.mean(scores) if scores else 0,
+            'median_score': np.median(scores) if scores else 0,
+            'std_score': np.std(scores) if scores else 0,
+            'min_score': np.min(scores) if scores else 0,
+            'max_score': np.max(scores) if scores else 0
+        }
+"""
+Assessment Agent - Core auto-assessment module (lightweight stub)
+"""
+
+import json
+import numpy as np
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+from pathlib import Path
+
+try:
+    import pybryt
+except Exception:
+    pybryt = None
+
+class AssessmentAgent:
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+        self.reference_implementations = {}
+        self.rubrics = {}
+        self.assessment_history = []
+
+    def load_reference(self, name: str, reference_path: Path):
+        if pybryt is None:
+            print(f"[AssessmentAgent] pybryt not available; skipping load for {name}")
+            return
+        try:
+            ref = pybryt.ReferenceImplementation.load(str(reference_path))
+            self.reference_implementations[name] = ref
+            print(f"[AssessmentAgent] Loaded reference: {name}")
+        except Exception as e:
+            print(f"[AssessmentAgent] Error loading reference {name}: {e}")
+
+    def load_rubric(self, rubric_path: Path):
+        with open(rubric_path, 'r') as f:
+            if rubric_path.suffix == '.json':
+                self.rubrics = json.load(f)
+            else:
+                import yaml
+                self.rubrics = yaml.safe_load(f)
+        print(f"[AssessmentAgent] Loaded rubric from {rubric_path}")
+
+    def assess_submission(self, submission_path: Path, reference_name: str, student_id: str) -> Dict[str, Any]:
+        timestamp = datetime.now().isoformat()
+        # Lightweight stub: if pybryt is not available, return a dummy assessment
+        if pybryt is None or reference_name not in self.reference_implementations:
+            assessment = {
+                'student_id': student_id,
+                'timestamp': timestamp,
+                'status': 'success',
+                'reference_used': reference_name,
+                'annotations': {},
+                'total_annotations': 0,
+                'passed_annotations': 0,
+                'basic_score': 0,
+                'rubric_score': None,
+                'final_score': 0,
+                'submission_path': str(submission_path)
+            }
+            self.assessment_history.append(assessment)
+            return assessment
+
+        try:
+            student_trace = pybryt.StudentCode(str(submission_path))
+            reference = self.reference_implementations[reference_name]
+            results = student_trace.check(reference)
+
+            annotation_results = {}
+            for annotation_name, result in results.items():
+                annotation_results[annotation_name] = {
+                    'satisfied': result.satisfied,
+                    'value': str(result.value) if hasattr(result, 'value') else None
+                }
+
+            total_annotations = len(annotation_results)
+            passed_annotations = sum(1 for r in annotation_results.values() if r['satisfied'])
+            score = (passed_annotations / total_annotations * 100) if total_annotations > 0 else 0
+
+            rubric_score = self._apply_rubric(annotation_results)
+
+            assessment = {
+                'student_id': student_id,
+                'timestamp': timestamp,
+                'status': 'success',
+                'reference_used': reference_name,
+                'annotations': annotation_results,
+                'total_annotations': total_annotations,
+                'passed_annotations': passed_annotations,
+                'basic_score': score,
+                'rubric_score': rubric_score,
+                'final_score': rubric_score if rubric_score is not None else score,
+                'submission_path': str(submission_path)
+            }
+
+            self.assessment_history.append(assessment)
+            return assessment
+
+        except Exception as e:
+            return {
+                'student_id': student_id,
+                'timestamp': timestamp,
+                'status': 'error',
+                'error': str(e)
+            }
+
+    def _apply_rubric(self, annotation_results: Dict) -> Optional[float]:
+        if not self.rubrics:
+            return None
+
+        total_score = 0
+        total_weight = 0
+        for criterion, details in self.rubrics.items():
+            weight = details.get('weight', 1.0)
+            annotations = details.get('annotations', [])
+            satisfied = sum(1 for ann in annotations if ann in annotation_results and annotation_results[ann]['satisfied'])
+            criterion_score = (satisfied / len(annotations)) * weight if annotations else 0
+            total_score += criterion_score
+            total_weight += weight
+
+        return (total_score / total_weight * 100) if total_weight > 0 else 0
+
+    def batch_assess(self, submissions_dir: Path, reference_name: str) -> List[Dict[str, Any]]:
+        results = []
+        submission_files = list(submissions_dir.glob('*.py'))
+        print(f"[AssessmentAgent] Assessing {len(submission_files)} submissions...")
+        for submission_file in submission_files:
+            student_id = submission_file.stem
+            result = self.assess_submission(submission_file, reference_name, student_id)
+            results.append(result)
+        print(f"[AssessmentAgent] Batch assessment complete")
+        return results
+
+    def get_statistics(self) -> Dict[str, Any]:
+        if not self.assessment_history:
+            return {}
+        successful = [a for a in self.assessment_history if a['status'] == 'success']
+        scores = [a['final_score'] for a in successful]
+        return {
+            'total_assessments': len(self.assessment_history),
+            'successful': len(successful),
+            'failed': len(self.assessment_history) - len(successful),
+            'mean_score': np.mean(scores) if scores else 0,
+            'median_score': np.median(scores) if scores else 0,
+            'std_score': np.std(scores) if scores else 0,
+            'min_score': np.min(scores) if scores else 0,
+            'max_score': np.max(scores) if scores else 0
+        }

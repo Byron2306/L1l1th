@@ -1,0 +1,398 @@
+import math
+import logging
+import ccxt
+from binance.client import Client
+from binance.exceptions import BinanceAPIException, BinanceOrderException
+from typing import Tuple, Dict, Any, Optional
+import json
+from web3 import Web3
+
+
+def round_step_size(quantity: float, step_size: float) -> float:
+    """Rounds down to the nearest step size."""
+    if step_size <= 0:
+        return quantity
+    precision = int(round(-math.log(step_size, 10), 0))
+    return math.floor(quantity * (10 ** precision)) / (10 ** precision)
+
+
+class OrderTracker:
+    def __init__(self):
+        self.orders = []
+
+    def add_order(self, order: Dict[str, Any]):
+        self.orders.append(order)
+
+    def get_open_orders(self):
+        return [o for o in self.orders if o.get("status") == "NEW"]
+
+    def update_order_status(self, order_id: str, status: str):
+        for o in self.orders:
+            if o.get("orderId") == order_id:
+                o["status"] = status
+
+
+class BinanceTrader:
+    def __init__(self, client: Client, symbol: str, dry_run: bool, max_position_base: float):
+        self.client = client
+        self.symbol = symbol
+        self.dry_run = dry_run
+        self.max_position_base = max_position_base
+        self.order_tracker = OrderTracker()
+
+        # Infer base/quote assets from symbol info
+        info = self.client.get_symbol_info(symbol)
+        if not info:
+            raise RuntimeError(f"Unknown symbol: {symbol}")
+        self.base_asset = info["baseAsset"]
+        self.quote_asset = info["quoteAsset"]
+        self.filters = {f["filterType"]: f for f in info["filters"]}
+
+    def _get_step_size(self) -> float:
+        lot = self.filters.get("LOT_SIZE")
+        return float(lot["stepSize"]) if lot else 0.0
+
+    def _get_tick_size(self) -> float:
+        price_filter = self.filters.get("PRICE_FILTER")
+        return float(price_filter["tickSize"]) if price_filter else 0.0
+
+    def balances(self) -> Tuple[float, float]:
+        base_free = float(self.client.get_asset_balance(asset=self.base_asset)["free"])
+        quote_free = float(self.client.get_asset_balance(asset=self.quote_asset)["free"])
+        return base_free, quote_free
+
+    def place_order(self, side: str, order_type: str, quantity: Optional[float] = None, quote_quantity: Optional[float] = None, price: Optional[float] = None, stop_price: Optional[float] = None) -> Optional[Dict[str, Any]]:
+        """
+        Place an order: MARKET, LIMIT, STOP_LOSS_LIMIT
+        """
+        if self.dry_run:
+            logging.info(f"[DRY_RUN] {side} {order_type} {self.symbol} qty={quantity} quote_qty={quote_quantity} price={price} stop={stop_price}")
+            return {"orderId": "dry_run", "status": "FILLED", "side": side, "type": order_type}
+
+        try:
+            if order_type == "MARKET":
+                if side == "BUY" and quote_quantity:
+                    order = self.client.order_market_buy(symbol=self.symbol, quoteOrderQty=quote_quantity)
+                elif side == "SELL" and quantity:
+                    order = self.client.order_market_sell(symbol=self.symbol, quantity=quantity)
+                else:
+                    logging.error("Invalid MARKET order params")
+                    return None
+            elif order_type == "LIMIT":
+                if not price or not quantity:
+                    logging.error("LIMIT order requires price and quantity")
+                    return None
+                order = self.client.create_order(symbol=self.symbol, side=side, type="LIMIT", timeInForce="GTC", quantity=quantity, price=price)
+            elif order_type == "STOP_LOSS_LIMIT":
+                if not price or not stop_price or not quantity:
+                    logging.error("STOP_LOSS_LIMIT order requires price, stop_price, and quantity")
+                    return None
+                order = self.client.create_order(symbol=self.symbol, side=side, type="STOP_LOSS_LIMIT", timeInForce="GTC", quantity=quantity, price=price, stopPrice=stop_price)
+            else:
+                logging.error(f"Unsupported order type: {order_type}")
+                return None
+
+            self.order_tracker.add_order(order)
+            logging.info(f"{side} {order_type} order placed: {order}")
+            return order
+        except (BinanceAPIException, BinanceOrderException) as e:
+            logging.error(f"{side} {order_type} failed: {e}")
+            return None
+
+    def buy_market_quote(self, quote_amount: float) -> Optional[Dict[str, Any]]:
+        return self.place_order("BUY", "MARKET", quote_quantity=quote_amount)
+
+    def sell_market_base(self, base_qty: float) -> Optional[Dict[str, Any]]:
+        step = self._get_step_size()
+        qty = round_step_size(base_qty, step)
+        if qty <= 0:
+            logging.info("Sell qty rounded to 0; skipping.")
+            return None
+        return self.place_order("SELL", "MARKET", quantity=qty)
+
+    def buy_limit(self, quantity: float, price: float) -> Optional[Dict[str, Any]]:
+        tick = self._get_tick_size()
+        price = round(price / tick) * tick
+        return self.place_order("BUY", "LIMIT", quantity=quantity, price=price)
+
+    def sell_limit(self, quantity: float, price: float) -> Optional[Dict[str, Any]]:
+        tick = self._get_tick_size()
+        price = round(price / tick) * tick
+        return self.place_order("SELL", "LIMIT", quantity=quantity, price=price)
+
+    def stop_loss_sell(self, quantity: float, stop_price: float, limit_price: float) -> Optional[Dict[str, Any]]:
+        return self.place_order("SELL", "STOP_LOSS_LIMIT", quantity=quantity, price=limit_price, stop_price=stop_price)
+
+    def check_order_status(self, order_id: str) -> Optional[Dict[str, Any]]:
+        try:
+            order = self.client.get_order(symbol=self.symbol, orderId=order_id)
+            self.order_tracker.update_order_status(order_id, order["status"])
+            return order
+        except Exception as e:
+            logging.error(f"Error checking order {order_id}: {e}")
+            return None
+
+    def cancel_order(self, order_id: str) -> bool:
+        try:
+            result = self.client.cancel_order(symbol=self.symbol, orderId=order_id)
+            self.order_tracker.update_order_status(order_id, "CANCELED")
+            logging.info(f"Order {order_id} canceled")
+            return True
+        except Exception as e:
+            logging.error(f"Error canceling order {order_id}: {e}")
+            return False
+
+
+# Placeholder for DEX execution
+class DexTrader:
+    def __init__(self, web3_provider: str, private_key: str, uniswap_router_address: str):
+        self.w3 = Web3(Web3.HTTPProvider(web3_provider))
+        self.account = self.w3.eth.account.from_key(private_key)
+        self.router = self.w3.eth.contract(address=uniswap_router_address, abi=[])  # Need Uniswap ABI
+
+    def swap(self, token_in: str, token_out: str, amount_in: int) -> str:
+        # Implement Uniswap swap
+        # This is a placeholder
+        logging.info(f"[DEX] Swapping {amount_in} {token_in} for {token_out}")
+        return "tx_hash_placeholder"
+
+
+class KrakenTrader:
+    """
+    Minimal trading adapter for Kraken via ccxt.
+    Uses base-amount orders (ccxt standard). For BUY, quote_amount is converted using last price.
+    """
+
+    def __init__(self, client: ccxt.kraken, symbol: str, dry_run: bool, max_position_base: float):
+        self.client = client
+        self.symbol = symbol  # e.g., "XBT/USDT"
+        self.dry_run = dry_run
+        self.max_position_base = max_position_base
+        self.order_tracker = OrderTracker()
+
+        # Infer base/quote from symbol "BASE/QUOTE"
+        if "/" not in symbol:
+            raise RuntimeError("Kraken symbol must be like 'XBT/USDT'")
+        self.base_asset, self.quote_asset = symbol.split("/")
+
+    def balances(self) -> Tuple[float, float]:
+        bal = self.client.fetch_balance()
+        base_free = float(bal.get(self.base_asset, {}).get("free", 0))
+        quote_free = float(bal.get(self.quote_asset, {}).get("free", 0))
+        return base_free, quote_free
+
+    def _place(self, side: str, amount: float) -> Optional[Dict[str, Any]]:
+        if amount <= 0:
+            logging.info("Order amount <= 0; skipping.")
+            return None
+        if self.dry_run:
+            logging.info(f"[DRY_RUN] {side} {self.symbol} amount={amount}")
+            return {"orderId": "dry_run", "status": "FILLED", "side": side, "type": "MARKET"}
+        try:
+            if side == "BUY":
+                order = self.client.create_market_buy_order(self.symbol, amount)
+            else:
+                order = self.client.create_market_sell_order(self.symbol, amount)
+            self.order_tracker.add_order(order)
+            logging.info(f"{side} MARKET order placed: {order}")
+            return order
+        except Exception as e:
+            logging.error(f"{side} MARKET failed: {e}")
+            return None
+
+    def buy_market_quote(self, quote_amount: float) -> Optional[Dict[str, Any]]:
+        try:
+            price = float(self.client.fetch_ticker(self.symbol)["last"])
+        except Exception as e:
+            logging.error(f"Could not fetch price for BUY: {e}")
+            return None
+        amount = quote_amount / price
+        return self._place("BUY", amount)
+
+    def sell_market_base(self, base_qty: float) -> Optional[Dict[str, Any]]:
+        qty = min(base_qty, self.max_position_base)
+        return self._place("SELL", qty)
+
+
+class ExecutionAgent:
+    """Wrapper around a low-level trader that provides deterministic, paranoid execution.
+
+    It performs prechecks (kill switch, balances, spread, staleness), enforces idempotency
+    by `client_order_id`, emits structured execution events via coordinator.share_data,
+    and exposes the same convenience methods as the underlying trader.
+    """
+    def __init__(self, trader: Any, coordinator: Optional[Any] = None, dry_run: bool = False,
+                 min_notional: float = 1.0, spread_threshold_pct: float = 0.0015,
+                 freshness_sec: int = 3):
+        self.trader = trader
+        self.coordinator = coordinator
+        self.dry_run = dry_run
+        self.min_notional = min_notional
+        self.spread_threshold_pct = spread_threshold_pct
+        self.freshness_sec = freshness_sec
+        self._client_orders: Dict[str, Dict[str, Any]] = {}  # idempotency store
+
+    def _emit(self, payload: Dict[str, Any]):
+        evt = {"buzz": {"type": "buzz.trade.execution", "source": "EXECUTION"}, "payload": payload}
+        try:
+            if self.coordinator:
+                # store on coordinator.shared data for consumers
+                self.coordinator.share_data('buzz.trade.execution', evt)
+        except Exception:
+            pass
+
+    def _precheck(self, req: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        # Kill switch
+        try:
+            ks = self.coordinator.agents.get('kill_switch') if self.coordinator and getattr(self.coordinator, 'agents', None) else None
+            if ks and ks.is_paused():
+                return False, {"status": "PRECHECK_FAILED", "error": {"class": "KILL_SWITCH", "message": "kill switch is paused"}}
+        except Exception:
+            pass
+
+        # Freshness
+        try:
+            ts = req.get('ts')
+            if ts:
+                age = abs(time.time() - (float(ts) / 1000.0))
+                if req.get('order_type') == 'MARKET' and age > self.freshness_sec:
+                    return False, {"status": "PRECHECK_FAILED", "error": {"class": "STALE_REQUEST", "message": "request too old"}}
+        except Exception:
+            pass
+
+        # Spread guard
+        try:
+            md = None
+            if self.coordinator:
+                md = self.coordinator.get_shared_data('market.data') or self.coordinator.get_shared_data('latest_price')
+            sp = None
+            if isinstance(md, dict):
+                sp = md.get('spread_pct')
+            if sp is not None:
+                try:
+                    spv = float(sp)
+                    if spv > self.spread_threshold_pct:
+                        return False, {"status": "PRECHECK_FAILED", "error": {"class": "SPREAD_TOO_WIDE", "message": f"spread_pct {spv} > {self.spread_threshold_pct}"}}
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Balance guard (best-effort using coordinator wallet snapshot)
+        try:
+            wb = self.coordinator.get_shared_data('wallet.balance') if self.coordinator else None
+            if wb and isinstance(wb, dict) and wb.get('balances'):
+                balances = {b.get('asset'): float(b.get('free') or 0) for b in wb.get('balances', [])}
+                side = req.get('side')
+                if side == 'BUY':
+                    quote = req.get('quote') or req.get('quote_amount') or req.get('qty')
+                    # need latest price to estimate
+                    price = None
+                    if isinstance(self.coordinator.get_shared_data('latest_price'), (int, float)):
+                        price = float(self.coordinator.get_shared_data('latest_price'))
+                    if price and req.get('qty') and not req.get('quote'):
+                        quote = float(req.get('qty')) * price
+                    if quote and balances.get('USDT', 0) < float(quote):
+                        return False, {"status": "PRECHECK_FAILED", "error": {"class": "INSUFFICIENT_FUNDS", "message": "Not enough quote balance"}}
+                elif side == 'SELL':
+                    base = req.get('qty')
+                    base_asset = getattr(self.trader, 'base_asset', None)
+                    if base_asset and balances.get(base_asset, 0) < float(base or 0):
+                        return False, {"status": "PRECHECK_FAILED", "error": {"class": "INSUFFICIENT_FUNDS", "message": "Not enough base balance"}}
+        except Exception:
+            pass
+
+        # Min notional
+        try:
+            if req.get('order_type') == 'MARKET':
+                qty = req.get('qty') or req.get('quote') or req.get('quote_amount')
+                if qty and float(qty) < self.min_notional:
+                    return False, {"status": "PRECHECK_FAILED", "error": {"class": "MIN_NOTIONAL", "message": "quantity below min notional"}}
+        except Exception:
+            pass
+
+        return True, None
+
+    def _idempotent_check(self, client_order_id: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not client_order_id:
+            return None
+        return self._client_orders.get(client_order_id)
+
+    def buy_market_quote(self, quote_amount: float, client_order_id: Optional[str] = None, intent_id: Optional[str] = None, ts: Optional[int] = None, **kwargs) -> Optional[Dict[str, Any]]:
+        req = {"client_order_id": client_order_id, "intent_id": intent_id, "side": "BUY", "order_type": "MARKET", "quote": quote_amount, "ts": ts or int(time.time() * 1000)}
+        # idempotency
+        prev = self._idempotent_check(client_order_id)
+        if prev:
+            # re-emit latest known
+            self._emit(prev)
+            return prev.get('order')
+
+        # ACK
+        ack = {"client_order_id": client_order_id, "status": "RECEIVED", "venue": getattr(self.trader, 'exchange', None) or getattr(self.trader, 'client', None) and 'binance'}
+        self._emit(ack)
+
+        ok, fail = self._precheck(req)
+        if not ok:
+            resp = {**req, **(fail or {})}
+            self._client_orders[client_order_id or str(time.time())] = {"status": resp.get('status'), "order": None}
+            self._emit(resp)
+            return None
+
+        # Place order
+        try:
+            order = self.trader.buy_market_quote(quote_amount)
+        except Exception as e:
+            order = None
+            logging.exception(f"Execution place order failed: {e}")
+
+        if order:
+            order_id = order.get('orderId') or order.get('id') or 'unknown'
+            placed = {"client_order_id": client_order_id, "intent_id": intent_id, "order_id": order_id, "status": "PLACED", "filled_qty": order.get('executedQty') or order.get('filledQty') or 0.0, "avg_price": order.get('avgPrice') or order.get('price') or None}
+            self._client_orders[client_order_id or order_id] = {"status": placed['status'], "order": order}
+            self._emit(placed)
+            # If immediate FILLED
+            if order.get('status') == 'FILLED' or order.get('status') == 'filled':
+                filled = {**placed, "status": "FILLED"}
+                self._emit(filled)
+            return order
+        else:
+            err = {"client_order_id": client_order_id, "intent_id": intent_id, "status": "ERROR", "error": {"class": "ORDER_FAILED", "message": "placement failed"}}
+            self._emit(err)
+            return None
+
+    def sell_market_base(self, base_qty: float, client_order_id: Optional[str] = None, intent_id: Optional[str] = None, ts: Optional[int] = None, **kwargs) -> Optional[Dict[str, Any]]:
+        req = {"client_order_id": client_order_id, "intent_id": intent_id, "side": "SELL", "order_type": "MARKET", "qty": base_qty, "ts": ts or int(time.time() * 1000)}
+        prev = self._idempotent_check(client_order_id)
+        if prev:
+            self._emit(prev)
+            return prev.get('order')
+
+        ack = {"client_order_id": client_order_id, "status": "RECEIVED"}
+        self._emit(ack)
+
+        ok, fail = self._precheck(req)
+        if not ok:
+            resp = {**req, **(fail or {})}
+            self._client_orders[client_order_id or str(time.time())] = {"status": resp.get('status'), "order": None}
+            self._emit(resp)
+            return None
+
+        try:
+            order = self.trader.sell_market_base(base_qty)
+        except Exception as e:
+            order = None
+            logging.exception(f"Execution place order failed: {e}")
+
+        if order:
+            order_id = order.get('orderId') or order.get('id') or 'unknown'
+            placed = {"client_order_id": client_order_id, "intent_id": intent_id, "order_id": order_id, "status": "PLACED", "filled_qty": order.get('executedQty') or order.get('filledQty') or 0.0, "avg_price": order.get('avgPrice') or order.get('price') or None}
+            self._client_orders[client_order_id or order_id] = {"status": placed['status'], "order": order}
+            self._emit(placed)
+            if order.get('status') == 'FILLED' or order.get('status') == 'filled':
+                filled = {**placed, "status": "FILLED"}
+                self._emit(filled)
+            return order
+        else:
+            err = {"client_order_id": client_order_id, "intent_id": intent_id, "status": "ERROR", "error": {"class": "ORDER_FAILED", "message": "placement failed"}}
+            self._emit(err)
+            return None

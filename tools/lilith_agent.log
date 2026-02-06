@@ -1,0 +1,273 @@
+[2026-01-31T21:11:16.918956] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:11:17.306350] HuggingFace init failed: OpenAIChatClient.__init__() got an unexpected keyword argument 'client'
+Traceback (most recent call last):
+  File "C:\LuciferOS_FULL\tools\lilith_complete.py", line 140, in initialize_agent
+    chat_client = OpenAIChatClient(
+        client=client,
+        model_id=MODEL_ID
+    )
+TypeError: OpenAIChatClient.__init__() got an unexpected keyword argument 'client'
+[2026-01-31T21:11:17.308894] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:11:17.310273] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:11:17.637639] HuggingFace init failed: OpenAIChatClient.__init__() got an unexpected keyword argument 'client'
+Traceback (most recent call last):
+  File "C:\LuciferOS_FULL\tools\lilith_complete.py", line 140, in initialize_agent
+    chat_client = OpenAIChatClient(
+        client=client,
+        model_id=MODEL_ID
+    )
+TypeError: OpenAIChatClient.__init__() got an unexpected keyword argument 'client'
+[2026-01-31T21:11:17.639719] query_agent_sync: agent still None after init.
+[2026-01-31T21:11:59.393716] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:11:59.848067] query_agent_sync exception: 'async_generator' object is not iterable
+[2026-01-31T21:12:38.904586] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:12:40.513339] query_agent_sync exception: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 410 - {'error': 'https://api-inference.huggingface.co is no longer supported. Please use https://router.huggingface.co instead.'}
+[2026-01-31T21:13:18.567507] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:13:20.002032] query_agent_sync exception: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Not Found
+[2026-01-31T21:14:06.112028] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:14:08.914655] query_agent_sync exception: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 401 - {'error': 'Invalid username or password.'}
+[2026-01-31T21:14:55.886956] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:14:57.754699] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 401 - {'error': 'Invalid username or password.'}
+[2026-01-31T21:14:57.755585] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:14:57.756203] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:14:58.456072] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 401 - {'error': 'Invalid username or password.'}
+[2026-01-31T21:14:58.459276] query_agent_sync: agent still None after init.
+[2026-01-31T21:16:58.152479] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:16:59.478949] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'microsoft/Phi-3-mini-4k-instruct' is not supported by any provider you have enabled.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_supported'}}
+[2026-01-31T21:16:59.480333] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:16:59.481149] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=microsoft/Phi-3-mini-4k-instruct
+[2026-01-31T21:17:00.134854] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'microsoft/Phi-3-mini-4k-instruct' is not supported by any provider you have enabled.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_supported'}}
+[2026-01-31T21:17:00.135532] query_agent_sync: agent still None after init.
+[2026-01-31T21:19:52.805042] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=mistral-small
+[2026-01-31T21:19:54.464262] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'mistral-small' does not exist.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_found'}}
+[2026-01-31T21:19:54.465423] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:19:54.466128] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=mistral-small
+[2026-01-31T21:19:55.098789] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'mistral-small' does not exist.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_found'}}
+[2026-01-31T21:19:55.099430] query_agent_sync: agent still None after init.
+[2026-01-31T21:20:40.055685] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=phi-3-mini
+[2026-01-31T21:20:41.590126] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'phi-3-mini' does not exist.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_found'}}
+[2026-01-31T21:20:41.591319] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:20:41.592038] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=phi-3-mini
+[2026-01-31T21:20:42.299511] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'phi-3-mini' does not exist.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_found'}}
+[2026-01-31T21:20:42.300290] query_agent_sync: agent still None after init.
+[2026-01-31T21:27:52.724606] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.2-3B-Instruct
+[2026-01-31T21:27:56.343067] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 402 - {'error': 'Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.'}
+[2026-01-31T21:27:56.343984] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:27:56.344737] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.2-3B-Instruct
+[2026-01-31T21:27:56.598967] query_agent_sync exception: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 402 - {'error': 'Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.'}
+[2026-01-31T21:27:57.145793] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 402 - {'error': 'Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.'}
+[2026-01-31T21:27:57.148353] query_agent_sync: agent still None after init.
+[2026-01-31T21:29:12.578627] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.2-3B-Instruct
+[2026-01-31T21:29:13.635311] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 402 - {'error': 'Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.'}
+[2026-01-31T21:29:13.636607] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:29:13.638001] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.2-3B-Instruct
+[2026-01-31T21:29:14.443588] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 402 - {'error': 'Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.'}
+[2026-01-31T21:29:14.444732] query_agent_sync: agent still None after init.
+[2026-01-31T21:31:33.239059] initialize_agent() called. MODEL_HOST=ollama MODEL_ID=qwen2.5:3b
+[2026-01-31T21:41:19.073165] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=dolphin-mistral:7b
+[2026-01-31T21:41:19.076623] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-01-31T21:41:19.077398] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=dolphin-mistral:7b
+[2026-01-31T21:41:19.078787] query_agent_sync: agent still None after init.
+[2026-02-01T13:08:18.582728] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=cognitivecomputations/dolphin-2.9.3-mistral-nemo-12b
+[2026-02-01T13:08:20.627037] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'cognitivecomputations/dolphin-2.9.3-mistral-nemo-12b' does not exist.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_found'}}
+[2026-02-01T13:08:20.627907] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:08:20.628517] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=cognitivecomputations/dolphin-2.9.3-mistral-nemo-12b
+[2026-02-01T13:08:21.259511] HuggingFace health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': "The requested model 'cognitivecomputations/dolphin-2.9.3-mistral-nemo-12b' does not exist.", 'type': 'invalid_request_error', 'param': 'model', 'code': 'model_not_found'}}
+[2026-02-01T13:08:21.260759] query_agent_sync: agent still None after init.
+[2026-02-01T13:19:28.194283] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=cognitivecomputations/dolphin-mistral-24b-venice-edition:free
+[2026-02-01T13:19:30.045747] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 401 - {'error': {'message': 'No cookie auth credentials found', 'code': 401}}
+[2026-02-01T13:19:30.046652] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:19:30.047289] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=cognitivecomputations/dolphin-mistral-24b-venice-edition:free
+[2026-02-01T13:19:30.685843] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 401 - {'error': {'message': 'No cookie auth credentials found', 'code': 401}}
+[2026-02-01T13:19:30.687005] query_agent_sync: agent still None after init.
+[2026-02-01T13:21:43.043839] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=cognitivecomputations/dolphin-mistral-24b-venice-edition:free
+[2026-02-01T13:21:45.020018] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found that support tool use. To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection', 'code': 404}}
+[2026-02-01T13:21:45.021049] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:21:45.021716] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=cognitivecomputations/dolphin-mistral-24b-venice-edition:free
+[2026-02-01T13:21:46.302096] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found that support tool use. To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection', 'code': 404}}
+[2026-02-01T13:21:46.303164] query_agent_sync: agent still None after init.
+[2026-02-01T13:23:33.709866] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=openai/gpt-oss-120b:free
+[2026-02-01T13:23:35.647909] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy', 'code': 404}}
+[2026-02-01T13:23:35.649383] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:23:35.650286] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=openai/gpt-oss-120b:free
+[2026-02-01T13:23:36.447148] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy', 'code': 404}}
+[2026-02-01T13:23:36.448861] query_agent_sync: agent still None after init.
+[2026-02-01T13:23:56.499069] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=meta-llama/llama-3.3-70b-instruct:free
+[2026-02-01T13:24:05.450998] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'Provider returned error', 'code': 404, 'metadata': {'raw': 'No matching route found. It is likely because the model specified in your request is not configured in the Gateway.', 'provider_name': 'ModelRun', 'is_byok': False}}, 'user_id': 'user_394JGhm2zV4kp6C5r9XSi40F5xJ'}
+[2026-02-01T13:24:05.451932] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:24:05.452585] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=meta-llama/llama-3.3-70b-instruct:free
+[2026-02-01T13:24:12.718674] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'Provider returned error', 'code': 404, 'metadata': {'raw': 'No matching route found. It is likely because the model specified in your request is not configured in the Gateway.', 'provider_name': 'ModelRun', 'is_byok': False}}, 'user_id': 'user_394JGhm2zV4kp6C5r9XSi40F5xJ'}
+[2026-02-01T13:24:12.719793] query_agent_sync: agent still None after init.
+[2026-02-01T13:24:35.230798] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=google/gemma-3-27b-it:free
+[2026-02-01T13:24:37.315023] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy', 'code': 404}}
+[2026-02-01T13:24:37.316450] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:24:37.317518] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=google/gemma-3-27b-it:free
+[2026-02-01T13:24:37.792751] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy', 'code': 404}}
+[2026-02-01T13:24:37.794314] query_agent_sync: agent still None after init.
+[2026-02-01T13:25:01.846861] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=google/gemma-3-27b-it:free
+[2026-02-01T13:25:03.767031] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy', 'code': 404}}
+[2026-02-01T13:25:03.768010] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:25:03.768698] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=google/gemma-3-27b-it:free
+[2026-02-01T13:25:04.507947] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 404 - {'error': {'message': 'No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy', 'code': 404}}
+[2026-02-01T13:25:04.509347] query_agent_sync: agent still None after init.
+[2026-02-01T13:25:28.007332] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=qwen/qwen3-coder:free
+[2026-02-01T13:25:34.059636] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 402 - {'error': {'message': 'Provider returned error', 'code': 402, 'metadata': {'raw': '{"error":"API key USD spend limit exceeded. Your account may still have USD balance, but this API key has reached its configured USD spending limit."}', 'provider_name': 'Venice', 'is_byok': False}}, 'user_id': 'user_394JGhm2zV4kp6C5r9XSi40F5xJ'}
+[2026-02-01T13:25:34.060758] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:25:34.061475] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=qwen/qwen3-coder:free
+[2026-02-01T13:25:41.198761] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-coder:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Venice', 'is_byok': False}}, 'user_id': 'user_394JGhm2zV4kp6C5r9XSi40F5xJ'}
+[2026-02-01T13:25:41.201214] query_agent_sync: agent still None after init.
+[2026-02-01T13:50:10.009138] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=qwen/qwen3-coder:free
+[2026-02-01T13:50:17.724385] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-coder:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Venice', 'is_byok': False}}, 'user_id': 'user_394JGhm2zV4kp6C5r9XSi40F5xJ'}
+[2026-02-01T13:50:17.725339] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:50:17.726213] initialize_agent() called. MODEL_HOST=openrouter MODEL_ID=qwen/qwen3-coder:free
+[2026-02-01T13:50:22.403562] OpenRouter health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'qwen/qwen3-coder:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Venice', 'is_byok': False}}, 'user_id': 'user_394JGhm2zV4kp6C5r9XSi40F5xJ'}
+[2026-02-01T13:50:22.408977] query_agent_sync: agent still None after init.
+[2026-02-01T13:51:53.106918] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.2-3B-Instruct
+[2026-02-01T13:51:56.767556] HuggingFace query success: response_len=110
+[2026-02-01T13:52:05.563837] HuggingFace query success: response_len=141
+[2026-02-01T13:54:37.869230] HuggingFace query success: response_len=203
+[2026-02-01T13:54:47.365257] HuggingFace query success: response_len=158
+[2026-02-01T13:57:25.147052] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=cognitivecomputations/dolphin-2.9-llama3-8b
+[2026-02-01T13:57:26.287892] HuggingFace health check failed: 
+[2026-02-01T13:57:26.294594] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T13:57:26.296096] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=cognitivecomputations/dolphin-2.9-llama3-8b
+[2026-02-01T13:57:26.298609] HuggingFace health check failed: 
+[2026-02-01T13:57:26.300139] query_agent_sync: agent still None after init.
+[2026-02-01T13:58:21.883812] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T13:59:01.055451] HuggingFace query success: response_len=2459
+[2026-02-01T14:00:27.797291] HuggingFace query success: response_len=1815
+[2026-02-01T14:01:07.500017] HuggingFace query success: response_len=409
+[2026-02-01T14:01:57.046692] HuggingFace query success: response_len=801
+[2026-02-01T14:03:33.097510] HuggingFace query success: response_len=4630
+[2026-02-01T14:04:43.916902] HuggingFace query success: response_len=1429
+[2026-02-01T14:05:37.584441] HuggingFace query success: response_len=1271
+[2026-02-01T14:06:19.244305] HuggingFace query success: response_len=2435
+[2026-02-01T14:07:42.673465] HuggingFace query success: response_len=3378
+[2026-02-01T14:08:51.690190] HuggingFace query success: response_len=2695
+[2026-02-01T14:09:58.351558] HuggingFace query success: response_len=1119
+[2026-02-01T14:11:23.336879] HuggingFace query success: response_len=2005
+[2026-02-01T14:12:56.048774] HuggingFace query success: response_len=2350
+[2026-02-01T14:14:45.800243] HuggingFace query success: response_len=2535
+[2026-02-01T14:15:45.416987] HuggingFace query success: response_len=1069
+[2026-02-01T14:16:31.056095] HuggingFace query success: response_len=908
+[2026-02-01T14:17:08.566218] HuggingFace query success: response_len=905
+[2026-02-01T14:17:36.579816] HuggingFace query success: response_len=905
+[2026-02-01T14:18:10.456617] HuggingFace query success: response_len=613
+[2026-02-01T14:20:03.730833] HuggingFace query success: response_len=1330
+[2026-02-01T14:20:58.261529] HuggingFace query success: response_len=766
+[2026-02-01T14:23:32.926429] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T14:23:53.529859] HuggingFace query success: response_len=227
+[2026-02-01T14:24:11.799105] HuggingFace query success: response_len=736
+[2026-02-01T14:26:55.818379] HuggingFace query success: response_len=650
+[2026-02-01T14:34:32.656759] HuggingFace query success: response_len=123
+[2026-02-01T14:35:07.754287] HuggingFace query success: response_len=1580
+[2026-02-01T14:35:18.939494] HuggingFace query success: response_len=925
+[2026-02-01T14:35:38.299846] HuggingFace query success: response_len=1884
+[2026-02-01T14:35:40.676367] HuggingFace query success: response_len=3119
+[2026-02-01T14:36:32.175421] HuggingFace query success: response_len=808
+[2026-02-01T14:37:27.943576] HuggingFace query success: response_len=2619
+[2026-02-01T14:38:13.671676] HuggingFace query success: response_len=1648
+[2026-02-01T14:39:17.145868] HuggingFace query success: response_len=1887
+[2026-02-01T14:41:12.162499] HuggingFace query success: response_len=2204
+[2026-02-01T14:44:32.725857] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T14:44:32.727356] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T14:44:44.088733] HuggingFace query failed: 402 Client Error: Payment Required for url: https://router.huggingface.co/featherless-ai/v1/chat/completions (Request ID: Root=1-697f66dd-71588fe30c080d5b47d41dfd;fcea46fc-c2ec-4961-b652-650dfdb43028)
+
+Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.
+[2026-02-01T14:45:33.080417] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T14:45:33.083287] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T14:45:35.570112] HuggingFace health check failed: 402 Client Error: Payment Required for url: https://router.huggingface.co/featherless-ai/v1/chat/completions (Request ID: Root=1-697f6711-05684f5a64248ec112fd3d28;d9d88f87-a982-4c77-bc7e-cb7d8fbb50ce)
+
+Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.
+[2026-02-01T14:45:35.571220] query_agent_sync: agent still None after init.
+[2026-02-01T14:45:42.333588] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T14:45:43.031900] HuggingFace health check failed: 402 Client Error: Payment Required for url: https://router.huggingface.co/featherless-ai/v1/chat/completions (Request ID: Root=1-697f6718-469bfd6f2679c278247702dd;12fd38a9-a4e1-42ce-9b63-8f12f2bac577)
+
+Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.
+[2026-02-01T14:45:43.032933] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T14:45:43.033716] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T14:45:43.320615] HuggingFace health check failed: 402 Client Error: Payment Required for url: https://router.huggingface.co/featherless-ai/v1/chat/completions (Request ID: Root=1-697f6719-5c80f70e7e4a91006225bbf5;16a6d690-e54e-4b83-a8b3-73bff07e3191)
+
+Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.
+[2026-02-01T14:45:43.321602] query_agent_sync: agent still None after init.
+[2026-02-01T14:48:11.140043] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T14:48:11.141491] initialize_agent() called. MODEL_HOST=ollama MODEL_ID=dolphin-mistral:7b
+[2026-02-01T14:48:13.781437] Ollama health check failed: <class 'agent_framework.openai._chat_client.OpenAIChatClient'> service failed to complete the prompt: Error code: 400 - {'error': {'message': 'registry.ollama.ai/library/dolphin-mistral:7b does not support tools', 'type': 'api_error', 'param': None, 'code': None}}
+[2026-02-01T14:48:13.782704] query_agent_sync: agent still None after init.
+[2026-02-01T15:43:48.365752] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T15:43:48.367350] initialize_agent() called. MODEL_HOST=ollama MODEL_ID=dolphin-mistral:7b
+[2026-02-01T15:44:03.537581] Ollama init failed: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=15)
+[2026-02-01T15:44:03.594249] query_agent_sync: agent still None after init.
+[2026-02-01T15:47:26.736589] initialize_agent() called. MODEL_HOST=ollama MODEL_ID=dolphin-mistral:7b
+[2026-02-01T15:50:04.934911] api_chat: agent timed out for message: Scan ports on 192.168.1.100
+[2026-02-01T15:53:04.170794] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.2-3B-Instruct
+[2026-02-01T15:53:10.095196] HuggingFace query success: response_len=1271
+[2026-02-01T15:53:30.491779] HuggingFace query success: response_len=1913
+[2026-02-01T15:56:56.133343] HuggingFace query success: response_len=110
+[2026-02-01T15:57:06.025037] HuggingFace query success: response_len=110
+[2026-02-01T15:59:14.927286] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T15:59:38.283328] HuggingFace query success: response_len=1311
+[2026-02-01T16:00:00.593033] HuggingFace query success: response_len=1297
+[2026-02-01T16:01:29.767746] HuggingFace query success: response_len=1366
+[2026-02-01T16:03:09.024016] HuggingFace query success: response_len=2762
+[2026-02-01T16:09:16.475512] HuggingFace query success: response_len=1958
+[2026-02-01T16:10:51.417314] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T16:11:30.524236] HuggingFace query success: response_len=3012
+[2026-02-01T16:14:00.072983] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=NousResearch/Hermes-3-Llama-3.1-8B
+[2026-02-01T16:14:07.502111] HuggingFace query failed: 402 Client Error: Payment Required for url: https://router.huggingface.co/featherless-ai/v1/chat/completions (Request ID: Root=1-697f7bd1-425befee14277e463c8022a0;38a905fd-0ad5-47e7-b2d0-52c1e7399207)
+
+Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.
+[2026-02-01T16:14:48.062345] initialize_agent() called. MODEL_HOST=huggingface MODEL_ID=meta-llama/Llama-3.1-8B-Instruct
+[2026-02-01T16:14:50.617688] HuggingFace query failed: 402 Client Error: Payment Required for url: https://router.huggingface.co/novita/v3/openai/chat/completions (Request ID: Root=1-697f7bfc-0d86ad152aa13abc5670bb95;4e67c16d-d57e-440e-9054-822e84df62b0)
+
+Credit balance is depleted: purchase pre-paid credits to continue using Inference Providers with your account. Alternatively, subscribe to PRO to get 20x more included usage.
+[2026-02-01T16:18:38.846574] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.1-70b-versatile
+[2026-02-01T16:18:39.927060] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-01T16:18:39.929993] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.1-70b-versatile
+[2026-02-01T16:18:40.833364] query_agent_sync: agent still None after init.
+[2026-02-01T16:20:36.568682] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.3-70b-versatile
+[2026-02-01T16:20:39.276702] Groq query success: response_len=2472
+[2026-02-01T16:21:39.468770] Groq query success: response_len=2527
+[2026-02-01T16:22:29.627455] Groq query success: response_len=3173
+[2026-02-01T16:30:09.203961] Groq query success: response_len=503
+[2026-02-01T16:30:53.367843] Groq query success: response_len=262
+[2026-02-01T16:30:57.351322] Groq query success: response_len=1220
+[2026-02-01T16:31:15.702668] Groq query success: response_len=1294
+[2026-02-01T16:31:39.934899] Groq query success: response_len=1951
+[2026-02-01T16:31:55.629721] Groq query success: response_len=2061
+[2026-02-01T16:34:09.811729] Groq query success: response_len=1006
+[2026-02-01T16:36:17.661965] Groq query success: response_len=109
+[2026-02-01T16:39:36.290208] Groq query success: response_len=109
+[2026-02-01T16:39:45.693201] Groq query success: response_len=1860
+[2026-02-01T16:41:15.819881] Groq query success: response_len=2045
+[2026-02-01T16:59:33.674074] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.3-70b-versatile
+[2026-02-01T16:59:36.457685] Groq query success: response_len=1886
+[2026-02-01T17:11:38.715294] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.3-70b-versatile
+[2026-02-01T17:11:41.278480] Groq query success: response_len=360
+[2026-02-01T17:11:49.953777] Groq query success: response_len=423
+[2026-02-01T17:11:57.649341] Groq query success: response_len=626
+[2026-02-01T17:12:06.100503] Groq query success: response_len=1482
+[2026-02-01T17:15:39.293330] Groq query success: response_len=2173
+[2026-02-01T17:28:32.403326] Groq query success: response_len=4410
+[2026-02-01T17:29:22.472656] Groq query success: response_len=61
+[2026-02-01T17:29:55.259663] Groq query success: response_len=2401
+[2026-02-01T17:32:45.194964] Groq query success: response_len=448
+[2026-02-01T17:44:25.614537] Groq query success: response_len=4590
+[2026-02-02T11:29:22.277778] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-02T11:29:22.282083] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.3-70b-versatile
+[2026-02-02T11:29:26.675251] Groq query success: response_len=2396
+[2026-02-02T11:29:31.398916] Groq query success: response_len=3303
+[2026-02-02T11:29:35.203760] Groq query success: response_len=2213
+[2026-02-02T11:29:45.725899] Groq query success: response_len=2388
+[2026-02-02T11:38:56.732414] Groq query success: response_len=3612
+[2026-02-02T12:01:58.891383] query_agent_sync: agent is None, attempting initialize_agent()
+[2026-02-02T12:01:58.952538] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.3-70b-versatile
+[2026-02-02T12:02:10.414708] Groq query success: response_len=5457
+[2026-02-02T12:02:42.678151] Groq query success: response_len=4536
+[2026-02-02T12:03:33.140657] Groq query success: response_len=2815
+[2026-02-03T21:48:59.436788] initialize_agent() called. MODEL_HOST=groq MODEL_ID=llama-3.3-70b-versatile
+[2026-02-03T21:49:06.407011] Groq query success: response_len=961
+[2026-02-03T21:51:19.268761] Groq query success: response_len=1467
+[2026-02-03T22:11:39.104797] Groq query success: response_len=1536
+[2026-02-03T22:12:50.283529] Groq query success: response_len=1433
+[2026-02-03T22:14:17.581836] Groq query success: response_len=1411

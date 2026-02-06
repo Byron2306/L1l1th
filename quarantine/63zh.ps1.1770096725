@@ -1,0 +1,23 @@
+# PowerShell script to monitor and restart Clawdbot gateway
+$gatewayScript = "C:\Users\User\.clawdbot\gateway.cmd"
+$logFile = "C:\Users\User\.clawdbot\gateway-monitor.log"
+$processName = "cmd"
+$gatewayPort = 18791
+
+function Is-GatewayRunning {
+    # Check if port is listening
+    $tcp = Get-NetTCPConnection -LocalPort $gatewayPort -State Listen -ErrorAction SilentlyContinue
+    return $tcp -ne $null
+}
+
+function Start-Gateway {
+    Write-Output "[$(Get-Date)] Gateway not running. Starting..." | Tee-Object -FilePath $logFile -Append
+    Start-Process -FilePath $gatewayScript -WindowStyle Hidden
+}
+
+while ($true) {
+    if (-not (Is-GatewayRunning)) {
+        Start-Gateway
+    }
+    Start-Sleep -Seconds 30
+}

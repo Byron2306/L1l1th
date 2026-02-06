@@ -1,0 +1,211 @@
+import os
+import json
+import subprocess
+import threading
+import tkinter as tk
+from tkinter import ttk, scrolledtext, messagebox
+
+try:
+    import requests
+except Exception:
+    requests = None
+
+
+HOME = os.environ.get('USERPROFILE') or os.path.expanduser('~')
+CONFIG_DIR = os.path.join(HOME, '.clawdbot')
+CONFIG_PATH = os.path.join(CONFIG_DIR, 'clawdbot.json')
+
+
+def ensure_config():
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    if not os.path.exists(CONFIG_PATH):
+        default = {
+            "gateway": {"bind": "loopback", "port": 18789},
+            "models": {"providers": {"ollama": {"baseUrl": "http://127.0.0.1:11434/v1"}}},
+            "workspace": CONFIG_DIR
+        }
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(default, f, indent=2)
+
+
+def load_config():
+    ensure_config()
+    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def save_config(cfg):
+    ensure_config()
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, indent=2)
+
+
+class App:
+    def __init__(self, root):
+        self.root = root
+        root.title('Clawdbot (Windows) — Config & Chat')
+
+        cfg = load_config()
+
+        frm = ttk.Frame(root, padding=8)
+        frm.grid(sticky='nsew')
+
+        # Config area
+        ttk.Label(frm, text='Ollama baseUrl:').grid(row=0, column=0, sticky='w')
+        self.baseurl_var = tk.StringVar(value=cfg.get('models', {}).get('providers', {}).get('ollama', {}).get('baseUrl', 'http://127.0.0.1:11434/v1'))
+        ttk.Entry(frm, textvariable=self.baseurl_var, width=60).grid(row=0, column=1, sticky='we')
+
+        ttk.Label(frm, text='Gateway bind:').grid(row=1, column=0, sticky='w')
+        self.bind_var = tk.StringVar(value=cfg.get('gateway', {}).get('bind', 'loopback'))
+        ttk.Entry(frm, textvariable=self.bind_var, width=30).grid(row=1, column=1, sticky='w')
+
+        ttk.Label(frm, text='Workspace:').grid(row=2, column=0, sticky='w')
+        self.ws_var = tk.StringVar(value=cfg.get('workspace', CONFIG_DIR))
+        ttk.Entry(frm, textvariable=self.ws_var, width=60).grid(row=2, column=1, sticky='we')
+
+        ttk.Button(frm, text='Save config', command=self.save_config).grid(row=3, column=1, sticky='e')
+
+        # Gateway controls
+        ttk.Separator(frm).grid(row=4, column=0, columnspan=2, sticky='we', pady=6)
+        gfrm = ttk.Frame(frm)
+        gfrm.grid(row=5, column=0, columnspan=2, sticky='we')
+        ttk.Button(gfrm, text='Start gateway', command=self.start_gateway).grid(row=0, column=0, padx=4)
+        ttk.Button(gfrm, text='Stop gateway', command=self.stop_gateway).grid(row=0, column=1, padx=4)
+
+        # Chat UI
+        ttk.Separator(frm).grid(row=6, column=0, columnspan=2, sticky='we', pady=6)
+        ttk.Label(frm, text='Agent (optional):').grid(row=7, column=0, sticky='w')
+        self.agent_var = tk.StringVar(value='uncensoredagent')
+        ttk.Entry(frm, textvariable=self.agent_var, width=30).grid(row=7, column=1, sticky='w')
+
+        self.chat_display = scrolledtext.ScrolledText(frm, width=80, height=18)
+        self.chat_display.grid(row=8, column=0, columnspan=2, pady=6)
+
+        self.msg_var = tk.StringVar()
+        ttk.Entry(frm, textvariable=self.msg_var, width=70).grid(row=9, column=0, sticky='we')
+        ttk.Button(frm, text='Send', command=self.on_send).grid(row=9, column=1, sticky='e')
+
+        # Kali/WSL integration
+        ttk.Separator(frm).grid(row=10, column=0, columnspan=2, sticky='we', pady=6)
+        ttk.Label(frm, text='Run WSL (Kali) command:').grid(row=11, column=0, sticky='w')
+        self.wsl_var = tk.StringVar()
+        ttk.Entry(frm, textvariable=self.wsl_var, width=60).grid(row=11, column=1, sticky='we')
+        ttk.Button(frm, text='Run in WSL', command=self.run_wsl).grid(row=12, column=1, sticky='e')
+
+        root.columnconfigure(0, weight=1)
+        frm.columnconfigure(1, weight=1)
+
+    def save_config(self):
+        cfg = load_config()
+        # patch the values
+        cfg.setdefault('models', {}).setdefault('providers', {}).setdefault('ollama', {})
+        cfg['models']['providers']['ollama']['baseUrl'] = self.baseurl_var.get()
+        cfg.setdefault('gateway', {})['bind'] = self.bind_var.get()
+        cfg['workspace'] = self.ws_var.get()
+        save_config(cfg)
+        messagebox.showinfo('Saved', f'Wrote {CONFIG_PATH}')
+
+    def start_gateway(self):
+        # Use gateway.cmd in the config directory if present
+        gw_cmd = os.path.join(os.path.dirname(CONFIG_PATH), 'gateway.cmd')
+        if os.path.exists(gw_cmd):
+            # start a new window so the gateway persists independently
+            subprocess.Popen(['cmd.exe', '/c', 'start', '"Clawdbot Gateway"', gw_cmd], cwd=os.path.dirname(CONFIG_PATH))
+            self.chat_display.insert(tk.END, '[Gateway] Started gateway via gateway.cmd\n')
+        else:
+            self.chat_display.insert(tk.END, '[Gateway] gateway.cmd not found in config folder\n')
+
+    def stop_gateway(self):
+        # Try to stop processes whose command line contains 'clawdbot gateway'
+        cmd = "powershell -Command \"Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'clawdbot gateway' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }\""
+        subprocess.run(cmd, shell=True)
+        self.chat_display.insert(tk.END, '[Gateway] Sent stop request to matching processes\n')
+
+    def on_send(self):
+        msg = self.msg_var.get().strip()
+        if not msg:
+            return
+        self.chat_display.insert(tk.END, f'You: {msg}\n')
+        self.msg_var.set('')
+        threading.Thread(target=self.send_message, args=(msg,), daemon=True).start()
+
+    def send_message(self, msg):
+        agent = self.agent_var.get().strip() or None
+        # Try Clawdbot CLI first
+        try:
+            args = ['clawdbot', 'agent']
+            if agent:
+                args += ['--agent', agent]
+            args += ['--session-id', 'gui', '--message', msg, '--json']
+            proc = subprocess.run(args, capture_output=True, text=True, timeout=60)
+            out = proc.stdout or proc.stderr
+            # try to parse json
+            try:
+                data = json.loads(out)
+                text = data.get('result', {}).get('payloads', [{}])[0].get('text')
+                if text:
+                    self.chat_display.insert(tk.END, f'Bot: {text}\n')
+                    return
+            except Exception:
+                pass
+        except FileNotFoundError:
+            out = None
+
+        # Fallback: direct Ollama HTTP call
+        base = self.baseurl_var.get().rstrip('/')
+        if requests is None:
+            try:
+                import urllib.request as _u
+                import urllib.parse as _p
+            except Exception:
+                self.chat_display.insert(tk.END, '[Error] requests not installed and urllib unavailable\n')
+                return
+
+        try:
+            url = base + '/chat/completions'
+            payload = {"model": "dolphin-mistral:7b", "messages": [{"role": "user", "content": msg}]}
+            if requests:
+                r = requests.post(url, json=payload, timeout=60)
+                r.raise_for_status()
+                resp = r.json()
+            else:
+                data = json.dumps(payload).encode('utf-8')
+                req = _u.Request(url, data=data, headers={'Content-Type': 'application/json'})
+                with _u.urlopen(req, timeout=60) as fh:
+                    resp = json.load(fh)
+
+            # Ollama -> check fields
+            text = None
+            if isinstance(resp, dict):
+                # attempt common shapes
+                if 'choices' in resp and len(resp['choices']) > 0:
+                    text = resp['choices'][0].get('message', {}).get('content')
+                elif 'result' in resp:
+                    text = resp['result'].get('output', '')
+            if not text:
+                text = str(resp)
+            self.chat_display.insert(tk.END, f'Bot: {text}\n')
+        except Exception as e:
+            self.chat_display.insert(tk.END, f'[Error] Ollama request failed: {e}\n')
+
+    def run_wsl(self):
+        cmd = self.wsl_var.get().strip()
+        if not cmd:
+            return
+        full = ['wsl', '-d', 'kali-linux', '-u', 'root', '--', 'bash', '-lc', cmd]
+        try:
+            proc = subprocess.run(full, capture_output=True, text=True, timeout=120)
+            out = proc.stdout or proc.stderr
+            self.chat_display.insert(tk.END, f'[WSL] $ {cmd}\n{out}\n')
+        except Exception as e:
+            self.chat_display.insert(tk.END, f'[WSL] command failed: {e}\n')
+
+
+def main():
+    root = tk.Tk()
+    App(root)
+    root.mainloop()
+
+
+if __name__ == '__main__':
+    main()

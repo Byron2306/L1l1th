@@ -1,0 +1,183 @@
+from __future__ import annotations
+
+import re
+import requests
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+from pathlib import Path
+
+# Ollama configuration - OPTIMIZED FOR SPEED
+OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+OLLAMA_MODEL = "llama3.2:1b"  # 1b is ~2x faster than 3b on CPU
+OLLAMA_TIMEOUT = 60
+
+# Speed optimization parameters for Ollama
+OLLAMA_OPTIONS = {
+    "num_ctx": 2048,       # Smaller context window (default 4096) = faster
+    "num_predict": 256,    # Limit max response tokens for faster replies
+    "temperature": 0.7,    # Balanced creativity/speed
+    "top_k": 40,          # Limit token sampling
+    "top_p": 0.9,         # Nucleus sampling
+    "repeat_penalty": 1.1, # Prevent repetition
+}
+
+# Import ElevenLabs TTS
+try:
+    from backend.llm.elevenlabs_tts import text_to_speech, sanitize_for_speech
+    ELEVENLABS_AVAILABLE = True
+except ImportError:
+    ELEVENLABS_AVAILABLE = False
+    text_to_speech = None
+    sanitize_for_speech = None
+
+
+# ─────────────────────────────────────────────
+# System prompt (concise for speed)
+# ─────────────────────────────────────────────
+
+SYSTEM_PROMPT = """You are VAMP, the Virtual Academic Management Partner for North-West University (NWU).
+
+Your purpose is to assist academic staff with their Task Agreements, Key Performance Areas (KPAs), evidence collection, and progress tracking. You provide guidance on academic workload management, help interpret expectations, suggest evidence types, and offer supportive advice on meeting institutional requirements.
+
+Key responsibilities:
+- Explain NWU policies and procedures related to academic performance
+- Analyze staff expectations and progress against KPAs
+- Recommend specific evidence for demonstrating achievements
+- Provide realistic timelines and actionable steps for improvement
+- Celebrate successes and offer encouragement
+
+Always be:
+- Concise and professional
+- Supportive and encouraging
+- Specific about KPAs and evidence requirements
+- Helpful in interpreting complex academic policies
+
+If you lack specific information, ask for clarification rather than guessing.
+No markdown formatting, asterisks, or emojis in responses."""
+
+
+def build_prompt(question: str, context: Dict[str, Any]) -> str:
+    ctx_lines: List[str] = []
+
+    if context.get("staff_id"):
+        ctx_lines.append(f"Staff ID: {context['staff_id']}")
+    if context.get("cycle_year"):
+        ctx_lines.append(f"Cycle year: {context['cycle_year']}")
+    if context.get("stage"):
+        ctx_lines.append(f"Current stage: {context['stage']}")
+    if context.get("scan_month"):
+        ctx_lines.append(f"Current month bucket: {context['scan_month']}")
+    if context.get("month"):
+        ctx_lines.append(f"Month being analyzed: {context['month']}")
+    if context.get("tasks"):
+        ctx_lines.append(f"Tasks for this period: {context['tasks']}")
+    if context.get("evidence_count"):
+        ctx_lines.append(f"Evidence items uploaded: {context['evidence_count']}")
+    if context.get("required"):
+        ctx_lines.append(f"Minimum required evidence: {context['required']}")
+
+    ctx_block = "\n".join(ctx_lines) if ctx_lines else "No additional context."
+
+    return f"""
+{SYSTEM_PROMPT}
+
+Context:
+{ctx_block}
+
+User question or task:
+{question}
+
+When analyzing monthly expectations:
+- Be specific about which KPAs need attention
+- Suggest concrete evidence types (e.g., "Upload assessment rubrics for KPA1")
+- Celebrate progress when expectations are met
+- Provide realistic timelines for catching up if behind
+
+Respond clearly and helpfully.
+"""
+
+
+# ─────────────────────────────────────────────
+# Public API
+# ─────────────────────────────────────────────
+
+def ask_vamp(question: str, context: Dict[str, Any], with_voice: bool = False) -> Dict[str, Any]:
+    """
+    Ask VAMP a question with optional voice response
+    
+    Args:
+        question: User's question
+        context: Contextual information
+        with_voice: If True, generate audio response using ElevenLabs
+        
+    Returns:
+        Dictionary with answer, optional audio_path, and metadata
+    """
+    prompt = build_prompt(question, context)
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": OLLAMA_OPTIONS,  # Speed optimizations
+    }
+
+    try:
+        r = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=OLLAMA_TIMEOUT
+        )
+        r.raise_for_status()
+
+        data = r.json()
+        answer = data.get("response", "").strip()
+
+        if not answer:
+            answer = "I have reflected on this, but require more information."
+        
+        # Sanitize answer for speech (removes asterisks, markdown, etc.)
+        clean_answer = sanitize_for_speech(answer) if ELEVENLABS_AVAILABLE else answer
+        
+        result = {
+            "answer": clean_answer,
+            "model": OLLAMA_MODEL,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        
+        # Generate voice if requested
+        if with_voice and ELEVENLABS_AVAILABLE:
+            try:
+                audio_path = text_to_speech(clean_answer)
+                if audio_path:
+                    result["audio_path"] = str(audio_path)
+                    result["has_voice"] = True
+                else:
+                    result["has_voice"] = False
+            except Exception as voice_error:
+                print(f"Voice generation failed: {voice_error}")
+                result["has_voice"] = False
+        else:
+            result["has_voice"] = False
+
+        return result
+
+    except requests.exceptions.Timeout:
+        return {
+            "answer": (
+                "My thoughts are slow to coalesce. "
+                "Please allow a moment, or ensure Ollama is running."
+            ),
+            "error": "timeout",
+            "has_voice": False
+        }
+
+    except Exception as e:
+        return {
+            "answer": (
+                "I cannot reach my cognitive core at present. "
+                "Ensure the local AI service is available."
+            ),
+            "error": str(e),
+            "has_voice": False
+        }

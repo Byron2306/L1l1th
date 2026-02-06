@@ -1,0 +1,9 @@
+import urllib.request, json, sys
+url = 'http://127.0.0.1:5000/tape.json'
+try:
+    with urllib.request.urlopen(url, timeout=5) as r:
+        data = json.load(r)
+        print(json.dumps(data, indent=2))
+except Exception as e:
+    print('ERROR:', e)
+    sys.exit(1)

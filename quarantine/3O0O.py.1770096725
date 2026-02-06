@@ -1,0 +1,162 @@
+import sqlite3
+import json
+import logging
+from datetime import datetime
+from typing import List, Dict, Any, Optional
+
+
+class DataStoreAgent:
+    """
+    Data Store Agent: Handles long-term storage and retrieval of data using SQLite.
+    Stores trades, market data, and wallet balances for analysis and retrieval.
+    """
+
+    def __init__(self, db_path: str = "data/swarm_data.db"):
+        self.db_path = db_path
+        self._create_tables()
+        logging.info(f"Data Store Agent initialized with DB: {db_path}")
+
+    def _create_tables(self):
+        """Create necessary tables if they don't exist."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            # Trades table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    symbol TEXT,
+                    side TEXT,
+                    quantity REAL,
+                    price REAL,
+                    order_id TEXT,
+                    status TEXT,
+                    profit_loss REAL DEFAULT 0
+                )
+            ''')
+            # Market data table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS market_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    symbol TEXT,
+                    price REAL,
+                    volume REAL,
+                    change_24h REAL,
+                    data_json TEXT
+                )
+            ''')
+            # Wallet balances table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS wallet_balances (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    address TEXT,
+                    token TEXT,
+                    balance REAL,
+                    usd_value REAL DEFAULT 0
+                )
+            ''')
+            conn.commit()
+
+    def store_trade(self, trade: Dict[str, Any]):
+        """Store a trade."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO trades (timestamp, symbol, side, quantity, price, order_id, status, profit_loss)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                trade.get('timestamp', datetime.now().isoformat()),
+                trade.get('symbol'),
+                trade.get('side'),
+                trade.get('quantity'),
+                trade.get('price'),
+                trade.get('order_id'),
+                trade.get('status'),
+                trade.get('profit_loss', 0)
+            ))
+            conn.commit()
+            logging.debug(f"Stored trade: {trade}")
+
+    def store_market_data(self, symbol: str, data: Dict[str, Any]):
+        """Store market data snapshot."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO market_data (timestamp, symbol, price, volume, change_24h, data_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                datetime.now().isoformat(),
+                symbol,
+                data.get('price'),
+                data.get('volume'),
+                data.get('change_24h'),
+                json.dumps(data)
+            ))
+            conn.commit()
+            logging.debug(f"Stored market data for {symbol}: {data}")
+
+    def store_wallet_balance(self, address: str, token: str, balance: float, usd_value: float = 0):
+        """Store wallet balance."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO wallet_balances (timestamp, address, token, balance, usd_value)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                datetime.now().isoformat(),
+                address,
+                token,
+                balance,
+                usd_value
+            ))
+            conn.commit()
+            logging.debug(f"Stored wallet balance: {address} {token} {balance}")
+
+    def get_recent_trades(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Retrieve recent trades."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM trades ORDER BY timestamp DESC LIMIT ?', (limit,))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+
+    def get_market_data_history(self, symbol: str, limit: int = 1000) -> List[Dict[str, Any]]:
+        """Retrieve historical market data for a symbol."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM market_data WHERE symbol = ? ORDER BY timestamp DESC LIMIT ?', (symbol, limit))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+
+    def get_wallet_history(self, address: str, token: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Retrieve wallet balance history."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            if token:
+                cursor.execute('SELECT * FROM wallet_balances WHERE address = ? AND token = ? ORDER BY timestamp DESC LIMIT ?', (address, token, limit))
+            else:
+                cursor.execute('SELECT * FROM wallet_balances WHERE address = ? ORDER BY timestamp DESC LIMIT ?', (address, limit))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+
+    def get_trade_summary(self) -> Dict[str, Any]:
+        """Get trade summary statistics."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*), SUM(profit_loss), AVG(profit_loss) FROM trades')
+            total_trades, total_pnl, avg_pnl = cursor.fetchone()
+            return {
+                "total_trades": total_trades or 0,
+                "total_pnl": total_pnl or 0,
+                "avg_pnl": avg_pnl or 0
+            }
+
+    def close(self):
+        """Close database connection (SQLite handles this automatically)."""
+        logging.info("Data Store Agent closed")</content>
+<parameter name="filePath">c:\Users\User\Desktop\CRYPTSWARM\agents\data_store_agent.py

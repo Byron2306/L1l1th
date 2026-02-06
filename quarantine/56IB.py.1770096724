@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""
+HOMS - Hybrid Offline Marking System
+Command-Line Interface (minimal)
+"""
+
+import argparse
+from pathlib import Path
+from homs.core.workflow_engine import WorkflowEngine
+
+def main():
+    parser = argparse.ArgumentParser(description='HOMS - Hybrid Offline Marking System')
+    subparsers = parser.add_subparsers(dest='command')
+
+    run_parser = subparsers.add_parser('run', help='Run complete workflow')
+    run_parser.add_argument('submissions', type=Path, help='Directory containing student submissions')
+    run_parser.add_argument('reference', type=str, help='Reference implementation name')
+    run_parser.add_argument('--config', type=Path, default='config.json', help='Configuration file')
+    run_parser.add_argument('--output', type=Path, default='./output', help='Output directory')
+
+    learn_parser = subparsers.add_parser('learn', help='Learn from previous workflow')
+    learn_parser.add_argument('workflow_id', type=str, help='Previous workflow ID')
+    learn_parser.add_argument('--config', type=Path, default='config.json')
+
+    args = parser.parse_args()
+
+    if args.command == 'run':
+        engine = WorkflowEngine(args.config)
+        result = engine.run_complete_workflow(args.submissions, args.reference, args.output)
+        print(f"\nWorkflow completed with status: {result.get('status')}")
+    elif args.command == 'learn':
+        engine = WorkflowEngine(args.config)
+        insights = engine.reprocess_with_learning(args.workflow_id)
+    else:
+        parser.print_help()
+
+if __name__ == '__main__':
+    main()

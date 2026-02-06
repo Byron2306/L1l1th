@@ -1,0 +1,247 @@
+from flask import Flask, request, redirect, url_for, send_from_directory, jsonify, render_template, flash
+from pathlib import Path
+from homs.core.workflow_engine import WorkflowEngine
+import os
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'change-this-secret-in-production'
+
+BASE = Path(__file__).resolve().parent
+REF_DIR = BASE / 'references'
+SUB_DIR = BASE / 'submissions'
+OUT_DIR = BASE / 'output'
+REF_DIR.mkdir(exist_ok=True)
+SUB_DIR.mkdir(exist_ok=True)
+OUT_DIR.mkdir(exist_ok=True)
+
+
+def list_reports():
+    return sorted([f.name for f in OUT_DIR.iterdir() if f.is_file()], reverse=True)
+
+
+@app.route('/')
+def index():
+    reports = list_reports()
+    references = [p.name for p in REF_DIR.iterdir() if p.is_file()]
+    submissions = [p.name for p in SUB_DIR.iterdir() if p.is_file()]
+    return render_template('index.html', reports=reports, references=references, submissions=submissions)
+
+
+@app.route('/upload_reference', methods=['GET', 'POST'])
+def upload_reference():
+    if request.method == 'POST':
+        ref_file = request.files.get('reference')
+        ref_name = request.form.get('ref_name') or None
+        if not ref_file:
+            flash('No reference file provided', 'danger')
+            return redirect(url_for('upload_reference'))
+        suffix = Path(ref_file.filename).suffix or ''
+        target_name = f"{ref_name or Path(ref_file.filename).stem}{suffix}"
+        target = REF_DIR / target_name
+        ref_file.save(target)
+        flash(f'Reference {target_name} uploaded', 'success')
+        return redirect(url_for('index'))
+    return render_template('upload_reference.html')
+
+
+@app.route('/upload_submission', methods=['GET', 'POST'])
+def upload_submission():
+    if request.method == 'POST':
+        submission = request.files.get('submission')
+        student_id = request.form.get('student_id')
+        if not submission or not student_id:
+            flash('Student ID and submission file required', 'danger')
+            return redirect(url_for('upload_submission'))
+        sub_path = SUB_DIR / f"{student_id}{Path(submission.filename).suffix}"
+        submission.save(sub_path)
+        flash(f'Submission for {student_id} uploaded', 'success')
+        return redirect(url_for('index'))
+    return render_template('upload_submission.html')
+
+
+@app.route('/assess_single', methods=['POST'])
+def assess_single():
+    student_id = request.form.get('student_id')
+    reference_name = request.form.get('reference_name')
+    if not student_id or not reference_name:
+        flash('Student ID and reference name are required', 'danger')
+        return redirect(url_for('index'))
+
+    # find student's file
+    candidates = list(SUB_DIR.glob(f"{student_id}.*"))
+    if not candidates:
+        flash(f'No submission found for {student_id}', 'warning')
+        return redirect(url_for('index'))
+    submission_path = candidates[0]
+
+    # find reference file
+    ref_matches = list(REF_DIR.glob(f"{reference_name}*"))
+    if not ref_matches:
+        flash(f'Reference {reference_name} not found', 'warning')
+        return redirect(url_for('index'))
+
+    engine = WorkflowEngine(Path('config.json'))
+    engine.assessment_agent.load_reference(reference_name, ref_matches[0])
+
+    # if file is a .py, run assess_submission; otherwise fallback to batch
+    if submission_path.suffix == '.py':
+        result = engine.assessment_agent.assess_submission(submission_path, reference_name, student_id)
+        # write report
+        out_path = OUT_DIR / f'assessment_{student_id}.json'
+        import json
+        with open(out_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        return render_template('result.html', result=result)
+    else:
+        # run assessment-only batch (will pick up submission)
+        results = engine.run_assessment_only(SUB_DIR, reference_name)
+        out_path = OUT_DIR / f'assessment_batch_{student_id}.json'
+        import json
+        with open(out_path, 'w') as f:
+            json.dump(results, f, indent=2)
+        return render_template('results_batch.html', results=results)
+
+
+@app.route('/reports')
+def reports():
+    files = list_reports()
+    return render_template('reports.html', files=files)
+
+
+@app.route('/reports/<path:filename>')
+def get_report(filename):
+    return send_from_directory(str(OUT_DIR), filename)
+
+
+@app.route('/reports/preview/<path:filename>')
+def preview_report(filename):
+    # Inline preview for logical report types: .html, .json, .csv, .txt
+    target = OUT_DIR / filename
+    if not target.exists() or not target.is_file():
+        return f"Report {filename} not found", 404
+    suffix = target.suffix.lower()
+    try:
+        text = target.read_text(encoding='utf-8')
+    except Exception:
+        return f"Unable to read {filename}", 500
+
+    if suffix == '.html':
+        # return raw HTML so it renders inline
+        return text
+    if suffix == '.json':
+        import json
+        try:
+            obj = json.loads(text)
+            pretty = json.dumps(obj, indent=2)
+        except Exception:
+            pretty = text
+        return render_template('preview.html', filename=filename, content=pretty, is_html=False)
+    if suffix == '.csv':
+        # Render CSV as simple HTML table
+        rows = [r.split(',') for r in text.strip().splitlines() if r.strip()]
+        return render_template('preview.html', filename=filename, table=rows, is_csv=True)
+
+    # fallback: plain text
+    return render_template('preview.html', filename=filename, content=text, is_html=False)
+
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory(str(BASE / 'static'), filename)
+
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)
+from flask import Flask, request, redirect, url_for, send_from_directory, jsonify
+from pathlib import Path
+from homs.core.workflow_engine import WorkflowEngine
+import os
+
+app = Flask(__name__)
+
+BASE = Path(__file__).resolve().parent
+REF_DIR = BASE / 'references'
+SUB_DIR = BASE / 'submissions'
+OUT_DIR = BASE / 'output'
+REF_DIR.mkdir(exist_ok=True)
+SUB_DIR.mkdir(exist_ok=True)
+OUT_DIR.mkdir(exist_ok=True)
+
+
+@app.route('/')
+def index():
+    return '''
+    <h1>HOMS Minimal UI</h1>
+    <h2>Upload Reference</h2>
+    <form action="/upload_reference" method="post" enctype="multipart/form-data">
+      Reference name: <input name="ref_name" required><br>
+      Reference file (.pkl): <input type="file" name="reference" required><br>
+      <button type="submit">Upload Reference</button>
+    </form>
+    <h2>Upload Submission and Assess</h2>
+    <form action="/assess_submission" method="post" enctype="multipart/form-data">
+      Student id: <input name="student_id" required><br>
+      Reference name: <input name="reference_name" required><br>
+      Submission file (.py): <input type="file" name="submission" required><br>
+      <button type="submit">Assess Submission</button>
+    </form>
+    <h2>View Reports</h2>
+    <a href="/reports">Open output directory</a>
+    '''
+
+
+@app.route('/upload_reference', methods=['POST'])
+def upload_reference():
+    ref_file = request.files.get('reference')
+    ref_name = request.form.get('ref_name')
+    if not ref_file or not ref_name:
+        return 'Missing reference or name', 400
+    target = REF_DIR / f"{ref_name}{Path(ref_file.filename).suffix}"
+    ref_file.save(target)
+    return redirect(url_for('index'))
+
+
+@app.route('/assess_submission', methods=['POST'])
+def assess_submission():
+    submission = request.files.get('submission')
+    student_id = request.form.get('student_id')
+    reference_name = request.form.get('reference_name')
+    if not submission or not student_id or not reference_name:
+        return 'Missing fields', 400
+    sub_path = SUB_DIR / f"{student_id}.py"
+    submission.save(sub_path)
+
+    # create engine and load reference
+    engine = WorkflowEngine(Path('config.json'))
+    # find reference file by name
+    matches = list(REF_DIR.glob(f"{reference_name}*"))
+    if not matches:
+        return f'Reference {reference_name} not found on server. Upload it first.', 404
+    engine.assessment_agent.load_reference(reference_name, matches[0])
+
+    # run assessment-only (will assess all .py in submissions dir)
+    results = engine.run_assessment_only(SUB_DIR, reference_name)
+
+    # generate small report in output
+    output_file = OUT_DIR / f"assessment_result_{student_id}.json"
+    import json
+    with open(output_file, 'w') as f:
+        json.dump(results, f, indent=2)
+
+    return jsonify(results)
+
+
+@app.route('/reports')
+def reports():
+    files = [f.name for f in OUT_DIR.iterdir() if f.is_file()]
+    links = ''.join([f"<li><a href='/reports/{f}'>{f}</a></li>" for f in files])
+    return f"<h1>Output</h1><ul>{links}</ul><a href='/'>Back</a>"
+
+
+@app.route('/reports/<path:filename>')
+def get_report(filename):
+    return send_from_directory(str(OUT_DIR), filename)
+
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)

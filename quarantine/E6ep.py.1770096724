@@ -1,0 +1,134 @@
+import os
+import json
+import logging
+from cryptography.fernet import Fernet
+from typing import Dict, Any, Optional, List
+import hashlib
+import time
+
+
+class SecurityAgent:
+    """
+    Security Agent: Manages API keys, encryption, authentication, and fraud detection.
+    """
+
+    def __init__(self, key_file: str = "config/encryption.key"):
+        self.key_file = key_file
+        self.fernet = self._load_or_generate_key()
+        self.api_keys = {}  # Encrypted storage
+        self.users = {}  # Simple user store (in prod, use DB)
+        self.fraud_alerts = []
+        logging.info("Security Agent initialized")
+
+    def _load_or_generate_key(self) -> Fernet:
+        """Load or generate encryption key."""
+        if os.path.exists(self.key_file):
+            with open(self.key_file, 'rb') as f:
+                key = f.read()
+        else:
+            key = Fernet.generate_key()
+            with open(self.key_file, 'wb') as f:
+                f.write(key)
+            logging.info(f"Generated new encryption key: {self.key_file}")
+        return Fernet(key)
+
+    def encrypt_data(self, data: str) -> str:
+        """Encrypt string data."""
+        return self.fernet.encrypt(data.encode()).decode()
+
+    def decrypt_data(self, encrypted_data: str) -> str:
+        """Decrypt string data."""
+        return self.fernet.decrypt(encrypted_data.encode()).decode()
+
+    def store_api_key(self, service: str, key: str, secret: Optional[str] = None):
+        """Store encrypted API key."""
+        data = {"key": key}
+        if secret:
+            data["secret"] = secret
+        encrypted = self.encrypt_data(json.dumps(data))
+        self.api_keys[service] = encrypted
+        logging.info(f"API key for {service} stored securely")
+
+    def get_api_key(self, service: str) -> Optional[Dict[str, str]]:
+        """Retrieve decrypted API key."""
+        if service in self.api_keys:
+            decrypted = self.decrypt_data(self.api_keys[service])
+            return json.loads(decrypted)
+        return None
+
+    def authenticate_user(self, username: str, password: str) -> bool:
+        """Simple authentication (hash password)."""
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        if username in self.users and self.users[username] == hashed:
+            logging.info(f"User {username} authenticated")
+            return True
+        logging.warning(f"Authentication failed for {username}")
+        return False
+
+    def add_user(self, username: str, password: str, role: str = "user"):
+        """Add a user (for demo)."""
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        self.users[username] = {"password": hashed, "role": role}
+        logging.info(f"User {username} added with role {role}")
+
+    def check_permissions(self, username: str, action: str) -> bool:
+        """Check if user has permission for action."""
+        if username in self.users:
+            role = self.users[username].get("role", "user")
+            # Simple role-based: admin can do anything, user limited
+            if role == "admin" or action in ["view", "monitor"]:
+                return True
+        return False
+
+    def detect_fraud(self, trade: Dict[str, Any], recent_trades: List[Dict[str, Any]]) -> Optional[str]:
+        """Detect potential fraud in trades."""
+        # Check for duplicate orders in short time
+        current_time = time.time()
+        duplicates = [t for t in recent_trades if t.get('symbol') == trade.get('symbol') and
+                      t.get('side') == trade.get('side') and
+                      abs(current_time - time.mktime(time.strptime(t.get('timestamp', ''), '%Y-%m-%dT%H:%M:%S.%f'))) < 10]
+        if duplicates:
+            alert = f"Duplicate trade detected: {trade}"
+            self.fraud_alerts.append(alert)
+            logging.warning(alert)
+            return alert
+
+        # Check for rapid trading (spoofing)
+        if len(recent_trades) > 10:  # More than 10 trades in window
+            alert = "Rapid trading detected, possible spoofing"
+            self.fraud_alerts.append(alert)
+            logging.warning(alert)
+            return alert
+
+        return None
+
+    def encrypt_file(self, file_path: str, output_path: Optional[str] = None):
+        """Encrypt a file."""
+        if not output_path:
+            output_path = file_path + ".enc"
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        encrypted = self.fernet.encrypt(data)
+        with open(output_path, 'wb') as f:
+            f.write(encrypted)
+        logging.info(f"File {file_path} encrypted to {output_path}")
+
+    def decrypt_file(self, file_path: str, output_path: str):
+        """Decrypt a file."""
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        decrypted = self.fernet.decrypt(data)
+        with open(output_path, 'wb') as f:
+            f.write(decrypted)
+        logging.info(f"File {file_path} decrypted to {output_path}")
+
+    def get_security_report(self) -> Dict[str, Any]:
+        """Generate security report."""
+        return {
+            "encryption_key_status": "Loaded" if os.path.exists(self.key_file) else "Generated",
+            "stored_api_keys": list(self.api_keys.keys()),
+            "users": list(self.users.keys()),
+            "fraud_alerts": self.fraud_alerts[-10:],  # Last 10
+            "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S')
+        }</content>
+<parameter name="filePath">c:\Users\User\Desktop\CRYPTSWARM\agents\security_agent.py

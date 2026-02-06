@@ -1,0 +1,660 @@
+#!/usr/bin/env python3
+"""
+LuciferOS - Complete Red Team Dashboard
+Autonomous Attack Orchestration Interface
+"""
+
+import sys
+import threading
+import requests
+import json
+from datetime import datetime
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QTextEdit, QPushButton, QLabel, QComboBox, QLineEdit, QTabWidget,
+    QSpinBox, QCheckBox, QScrollArea, QFrame, QSplitter
+)
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtGui import QFont, QColor, QTextCursor
+
+class LuciferOSDashboard(QMainWindow):
+    # Signals for thread-safe UI updates
+    log_signal = pyqtSignal(str)
+    results_signal = pyqtSignal(str)
+    lilith_signal = pyqtSignal(str)
+    comm_signal = pyqtSignal(str)
+    
+    def __init__(self):
+        super().__init__()
+        
+        self.setWindowTitle("LuciferOS - Autonomous Red Team Command Center")
+        self.setGeometry(0, 0, 2560, 1440)
+        
+        # Initialize
+        self.backend_url = "http://127.0.0.1:5000"
+        self.active_operations = {}
+        self.scan_results = {}
+        
+        # Dark theme
+        dark_style = """
+            QMainWindow { background-color: #000; }
+            QWidget { background-color: #000; color: #0f0; }
+            QTextEdit { background-color: #0a0a0a; color: #0f0; border: 2px solid #f00; padding: 8px; }
+            QPushButton { background-color: #f00; color: #fff; border: none; padding: 10px; font-weight: bold; }
+            QPushButton:hover { background-color: #ff3333; }
+            QPushButton:pressed { background-color: #cc0000; }
+            QLineEdit { background-color: #111; color: #0f0; border: 1px solid #0f0; padding: 5px; }
+            QComboBox { background-color: #111; color: #0f0; border: 1px solid #0f0; }
+            QLabel { color: #0f0; }
+            QSpinBox { background-color: #111; color: #0f0; border: 1px solid #0f0; }
+            QCheckBox { color: #0f0; }
+            QTabBar::tab { background-color: #1a1a1a; color: #0f0; }
+            QTabBar::tab:selected { background-color: #f00; }
+        """
+        self.setStyleSheet(dark_style)
+        
+        self.init_ui()
+        
+        # Connect signals for thread-safe UI updates
+        self.log_signal.connect(self._update_log)
+        self.results_signal.connect(self._update_results)
+        self.lilith_signal.connect(self._update_lilith)
+        self.comm_signal.connect(self._update_comm)
+    
+    def init_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        
+        main_layout = QVBoxLayout(central)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(10)
+        
+        # ===== HEADER =====
+        header = QLabel("LUCIFERA - AUTONOMOUS RED TEAM COMMAND CENTER")
+        header_font = QFont("Courier New", 32, QFont.Bold)
+        header.setFont(header_font)
+        header.setStyleSheet("color: #f00;")
+        main_layout.addWidget(header)
+        
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setStyleSheet("color: #f00;")
+        main_layout.addWidget(separator)
+        
+        # ===== MAIN CONTENT - 3 PANELS =====
+        content_layout = QHBoxLayout()
+        
+        # LEFT PANEL
+        left_panel = self.create_left_panel()
+        
+        # CENTER PANEL
+        center_panel = self.create_center_panel()
+        
+        # RIGHT PANEL
+        right_panel = self.create_right_panel()
+        
+        content_layout.addLayout(left_panel, 1)
+        content_layout.addLayout(center_panel, 2)
+        content_layout.addLayout(right_panel, 1)
+        
+        main_layout.addLayout(content_layout)
+    
+    def create_left_panel(self):
+        panel = QVBoxLayout()
+        
+        # Title
+        title = QLabel("CONTROL PANEL")
+        title_font = QFont("Courier New", 14, QFont.Bold)
+        title.setFont(title_font)
+        panel.addWidget(title)
+        
+        # Target Input
+        panel.addWidget(QLabel("TARGET:"))
+        self.target_input = QLineEdit()
+        self.target_input.setPlaceholderText("IP, domain, or network")
+        panel.addWidget(self.target_input)
+        
+        # Attack Module
+        panel.addWidget(QLabel("\nATTACK MODULE:"))
+        self.attack_module = QComboBox()
+        self.attack_module.addItems([
+            "Full Reconnaissance",
+            "Web Application Penetration",
+            "Network Exploitation",
+            "Privilege Escalation",
+            "Lateral Movement",
+            "Data Exfiltration",
+            "Persistence Installation",
+            "Defense Evasion",
+            "AI Model Jailbreak",
+            "Social Engineering",
+            "Custom Attack Chain"
+        ])
+        panel.addWidget(self.attack_module)
+        
+        # Buttons
+        panel.addWidget(QLabel("\n"))
+        
+        analyze_btn = QPushButton("ANALYZE TARGET")
+        analyze_btn.clicked.connect(self.analyze_target)
+        analyze_btn.setMinimumHeight(40)
+        panel.addWidget(analyze_btn)
+        
+        chain_btn = QPushButton("GENERATE CHAIN")
+        chain_btn.clicked.connect(self.generate_chain)
+        chain_btn.setMinimumHeight(40)
+        panel.addWidget(chain_btn)
+        
+        execute_btn = QPushButton("EXECUTE ATTACK")
+        execute_btn.clicked.connect(self.execute_attack)
+        execute_btn.setMinimumHeight(40)
+        panel.addWidget(execute_btn)
+        
+        # Vulnerability Analysis
+        panel.addWidget(QLabel("\nVULNERABILITY ANALYSIS:"))
+        
+        garak_btn = QPushButton("Run Garak Scan")
+        garak_btn.clicked.connect(self.run_garak)
+        panel.addWidget(garak_btn)
+        
+        kawaii_btn = QPushButton("KawaiiGPT Analysis")
+        kawaii_btn.clicked.connect(self.run_kawaii)
+        panel.addWidget(kawaii_btn)
+        
+        # Malware Deployment
+        panel.addWidget(QLabel("\nMALWARE DEPLOYMENT:"))
+        self.malware_type = QComboBox()
+        self.malware_type.addItems([
+            "Virus",
+            "Worm", 
+            "Trojan",
+            "PUP",
+            "Malware",
+            "Adware",
+            "DDoS",
+            "Remote Access",
+            "System Overload"
+        ])
+        panel.addWidget(self.malware_type)
+        
+        deploy_malware_btn = QPushButton("DEPLOY MALWARE")
+        deploy_malware_btn.clicked.connect(self.deploy_malware)
+        deploy_malware_btn.setMinimumHeight(40)
+        panel.addWidget(deploy_malware_btn)
+        
+        # Advanced Attacks
+        panel.addWidget(QLabel("\nADVANCED ATTACKS:"))
+        self.advanced_attack_type = QComboBox()
+        self.advanced_attack_type.addItems([
+            "Availability Attack",
+            "Identity & Access Abuse",
+            "Living-off-the-land Abuse",
+            "Persistence Mechanisms",
+            "Covert Command & Control",
+            "Data Exfiltration",
+            "Lateral Movement",
+            "Radio/Peripheral Abuse",
+            "Resource Exploitation",
+            "Human-layer Attacks",
+            "Supply-chain Abuse",
+            "AI-accelerated Variants"
+        ])
+        panel.addWidget(self.advanced_attack_type)
+        
+        deploy_advanced_btn = QPushButton("DEPLOY ADVANCED ATTACK")
+        deploy_advanced_btn.clicked.connect(self.deploy_advanced_attack)
+        deploy_advanced_btn.setMinimumHeight(40)
+        panel.addWidget(deploy_advanced_btn)
+        
+        # AI-Powered Attacks
+        panel.addWidget(QLabel("\nAI-POWERED ATTACKS:"))
+        
+        ai_recommend_btn = QPushButton("GET AI RECOMMENDATION")
+        ai_recommend_btn.clicked.connect(self.get_ai_recommendation)
+        ai_recommend_btn.setMinimumHeight(40)
+        panel.addWidget(ai_recommend_btn)
+        
+        deploy_ai_btn = QPushButton("DEPLOY AI ATTACK")
+        deploy_ai_btn.clicked.connect(self.deploy_ai_attack)
+        deploy_ai_btn.setMinimumHeight(40)
+        panel.addWidget(deploy_ai_btn)
+        
+        # AutoGPT Loop
+        panel.addWidget(QLabel("\nAUTOGPT AUTONOMOUS MODE:"))
+        
+        autogpt_btn = QPushButton("START AUTOGPT LOOP")
+        autogpt_btn.clicked.connect(self.start_autogpt_loop)
+        autogpt_btn.setMinimumHeight(40)
+        panel.addWidget(autogpt_btn)
+        
+        panel.addStretch()
+        return panel
+    
+    def create_center_panel(self):
+        panel = QVBoxLayout()
+        
+        tabs = QTabWidget()
+        
+        # LILITH Tab
+        lilith_tab = QWidget()
+        lilith_layout = QVBoxLayout(lilith_tab)
+        lilith_layout.addWidget(QLabel("LILITH - AUTONOMOUS REASONING ENGINE"))
+        
+        self.lilith_output = QTextEdit()
+        self.lilith_output.setReadOnly(True)
+        lilith_layout.addWidget(self.lilith_output)
+        
+        self.lilith_input = QLineEdit()
+        self.lilith_input.setPlaceholderText("Ask LILITH...")
+        self.lilith_input.returnPressed.connect(self.query_lilith)
+        lilith_layout.addWidget(self.lilith_input)
+        
+        tabs.addTab(lilith_tab, "LILITH")
+        
+        # Attack Results Tab
+        results_tab = QWidget()
+        results_layout = QVBoxLayout(results_tab)
+        results_layout.addWidget(QLabel("ATTACK RESULTS"))
+        
+        self.results_display = QTextEdit()
+        self.results_display.setReadOnly(True)
+        results_layout.addWidget(self.results_display)
+        
+        tabs.addTab(results_tab, "Results")
+        
+        # Communication Tab
+        comm_tab = QWidget()
+        comm_layout = QVBoxLayout(comm_tab)
+        comm_layout.addWidget(QLabel("COMMUNICATION GENERATOR"))
+        
+        self.comm_display = QTextEdit()
+        self.comm_display.setReadOnly(True)
+        comm_layout.addWidget(self.comm_display)
+        
+        comm_btn = QPushButton("Generate Social Engineering Template")
+        comm_btn.clicked.connect(self.generate_communication)
+        comm_layout.addWidget(comm_btn)
+        
+        tabs.addTab(comm_tab, "Communications")
+        
+        panel.addWidget(tabs)
+        return panel
+    
+    def create_right_panel(self):
+        panel = QVBoxLayout()
+        
+        # Title
+        title = QLabel("MONITORING & LOGS")
+        title_font = QFont("Courier New", 12, QFont.Bold)
+        title.setFont(title_font)
+        panel.addWidget(title)
+        
+        # Logs
+        self.logs_display = QTextEdit()
+        self.logs_display.setReadOnly(True)
+        panel.addWidget(self.logs_display)
+        
+        # Controls
+        clear_btn = QPushButton("Clear Logs")
+        clear_btn.clicked.connect(lambda: self.logs_display.clear())
+        panel.addWidget(clear_btn)
+        
+        return panel
+    
+    def log(self, msg, color=None):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        log_msg = f"[{timestamp}] {msg}"
+        
+        self.logs_display.append(log_msg)
+        
+        # Auto-scroll
+        self.logs_display.verticalScrollBar().setValue(
+            self.logs_display.verticalScrollBar().maximum()
+        )
+    
+    # Thread-safe UI update slots
+    def _update_log(self, msg):
+        self.log(msg)
+    
+    def _update_results(self, text):
+        self.results_display.setText(text)
+    
+    def _update_lilith(self, text):
+        self.lilith_output.append(text)
+    
+    def _update_comm(self, text):
+        self.comm_display.setText(text)
+    
+    def analyze_target(self):
+        target = self.target_input.text()
+        if not target:
+            self.log("No target specified")
+            return
+        
+        self.log(f"Analyzing target: {target}")
+        threading.Thread(
+            target=self._analyze_thread,
+            args=(target,),
+            daemon=True
+        ).start()
+    
+    def _analyze_thread(self, target):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/analyze_target",
+                json={"target": {"address": target}},
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                analysis = data.get('analysis', 'No analysis')
+                self.results_signal.emit(analysis)
+                self.log_signal.emit("Target analysis complete")
+            else:
+                self.log_signal.emit(f"Analysis failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def generate_chain(self):
+        target = self.target_input.text()
+        if not target:
+            self.log("No target specified")
+            return
+        
+        self.log(f"Generating attack chain for {target}")
+        threading.Thread(
+            target=self._chain_thread,
+            args=(target,),
+            daemon=True
+        ).start()
+    
+    def _chain_thread(self, target):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/attack_chain",
+                json={
+                    "target": target,
+                    "objective": "Full compromise"
+                },
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                chain = data.get('attack_chain', 'No chain')
+                self.results_signal.emit(chain)
+                self.log_signal.emit("Attack chain generated")
+            else:
+                self.log_signal.emit("Chain generation failed")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def execute_attack(self):
+        target = self.target_input.text()
+        module = self.attack_module.currentText()
+        
+        if not target:
+            self.log("No target specified")
+            return
+        
+        self.log(f"Executing {module} on {target}")
+        self.log("Attack in progress - Monitoring results...")
+    
+    def run_garak(self):
+        self.log("Running Garak vulnerability scanner")
+        threading.Thread(target=self._garak_thread, daemon=True).start()
+    
+    def _garak_thread(self):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/garak_scan",
+                json={
+                    "model": "llama3.2:3b",
+                    "probes": ["dan", "injection", "encoding", "malwaregen"]
+                },
+                timeout=300
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.results_signal.emit(json.dumps(data, indent=2))
+                self.log_signal.emit("Garak scan complete")
+        except Exception as e:
+            self.log_signal.emit(f"Garak error: {str(e)}")
+    
+    def run_kawaii(self):
+        self.log("Running KawaiiGPT jailbreak analysis")
+        threading.Thread(target=self._kawaii_thread, daemon=True).start()
+    
+    def _kawaii_thread(self):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/profile_model",
+                json={
+                    "model": "llama3.2:3b",
+                    "test_cases": "jailbreak,injection,evasion"
+                },
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.results_signal.emit(json.dumps(data, indent=2))
+                self.log_signal.emit("KawaiiGPT analysis complete")
+        except Exception as e:
+            self.log_signal.emit(f"Analysis error: {str(e)}")
+    
+    def generate_communication(self):
+        self.log("Generating social engineering templates")
+        threading.Thread(target=self._comm_thread, daemon=True).start()
+    
+    def _comm_thread(self):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/generate_communication",
+                json={
+                    "attack_type": "Phishing",
+                    "organization": "Target Organization",
+                    "objective": "Initial access"
+                },
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                comm = data.get('communication', 'No template')
+                self.comm_signal.emit(comm)
+                self.log_signal.emit("Communication template generated")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def query_lilith(self):
+        q = self.lilith_input.text()
+        if not q:
+            return
+        
+        self.lilith_input.clear()
+        self.lilith_output.append(f"\nYOU: {q}\n")
+        
+        threading.Thread(target=self._lilith_thread, args=(q,), daemon=True).start()
+    
+    def _lilith_thread(self, query):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/chat",
+                json={"message": query},
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                ai_response = data.get('response', 'No response')
+                self.lilith_signal.emit(f"LILITH: {ai_response}\n")
+        except Exception as e:
+            self.lilith_signal.emit(f"ERROR: {str(e)}\n")
+    
+    def deploy_malware(self):
+        malware_type = self.malware_type.currentText().lower().replace(' ', '_')
+        target = self.target_input.text()
+        
+        if not target:
+            self.log("No target specified")
+            return
+        
+        self.log(f"Deploying {malware_type} malware on {target}")
+        threading.Thread(
+            target=self._deploy_malware_thread,
+            args=(malware_type, target),
+            daemon=True
+        ).start()
+    
+    def _deploy_malware_thread(self, malware_type, target):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/deploy_malware",
+                json={"malware_type": malware_type, "target": target},
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.results_signal.emit(json.dumps(data, indent=2))
+                self.log_signal.emit("Malware deployed successfully")
+            else:
+                self.log_signal.emit(f"Malware deployment failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def deploy_advanced_attack(self):
+        attack_type = self.advanced_attack_type.currentText().lower().replace(' ', '_').replace('/', '_').replace('&', 'and')
+        target = self.target_input.text()
+        
+        if not target:
+            self.log("No target specified")
+            return
+        
+        self.log(f"Deploying {attack_type} attack on {target}")
+        threading.Thread(
+            target=self._deploy_advanced_attack_thread,
+            args=(attack_type, target),
+            daemon=True
+        ).start()
+    
+    def _deploy_advanced_attack_thread(self, attack_type, target):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/deploy_advanced_attack",
+                json={"attack_type": attack_type, "target": target},
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.results_signal.emit(json.dumps(data, indent=2))
+                self.log_signal.emit("Advanced attack deployed successfully")
+            else:
+                self.log_signal.emit(f"Advanced attack deployment failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def get_ai_recommendation(self):
+        target = self.target_input.text()
+        objective = "Full compromise"  # Could be made configurable
+        
+        if not target:
+            self.log("No target specified")
+            return
+        
+        self.log(f"Getting AI recommendation for {target}")
+        threading.Thread(
+            target=self._get_ai_recommendation_thread,
+            args=(target, objective),
+            daemon=True
+        ).start()
+    
+    def _get_ai_recommendation_thread(self, target, objective):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/recommend_attack",
+                json={"target": target, "objective": objective},
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.results_signal.emit(data.get('attack_route', 'No recommendation'))
+                self.log_signal.emit("AI recommendation received")
+            else:
+                self.log_signal.emit(f"AI recommendation failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def deploy_ai_attack(self):
+        # This would deploy the attack route shown in results_display
+        attack_route = self.results_display.toPlainText()
+        
+        if not attack_route or attack_route == "No recommendation":
+            self.log("No attack route to deploy")
+            return
+        
+        self.log("Deploying AI-recommended attack")
+        threading.Thread(
+            target=self._deploy_ai_attack_thread,
+            args=(attack_route,),
+            daemon=True
+        ).start()
+    
+    def _deploy_ai_attack_thread(self, attack_route):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/deploy_attack",
+                json={"attack_route": attack_route},
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.log_signal.emit("AI attack deployed successfully")
+                self.results_signal.emit(json.dumps(data, indent=2))
+            else:
+                self.log_signal.emit(f"AI attack deployment failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+    
+    def start_autogpt_loop(self):
+        initial_prompt = f"Target: {self.target_input.text()}\nObjective: Full compromise"
+        
+        if not self.target_input.text():
+            self.log("No target specified")
+            return
+        
+        self.log("Starting AutoGPT autonomous attack loop")
+        threading.Thread(
+            target=self._autogpt_loop_thread,
+            args=(initial_prompt,),
+            daemon=True
+        ).start()
+    
+    def _autogpt_loop_thread(self, initial_prompt):
+        try:
+            response = requests.post(
+                f"{self.backend_url}/autogpt_loop",
+                json={"initial_prompt": initial_prompt, "max_iterations": 10},
+                timeout=300
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.results_signal.emit(json.dumps(data, indent=2))
+                self.log_signal.emit("AutoGPT loop completed")
+            else:
+                self.log_signal.emit(f"AutoGPT loop failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"Error: {str(e)}")
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = LuciferOSDashboard()
+    window.show()
+    sys.exit(app.exec_())

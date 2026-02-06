@@ -1,0 +1,293 @@
+"""
+Moderation Agent - Quality assurance and validation module
+"""
+
+import json
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+from pathlib import Path
+import statistics
+
+class ModerationAgent:
+    """
+    Moderation agent that validates assessment results,
+    flags anomalies, and ensures quality control.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.moderation_rules = config.get('moderation_rules', {})
+        self.flagged_assessments = []
+        self.moderation_history = []
+        self.thresholds = {
+            'low_score_threshold': config.get('low_score_threshold', 40),
+            'high_score_threshold': config.get('high_score_threshold', 95),
+            'std_dev_multiplier': config.get('std_dev_multiplier', 2.0),
+            'similarity_threshold': config.get('similarity_threshold', 0.85)
+        }
+
+    def moderate_assessment(self, assessment: Dict[str, Any], 
+                           cohort_stats: Optional[Dict] = None) -> Dict[str, Any]:
+        timestamp = datetime.now().isoformat()
+        flags = []
+        recommendations = []
+        if assessment.get('status') != 'success':
+            return {
+                'student_id': assessment.get('student_id'),
+                'timestamp': timestamp,
+                'moderation_status': 'skipped',
+                'reason': 'Assessment failed'
+            }
+        score = assessment.get('final_score', 0)
+        if score < self.thresholds['low_score_threshold']:
+            flags.append('low_score')
+            recommendations.append('Consider manual review - score below threshold')
+        if score > self.thresholds['high_score_threshold']:
+            flags.append('high_score')
+            recommendations.append('Verify perfect/near-perfect submission')
+        if cohort_stats:
+            mean = cohort_stats.get('mean_score', 0)
+            std = cohort_stats.get('std_score', 0)
+            if std > 0:
+                z_score = abs((score - mean) / std)
+                if z_score > self.thresholds['std_dev_multiplier']:
+                    flags.append('statistical_outlier')
+                    recommendations.append(f'Statistical outlier (z-score: {z_score:.2f})')
+        if 'annotations' in assessment:
+            total = assessment.get('total_annotations', 0)
+            passed = assessment.get('passed_annotations', 0)
+            if total > 0:
+                pass_rate = passed / total
+                if pass_rate > 0 and pass_rate < 0.3:
+                    flags.append('partial_understanding')
+                    recommendations.append('Student shows partial understanding')
+        if flags:
+            action = 'review_required'
+            self.flagged_assessments.append(assessment['student_id'])
+        else:
+            action = 'approved'
+        moderation_result = {
+            'student_id': assessment['student_id'],
+            'timestamp': timestamp,
+            'moderation_status': 'completed',
+            'action': action,
+            'flags': flags,
+            'recommendations': recommendations,
+            'original_score': score,
+            'requires_human_review': len(flags) > 0
+        }
+        self.moderation_history.append(moderation_result)
+        return moderation_result
+
+    def batch_moderate(self, assessments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        print(f"[ModerationAgent] Moderating {len(assessments)} assessments...")
+        successful = [a for a in assessments if a.get('status') == 'success']
+        scores = [a.get('final_score', 0) for a in successful]
+        if scores:
+            cohort_stats = {
+                'mean_score': statistics.mean(scores),
+                'median_score': statistics.median(scores),
+                'std_score': statistics.stdev(scores) if len(scores) > 1 else 0
+            }
+        else:
+            cohort_stats = None
+        moderation_results = []
+        for assessment in assessments:
+            result = self.moderate_assessment(assessment, cohort_stats)
+            moderation_results.append(result)
+        flagged_count = sum(1 for r in moderation_results if r.get('requires_human_review'))
+        print(f"[ModerationAgent] Flagged {flagged_count} submissions for review")
+        return moderation_results
+
+    def detect_plagiarism(self, assessments: List[Dict[str, Any]], 
+                         similarity_threshold: Optional[float] = None) -> List[Dict[str, Any]]:
+        threshold = similarity_threshold or self.thresholds['similarity_threshold']
+        suspicious_pairs = []
+        print(f"[ModerationAgent] Running plagiarism detection...")
+        for i, assess1 in enumerate(assessments):
+            for assess2 in assessments[i+1:]:
+                if (assess1.get('status') == 'success' and assess2.get('status') == 'success'):
+                    similarity = self._calculate_similarity(assess1, assess2)
+                    if similarity >= threshold:
+                        suspicious_pairs.append({
+                            'student_1': assess1['student_id'],
+                            'student_2': assess2['student_id'],
+                            'similarity_score': similarity,
+                            'flagged': True
+                        })
+        if suspicious_pairs:
+            print(f"[ModerationAgent] Found {len(suspicious_pairs)} suspicious pairs")
+        return suspicious_pairs
+
+    def _calculate_similarity(self, assess1: Dict, assess2: Dict) -> float:
+        ann1 = assess1.get('annotations', {})
+        ann2 = assess2.get('annotations', {})
+        if not ann1 or not ann2:
+            return 0.0
+        common_keys = set(ann1.keys()) & set(ann2.keys())
+        if not common_keys:
+            return 0.0
+        matching = sum(1 for k in common_keys if ann1[k].get('satisfied') == ann2[k].get('satisfied'))
+        return matching / len(common_keys)
+
+    def get_moderation_report(self) -> Dict[str, Any]:
+        total = len(self.moderation_history)
+        flagged = len(self.flagged_assessments)
+        flag_types = {}
+        for mod in self.moderation_history:
+            for flag in mod.get('flags', []):
+                flag_types[flag] = flag_types.get(flag, 0) + 1
+        return {
+            'total_moderated': total,
+            'flagged_for_review': flagged,
+            'approval_rate': ((total - flagged) / total * 100) if total > 0 else 0,
+            'flag_breakdown': flag_types
+        }
+"""
+Moderation Agent - Quality assurance and validation module
+"""
+
+import json
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+from pathlib import Path
+import statistics
+
+class ModerationAgent:
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or {}
+        self.moderation_rules = self.config.get('moderation_rules', {})
+        self.flagged_assessments = []
+        self.moderation_history = []
+        self.thresholds = {
+            'low_score_threshold': self.config.get('low_score_threshold', 40),
+            'high_score_threshold': self.config.get('high_score_threshold', 95),
+            'std_dev_multiplier': self.config.get('std_dev_multiplier', 2.0),
+            'similarity_threshold': self.config.get('similarity_threshold', 0.85)
+        }
+
+    def moderate_assessment(self, assessment: Dict[str, Any], cohort_stats: Optional[Dict] = None) -> Dict[str, Any]:
+        timestamp = datetime.now().isoformat()
+        flags = []
+        recommendations = []
+
+        if assessment.get('status') != 'success':
+            return {
+                'student_id': assessment.get('student_id'),
+                'timestamp': timestamp,
+                'moderation_status': 'skipped',
+                'reason': 'Assessment failed'
+            }
+
+        score = assessment.get('final_score', 0)
+        if score < self.thresholds['low_score_threshold']:
+            flags.append('low_score')
+            recommendations.append('Consider manual review - score below threshold')
+        if score > self.thresholds['high_score_threshold']:
+            flags.append('high_score')
+            recommendations.append('Verify perfect/near-perfect submission')
+
+        if cohort_stats:
+            mean = cohort_stats.get('mean_score', 0)
+            std = cohort_stats.get('std_score', 0)
+            if std > 0:
+                z_score = abs((score - mean) / std)
+                if z_score > self.thresholds['std_dev_multiplier']:
+                    flags.append('statistical_outlier')
+                    recommendations.append(f'Statistical outlier (z-score: {z_score:.2f})')
+
+        if 'annotations' in assessment:
+            total = assessment.get('total_annotations', 0)
+            passed = assessment.get('passed_annotations', 0)
+            if total > 0:
+                pass_rate = passed / total
+                if pass_rate > 0 and pass_rate < 0.3:
+                    flags.append('partial_understanding')
+                    recommendations.append('Student shows partial understanding')
+
+        action = 'review_required' if flags else 'approved'
+        if flags:
+            self.flagged_assessments.append(assessment['student_id'])
+
+        moderation_result = {
+            'student_id': assessment['student_id'],
+            'timestamp': timestamp,
+            'moderation_status': 'completed',
+            'action': action,
+            'flags': flags,
+            'recommendations': recommendations,
+            'original_score': score,
+            'requires_human_review': len(flags) > 0
+        }
+
+        self.moderation_history.append(moderation_result)
+        return moderation_result
+
+    def batch_moderate(self, assessments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        print(f"[ModerationAgent] Moderating {len(assessments)} assessments...")
+        successful = [a for a in assessments if a.get('status') == 'success']
+        scores = [a.get('final_score', 0) for a in successful]
+
+        if scores:
+            cohort_stats = {
+                'mean_score': statistics.mean(scores),
+                'median_score': statistics.median(scores),
+                'std_score': statistics.stdev(scores) if len(scores) > 1 else 0
+            }
+        else:
+            cohort_stats = None
+
+        moderation_results = []
+        for assessment in assessments:
+            result = self.moderate_assessment(assessment, cohort_stats)
+            moderation_results.append(result)
+
+        flagged_count = sum(1 for r in moderation_results if r.get('requires_human_review'))
+        print(f"[ModerationAgent] Flagged {flagged_count} submissions for review")
+        return moderation_results
+
+    def detect_plagiarism(self, assessments: List[Dict[str, Any]], similarity_threshold: Optional[float] = None) -> List[Dict[str, Any]]:
+        threshold = similarity_threshold or self.thresholds['similarity_threshold']
+        suspicious_pairs = []
+        print(f"[ModerationAgent] Running plagiarism detection...")
+
+        for i, assess1 in enumerate(assessments):
+            for assess2 in assessments[i+1:]:
+                if assess1.get('status') == 'success' and assess2.get('status') == 'success':
+                    similarity = self._calculate_similarity(assess1, assess2)
+                    if similarity >= threshold:
+                        suspicious_pairs.append({
+                            'student_1': assess1['student_id'],
+                            'student_2': assess2['student_id'],
+                            'similarity_score': similarity,
+                            'flagged': True
+                        })
+
+        if suspicious_pairs:
+            print(f"[ModerationAgent] Found {len(suspicious_pairs)} suspicious pairs")
+        return suspicious_pairs
+
+    def _calculate_similarity(self, assess1: Dict, assess2: Dict) -> float:
+        ann1 = assess1.get('annotations', {})
+        ann2 = assess2.get('annotations', {})
+        if not ann1 or not ann2:
+            return 0.0
+        common_keys = set(ann1.keys()) & set(ann2.keys())
+        if not common_keys:
+            return 0.0
+        matching = sum(1 for k in common_keys if ann1[k].get('satisfied') == ann2[k].get('satisfied'))
+        return matching / len(common_keys)
+
+    def get_moderation_report(self) -> Dict[str, Any]:
+        total = len(self.moderation_history)
+        flagged = len(self.flagged_assessments)
+        flag_types = {}
+        for mod in self.moderation_history:
+            for flag in mod.get('flags', []):
+                flag_types[flag] = flag_types.get(flag, 0) + 1
+        return {
+            'total_moderated': total,
+            'flagged_for_review': flagged,
+            'approval_rate': ((total - flagged) / total * 100) if total > 0 else 0,
+            'flag_breakdown': flag_types
+        }

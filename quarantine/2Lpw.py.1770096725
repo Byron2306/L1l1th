@@ -1,0 +1,201 @@
+import logging
+import json
+import csv
+import os
+from datetime import datetime
+from typing import List, Dict, Any
+
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+    )
+
+
+class LoggingAnalyticsAgent:
+    def __init__(self, log_dir: str = "logs"):
+        self.log_dir = log_dir
+        os.makedirs(log_dir, exist_ok=True)
+        self.trade_log_file = os.path.join(log_dir, "trades.csv")
+        self.metrics_file = os.path.join(log_dir, "metrics.json")
+        self.logs_file = os.path.join(log_dir, "activity.log")
+        # Keep bounded in-memory trades to avoid unbounded growth and UI flooding.
+        # Only keep significant trades (above `min_notional_in_memory`) in-memory.
+        self.max_trades_in_memory = 2000
+        self.min_notional_in_memory = 2000.0
+        all_trades = self._load_trades()
+        # Filter to only keep trades meeting the notional threshold in memory
+        filtered = []
+        for r in all_trades:
+            try:
+                qty = float(r.get('quantity') or r.get('qty') or 0)
+                price = float(r.get('price') or 0)
+                notional = qty * price
+            except Exception:
+                notional = 0.0
+            if notional >= self.min_notional_in_memory:
+                filtered.append(r)
+        self.trades = filtered[-self.max_trades_in_memory:]
+        self.metrics = self._load_metrics()
+        self.recent_logs = []  # Store recent log entries in memory
+
+    def log_activity(self, level: str, message: str, agent: str = "system"):
+        """Log an activity message."""
+        timestamp = datetime.now().isoformat()
+        log_entry = {
+            "timestamp": timestamp,
+            "level": level,
+            "message": message,
+            "agent": agent
+        }
+        
+        # Store in memory (keep last 100 entries)
+        self.recent_logs.append(log_entry)
+        if len(self.recent_logs) > 100:
+            self.recent_logs = self.recent_logs[-100:]
+        
+        # Also write to file
+        with open(self.logs_file, 'a') as f:
+            f.write(f"{timestamp} | {level} | {agent} | {message}\n")
+        
+        # Use Python logging as well
+        log_func = getattr(logging, level.lower(), logging.info)
+        log_func(f"[{agent}] {message}")
+
+    def get_recent_logs(self, limit: int = 10) -> List[tuple]:
+        """Get recent log entries as tuples for UI compatibility."""
+        recent = self.recent_logs[-limit:]
+        return [(i, log["timestamp"], log["level"], log["message"], log["agent"]) for i, log in enumerate(recent)]
+
+    def get_recent_trades(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Return most recent trades (latest first)."""
+        return list(reversed(self.trades[-limit:]))
+
+    def _load_trades(self) -> List[Dict[str, Any]]:
+        if os.path.exists(self.trade_log_file):
+            with open(self.trade_log_file, 'r') as f:
+                reader = csv.DictReader(f)
+                return list(reader)
+        return []
+
+    def _save_trades(self):
+        # Persist the in-memory trades buffer (only significant trades) to CSV.
+        if self.trades:
+            try:
+                with open(self.trade_log_file, 'w', newline='') as f:
+                    writer = csv.DictWriter(f, fieldnames=self.trades[0].keys())
+                    writer.writeheader()
+                    writer.writerows(self.trades)
+            except Exception:
+                logging.exception("Failed to write trades CSV from in-memory buffer")
+
+    def _load_metrics(self) -> Dict[str, Any]:
+        if os.path.exists(self.metrics_file):
+            with open(self.metrics_file, 'r') as f:
+                return json.load(f)
+        return {
+            "total_trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "profit_loss": 0.0,
+            "win_rate": 0.0,
+            "max_drawdown": 0.0,
+            "peak_pnl": 0.0,
+            "drawdown_pct": 0.0,
+            "last_trade_result": None,
+            "total_pnl": 0.0
+        }
+
+    def _save_metrics(self):
+        with open(self.metrics_file, 'w') as f:
+            json.dump(self.metrics, f, indent=4)
+
+    def log_trade(self, trade: Dict[str, Any]):
+        """Log a trade: {"timestamp", "symbol", "side", "quantity", "price", "order_id", "status"}"""
+        # mark timestamp server-side to keep CSV rows consistent
+        trade["timestamp"] = datetime.now().isoformat()
+
+        # Always append the trade to the CSV log (persist full history)
+        try:
+            write_header = not os.path.exists(self.trade_log_file)
+            with open(self.trade_log_file, 'a', newline='', encoding='utf-8') as f:
+                fieldnames = list(trade.keys())
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                if write_header:
+                    writer.writeheader()
+                writer.writerow({k: (v if v is not None else '') for k, v in trade.items()})
+        except Exception:
+            logging.exception("Failed to append trade to CSV")
+
+        # Decide whether to keep this trade in the in-memory buffer (only large prints)
+        try:
+            qty = float(trade.get('quantity') or trade.get('qty') or 0)
+            price = float(trade.get('price') or 0)
+            notional = qty * price
+        except Exception:
+            notional = 0.0
+
+        if notional >= self.min_notional_in_memory:
+            self.trades.append(trade)
+            # trim in-memory buffer to prevent unbounded growth
+            if len(self.trades) > self.max_trades_in_memory:
+                self.trades = self.trades[-self.max_trades_in_memory:]
+
+        logging.info(f"Trade logged: {trade}")
+
+    def update_metrics(self, new_trade: Dict[str, Any]):
+        """Update performance metrics after a trade."""
+        self.metrics["total_trades"] += 1
+        # Placeholder profit calculation; in real, track entry/exit prices
+        profit = float(new_trade.get("quantity", 0)) * float(new_trade.get("price", 0)) * 0.01  # dummy 1% profit per trade
+        if new_trade.get("side") == "SELL":
+            profit = -profit  # loss on sell for demo
+        self.metrics["profit_loss"] += profit
+        self.metrics["total_pnl"] = self.metrics["profit_loss"]
+
+        # Determine win/loss
+        self.metrics["last_trade_result"] = "win" if profit > 0 else "loss"
+        if profit > 0:
+            self.metrics["wins"] += 1
+        else:
+            self.metrics["losses"] += 1
+
+        self.metrics["win_rate"] = self.metrics["wins"] / self.metrics["total_trades"] if self.metrics["total_trades"] > 0 else 0.0
+
+        # Drawdown calculation
+        current_pnl = self.metrics["profit_loss"]
+        peak_pnl = max(self.metrics.get("peak_pnl", 0), current_pnl)
+        self.metrics["peak_pnl"] = peak_pnl
+        drawdown = peak_pnl - current_pnl
+        self.metrics["drawdown_pct"] = (drawdown / peak_pnl * 100) if peak_pnl > 0 else 0.0
+
+        # Max drawdown (lowest point)
+        self.metrics["max_drawdown"] = min(self.metrics.get("max_drawdown", 0), current_pnl)
+
+        self._save_metrics()
+        logging.info(f"Metrics updated: {self.metrics}")
+
+    def generate_report(self) -> str:
+        """Generate a simple text report."""
+        report = f"""
+Trading Report
+==============
+Total Trades: {self.metrics['total_trades']}
+Wins: {self.metrics['wins']}
+Losses: {self.metrics['losses']}
+Win Rate: {self.metrics['win_rate']:.2%}
+Profit/Loss: {self.metrics['profit_loss']:.2f}
+Max Drawdown: {self.metrics['max_drawdown']:.2f}
+"""
+        report_file = os.path.join(self.log_dir, "report.txt")
+        with open(report_file, 'w') as f:
+            f.write(report)
+        logging.info(f"Report generated: {report_file}")
+        return report
+
+    def get_recent_trades(self, limit: int = 10) -> List[Dict[str, Any]]:
+        return self.trades[-limit:]
+
+    def get_metrics(self) -> Dict[str, Any]:
+        return self.metrics

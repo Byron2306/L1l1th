@@ -1,0 +1,401 @@
+import sqlite3
+import json
+import logging
+import time
+from typing import Any, Dict, Optional
+from datetime import datetime
+
+
+class DataStoreAgent:
+    """
+    Data Store Agent: SQLite-backed authoritative store for intents, orders, fills,
+    balances, kill-switch transitions, and config versions. It accepts buzz events
+    via `handle_event` and responds to `buzz.store.query` by publishing
+    `buzz.store.result` via the coordinator when available.
+    """
+
+    def __init__(self, db_path: str = "swarm_data.db", coordinator: Optional[Any] = None):
+        self.db_path = db_path
+        self.conn = None
+        self.coordinator = coordinator
+        self._connect()
+        self._create_tables()
+
+    def _connect(self):
+        """Establish SQLite connection."""
+        try:
+            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            logging.info(f"Data Store Agent connected to {self.db_path}")
+        except Exception as e:
+            logging.error(f"Failed to connect to database: {e}")
+            self.conn = None
+
+    def _create_tables(self):
+        """Create necessary tables."""
+        if not self.conn:
+            return
+        try:
+            c = self.conn.cursor()
+            # raw events (optional)
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS raw_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts REAL,
+                type TEXT,
+                source TEXT,
+                payload TEXT
+            )
+            """)
+            # intents
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS intents (
+                intent_id TEXT PRIMARY KEY,
+                symbol TEXT,
+                action TEXT,
+                origin_strategy TEXT,
+                created_ts REAL,
+                state TEXT,
+                final_outcome TEXT,
+                final_reason TEXT,
+                position_size_pct REAL,
+                qty REAL,
+                order_type TEXT
+            )
+            """)
+            # orders
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                client_order_id TEXT PRIMARY KEY,
+                intent_id TEXT,
+                venue TEXT,
+                symbol TEXT,
+                side TEXT,
+                order_type TEXT,
+                order_id TEXT,
+                status TEXT,
+                placed_ts REAL,
+                final_ts REAL
+            )
+            """)
+            # fills
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS fills (
+                fill_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id TEXT,
+                client_order_id TEXT,
+                filled_qty REAL,
+                avg_price REAL,
+                fee REAL,
+                slippage_pct REAL,
+                ts REAL
+            )
+            """)
+            # balances
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS balances (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts REAL,
+                venue TEXT,
+                eth_free REAL,
+                eth_locked REAL,
+                usdt_free REAL,
+                usdt_locked REAL,
+                equity_usd_est REAL
+            )
+            """)
+            # killswitch transitions
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS killswitch (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts REAL,
+                state TEXT,
+                reason TEXT,
+                metrics_json TEXT
+            )
+            """)
+            # config versions
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS config_versions (
+                version_id TEXT PRIMARY KEY,
+                ts REAL,
+                config_json TEXT,
+                changed_by TEXT
+            )
+            """)
+            self.conn.commit()
+            logging.info("Data Store tables created/verified")
+        except Exception:
+            logging.exception("Error creating data store tables")
+
+    def store_trade(self, trade_data: Dict[str, Any]):
+        """Store a trade record."""
+        if not self.conn:
+            return
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO trades (timestamp, symbol, side, quantity, price, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                trade_data.get('timestamp', datetime.now().isoformat()),
+                trade_data.get('symbol'),
+                trade_data.get('side'),
+                trade_data.get('quantity'),
+                trade_data.get('price'),
+                trade_data.get('status', 'pending')
+            ))
+            self.conn.commit()
+            logging.debug(f"Stored trade: {trade_data}")
+        except Exception as e:
+            logging.error(f"Error storing trade: {e}")
+
+    # ------------------ event ingestion / projection ------------------
+    def handle_event(self, evt: Dict[str, Any]):
+        """Handle incoming buzz events for durable storage. Idempotent where applicable."""
+        try:
+            buzz = evt.get('buzz', {})
+            typ = buzz.get('type')
+            payload = evt.get('payload') or {}
+            ts = int(buzz.get('ts', int(time.time()*1000))) / 1000.0
+            c = self.conn.cursor()
+            # record raw event
+            try:
+                c.execute('INSERT INTO raw_events (ts, type, source, payload) VALUES (?,?,?,?)', (ts, typ, buzz.get('source'), json.dumps(payload)))
+            except Exception:
+                pass
+
+            if typ in ('buzz.intent.state', 'buzz.coordinator.decision'):
+                intent_id = payload.get('intent_id') or payload.get('id')
+                if intent_id:
+                    # upsert intent
+                    c.execute('SELECT intent_id FROM intents WHERE intent_id=?', (intent_id,))
+                    exists = c.fetchone()
+                    if exists:
+                        c.execute('UPDATE intents SET state=?, final_outcome=?, final_reason=?, qty=?, action=? WHERE intent_id=?', (payload.get('state') or payload.get('status'), payload.get('final_outcome'), payload.get('reason'), payload.get('qty'), payload.get('action'), intent_id))
+                    else:
+                        c.execute('INSERT INTO intents (intent_id, symbol, action, origin_strategy, created_ts, state, final_outcome, final_reason, position_size_pct, qty, order_type) VALUES (?,?,?,?,?,?,?,?,?,?,?)', (
+                            intent_id, payload.get('symbol'), payload.get('action') or payload.get('type'), payload.get('strategy'), ts, payload.get('state') or payload.get('status'), payload.get('final_outcome'), payload.get('reason'), payload.get('position_size_pct'), payload.get('qty'), payload.get('order_type')
+                        ))
+
+            elif typ in ('buzz.trade.request', 'buzz.trade.order'):
+                # create or update order record
+                client_order_id = payload.get('client_order_id') or payload.get('clientId')
+                if client_order_id:
+                    c.execute('SELECT client_order_id FROM orders WHERE client_order_id=?', (client_order_id,))
+                    if c.fetchone():
+                        c.execute('UPDATE orders SET status=?, order_id=?, placed_ts=? WHERE client_order_id=?', (payload.get('status') or 'REQUESTED', payload.get('order_id'), ts, client_order_id))
+                    else:
+                        c.execute('INSERT INTO orders (client_order_id, intent_id, venue, symbol, side, order_type, order_id, status, placed_ts, final_ts) VALUES (?,?,?,?,?,?,?,?,?,?)', (
+                            client_order_id, payload.get('intent_id'), payload.get('venue'), payload.get('symbol'), payload.get('side'), payload.get('order_type'), payload.get('order_id'), payload.get('status') or 'REQUESTED', ts, None
+                        ))
+
+            elif typ in ('buzz.trade.execution',):
+                # update order and insert fills
+                client_order_id = payload.get('client_order_id')
+                order_id = payload.get('order_id')
+                status = payload.get('status')
+                filled = float(payload.get('filled_qty') or 0)
+                avg_price = payload.get('avg_price')
+                fees = payload.get('fees') or 0.0
+                slippage = payload.get('slippage_pct') or 0.0
+                # upsert order
+                if client_order_id:
+                    c.execute('SELECT client_order_id FROM orders WHERE client_order_id=?', (client_order_id,))
+                    if c.fetchone():
+                        c.execute('UPDATE orders SET status=?, order_id=?, final_ts=? WHERE client_order_id=?', (status, order_id, ts, client_order_id))
+                    else:
+                        c.execute('INSERT OR IGNORE INTO orders (client_order_id, intent_id, venue, symbol, side, order_type, order_id, status, placed_ts, final_ts) VALUES (?,?,?,?,?,?,?,?,?,?)', (
+                            client_order_id, payload.get('intent_id'), payload.get('venue'), payload.get('symbol'), payload.get('side'), payload.get('order_type'), order_id, status, payload.get('placed_ts') or ts, ts
+                        ))
+                # record fill
+                if filled > 0:
+                    try:
+                        c.execute('INSERT INTO fills (order_id, client_order_id, filled_qty, avg_price, fee, slippage_pct, ts) VALUES (?,?,?,?,?,?,?)', (order_id, client_order_id, filled, avg_price, fees, slippage, ts))
+                    except Exception:
+                        logging.exception('Failed to insert fill')
+
+            elif typ in ('buzz.wallet.balance',):
+                balances = payload.get('balances') or []
+                equity = payload.get('equity_usd_est') or payload.get('equity_est') or 0.0
+                venue = payload.get('venue') or 'wallet'
+                eth_free = eth_locked = usdt_free = usdt_locked = 0.0
+                for b in balances:
+                    a = (b.get('asset') or '').upper()
+                    if a == 'ETH':
+                        eth_free = float(b.get('free') or 0)
+                        eth_locked = float(b.get('locked') or 0)
+                    if a in ('USDT', 'USDC'):
+                        usdt_free = float(b.get('free') or 0)
+                        usdt_locked = float(b.get('locked') or 0)
+                c.execute('INSERT INTO balances (ts, venue, eth_free, eth_locked, usdt_free, usdt_locked, equity_usd_est) VALUES (?,?,?,?,?,?,?)', (ts, venue, eth_free, eth_locked, usdt_free, usdt_locked, equity))
+
+            elif typ in ('buzz.kill.check', 'buzz.kill.trigger'):
+                payload_json = json.dumps(payload)
+                state = payload.get('risk_state') or payload.get('state') or payload.get('risk')
+                c.execute('INSERT INTO killswitch (ts, state, reason, metrics_json) VALUES (?,?,?,?)', (ts, state, payload.get('reason'), payload_json))
+
+            elif typ == 'buzz.store.query':
+                # perform query and publish result over coordinator
+                q = payload or {}
+                query_id = q.get('query_id')
+                name = q.get('name')
+                params = q.get('params') or {}
+                rows = []
+                ok = True
+                try:
+                    rows = self._execute_named_query(name, params)
+                except Exception as e:
+                    ok = False
+                    rows = {'error': str(e)}
+                # publish result
+                result_evt = {'buzz': {'type': 'buzz.store.result', 'source': 'DATA_STORE', 'ts': int(time.time()*1000)}, 'payload': {'query_id': query_id, 'ok': ok, 'rows': rows}}
+                try:
+                    if self.coordinator:
+                        self.coordinator.share_data('buzz.store.result', result_evt)
+                except Exception:
+                    logging.exception('Failed to publish store.query result')
+
+            # commit at end
+            try:
+                self.conn.commit()
+            except Exception:
+                pass
+        except Exception:
+            logging.exception('DataStoreAgent.handle_event failed')
+
+    def _execute_named_query(self, name: str, params: Dict[str, Any]):
+        c = self.conn.cursor()
+        if name == 'get_recent_intents':
+            limit = int(params.get('limit', 50))
+            c.execute('SELECT intent_id, symbol, action, state, final_outcome, final_reason, qty FROM intents ORDER BY created_ts DESC LIMIT ?', (limit,))
+            rows = [dict(zip([d[0] for d in c.description], r)) for r in c.fetchall()]
+            return rows
+        if name == 'get_open_intents':
+            c.execute("SELECT intent_id, symbol, action, state, qty FROM intents WHERE state NOT IN ('DONE','CANCELED') ORDER BY created_ts ASC")
+            rows = [dict(zip([d[0] for d in c.description], r)) for r in c.fetchall()]
+            return rows
+        if name == 'get_recent_fills':
+            limit = int(params.get('limit', 100))
+            c.execute('SELECT * FROM fills ORDER BY ts DESC LIMIT ?', (limit,))
+            rows = [dict(zip([d[0] for d in c.description], r)) for r in c.fetchall()]
+            return rows
+        # fallback: simple raw SQL if provided (dangerous but useful for debugging)
+        if name == 'raw_sql' and params.get('sql'):
+            sql = params.get('sql')
+            c.execute(sql)
+            rows = [dict(zip([d[0] for d in c.description], r)) for r in c.fetchall()]
+            return rows
+        raise ValueError('Unknown query name')
+
+    def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> list:
+        """Retrieve trade records."""
+        if not self.conn:
+            return []
+        try:
+            cursor = self.conn.cursor()
+            if symbol:
+                cursor.execute("SELECT * FROM trades WHERE symbol = ? ORDER BY timestamp DESC LIMIT ?",
+                             (symbol, limit))
+            else:
+                cursor.execute("SELECT * FROM trades ORDER BY timestamp DESC LIMIT ?", (limit,))
+            return cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Error retrieving trades: {e}")
+            return []
+
+    def get_recent_trades(self, limit: int = 100) -> list:
+        """Convenience wrapper for most recent trades."""
+        return self.get_trades(symbol=None, limit=limit)
+
+    def store_market_data(self, symbol_or_data, data: Optional[Dict[str, Any]] = None):
+        """Store market data.
+
+        Can be called as store_market_data(data_dict) or store_market_data(symbol, data_dict).
+        """
+        if not self.conn:
+            return
+        try:
+            if data is None and isinstance(symbol_or_data, dict):
+                payload = symbol_or_data
+            else:
+                payload = data or {}
+                payload.setdefault('symbol', symbol_or_data)
+
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO market_data (timestamp, symbol, price, volume, source)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                payload.get('timestamp', datetime.now().isoformat()),
+                payload.get('symbol'),
+                payload.get('price'),
+                payload.get('volume'),
+                payload.get('source', 'unknown')
+            ))
+            self.conn.commit()
+            logging.debug(f"Stored market data: {payload}")
+        except Exception as e:
+            logging.error(f"Error storing market data: {e}")
+
+    def get_market_data(self, symbol: str, limit: int = 100) -> list:
+        """Retrieve market data for a symbol."""
+        if not self.conn:
+            return []
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT * FROM market_data WHERE symbol = ? ORDER BY timestamp DESC LIMIT ?",
+                         (symbol, limit))
+            return cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Error retrieving market data: {e}")
+            return []
+
+    def store_log(self, level: str, message: str, agent: str = "unknown"):
+        """Store a log entry."""
+        if not self.conn:
+            return
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO logs (timestamp, level, message, agent)
+                VALUES (?, ?, ?, ?)
+            """, (datetime.now().isoformat(), level, message, agent))
+            self.conn.commit()
+        except Exception as e:
+            logging.error(f"Error storing log: {e}")
+
+    def get_logs(self, level: Optional[str] = None, limit: int = 100) -> list:
+        """Retrieve log entries."""
+        if not self.conn:
+            return []
+        try:
+            cursor = self.conn.cursor()
+            if level:
+                cursor.execute("SELECT * FROM logs WHERE level = ? ORDER BY timestamp DESC LIMIT ?",
+                             (level, limit))
+            else:
+                cursor.execute("SELECT * FROM logs ORDER BY timestamp DESC LIMIT ?", (limit,))
+            return cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Error retrieving logs: {e}")
+            return []
+
+    def store_wallet_balance(self, address: str, asset: str, balance: float):
+        """Store wallet balance snapshot."""
+        if not self.conn:
+            return
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                INSERT INTO wallet_balances (timestamp, address, asset, balance)
+                VALUES (?, ?, ?, ?)
+            """, (datetime.now().isoformat(), address, asset, balance))
+            self.conn.commit()
+        except Exception as e:
+            logging.error(f"Error storing wallet balance: {e}")
+
+    def close(self):
+        """Close database connection."""
+        if self.conn:
+            self.conn.close()
+            logging.info("Data Store Agent closed")

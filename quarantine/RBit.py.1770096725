@@ -1,0 +1,436 @@
+import logging
+import json
+import csv
+import os
+import shutil
+import sqlite3
+import threading
+import time
+import statistics
+from pathlib import Path
+from datetime import datetime
+from typing import List, Dict, Any, Optional
+
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+    )
+
+
+class LoggingAnalyticsAgent:
+    def __init__(self, log_dir: str = "logs", coordinator: Optional[Any] = None):
+        self.log_dir = log_dir
+        os.makedirs(log_dir, exist_ok=True)
+        self.events_dir = os.path.join(log_dir, "events")
+        os.makedirs(self.events_dir, exist_ok=True)
+        self.db_path = os.path.join(log_dir, "analytics.db")
+
+        self.trade_log_file = os.path.join(log_dir, "trades.csv")
+        self.metrics_file = os.path.join(log_dir, "metrics.json")
+        self.logs_file = os.path.join(log_dir, "activity.log")
+
+        self.coordinator = coordinator
+
+        # in-memory buffers and limits
+        self.max_trades_in_memory = 2000
+        self.min_notional_in_memory = 0.0
+        self.trades = []
+        self.metrics_snapshot: Dict[str, Any] = {}
+        # legacy metrics structure (kept for compatibility with existing callers)
+        self.metrics = self._load_metrics()
+        self.recent_logs: List[Dict[str, Any]] = []
+
+        # sqlite DB for normalized tables
+        self._db_lock = threading.Lock()
+        self._init_db()
+
+        # start aggregator thread
+        self._agg_running = True
+        self._agg_thread = threading.Thread(target=self._agg_loop, daemon=True)
+        self._agg_thread.start()
+
+    def log_activity(self, level: str, message: str, agent: str = "system"):
+        """Log an activity message."""
+        timestamp = datetime.now().isoformat()
+        log_entry = {
+            "timestamp": timestamp,
+            "level": level,
+            "message": message,
+            "agent": agent
+        }
+        # Store in memory (keep last 200 entries)
+        self.recent_logs.append(log_entry)
+        if len(self.recent_logs) > 200:
+            self.recent_logs = self.recent_logs[-200:]
+
+        # Also write to file
+        try:
+            with open(self.logs_file, 'a', encoding='utf-8') as f:
+                f.write(f"{timestamp} | {level} | {agent} | {message}\n")
+        except Exception:
+            pass
+
+        # Use Python logging as well
+        log_func = getattr(logging, level.lower(), logging.info)
+        log_func(f"[{agent}] {message}")
+
+    # --------------------- event ingest / projector ---------------------
+    def _init_db(self):
+        try:
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            c = self._conn.cursor()
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS raw_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts REAL,
+                type TEXT,
+                source TEXT,
+                payload TEXT
+            )
+            """)
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_order_id TEXT,
+                intent_id TEXT,
+                order_id TEXT,
+                symbol TEXT,
+                side TEXT,
+                qty REAL,
+                status TEXT,
+                placed_ts REAL,
+                final_ts REAL,
+                avg_price REAL,
+                fees REAL,
+                slippage_pct REAL
+            )
+            """)
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS fills (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id TEXT,
+                filled_qty REAL,
+                avg_price REAL,
+                fee REAL,
+                slippage_pct REAL,
+                ts REAL
+            )
+            """)
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS intents (
+                intent_id TEXT PRIMARY KEY,
+                symbol TEXT,
+                action TEXT,
+                created_ts REAL,
+                final_outcome TEXT,
+                reason TEXT,
+                strategy TEXT
+            )
+            """)
+            c.execute("""
+            CREATE TABLE IF NOT EXISTS balances (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts REAL,
+                eth_free REAL,
+                eth_locked REAL,
+                usdt_free REAL,
+                usdt_locked REAL,
+                equity_est REAL
+            )
+            """)
+            self._conn.commit()
+        except Exception:
+            logging.exception("Failed to init analytics DB")
+
+    def _write_event_jsonl(self, evt: Dict[str, Any]):
+        try:
+            ts = int(time.time())
+            fn = os.path.join(self.events_dir, f"{datetime.utcfromtimestamp(ts).date()}.jsonl")
+            with open(fn, 'a', encoding='utf-8') as f:
+                f.write(json.dumps({'ingest_ts': int(time.time()*1000), 'evt': evt}, default=str) + '\n')
+        except Exception:
+            logging.exception('Failed to write event jsonl')
+
+    def log_event(self, evt: Dict[str, Any]):
+        """Ingest a buzz event: persist raw, project into normalized tables, and keep lightweight in-memory metrics."""
+        try:
+            # add ingestion timestamp
+            ingest = {'ingest_ts': int(time.time()*1000), 'evt': evt}
+            # raw JSONL
+            self._write_event_jsonl(evt)
+            # sqlite insert raw_event
+            with self._db_lock:
+                try:
+                    c = self._conn.cursor()
+                    ts = evt.get('buzz', {}).get('ts', int(time.time()*1000)) / 1000.0
+                    typ = evt.get('buzz', {}).get('type')
+                    src = evt.get('buzz', {}).get('source')
+                    c.execute('INSERT INTO raw_events (ts, type, source, payload) VALUES (?,?,?,?)', (ts, typ, src, json.dumps(evt.get('payload', {}))))
+                    self._conn.commit()
+                except Exception:
+                    logging.exception('Failed to insert raw_event')
+            # project into normalized tables
+            try:
+                self._project_event(evt)
+            except Exception:
+                logging.exception('Project event failed')
+        except Exception:
+            logging.exception('log_event failed')
+
+    def _project_event(self, evt: Dict[str, Any]):
+        typ = evt.get('buzz', {}).get('type')
+        payload = evt.get('payload', {}) or {}
+        with self._db_lock:
+            c = self._conn.cursor()
+            try:
+                if typ == 'buzz.trade.execution':
+                    intent_id = payload.get('intent_id')
+                    client_order_id = payload.get('client_order_id')
+                    order_id = payload.get('order_id')
+                    status = payload.get('status')
+                    filled = float(payload.get('filled_qty') or 0)
+                    avg_price = payload.get('avg_price')
+                    slippage = float(payload.get('slippage_pct') or 0)
+                    ts = int(payload.get('ts') or int(time.time()*1000)) / 1000.0
+                    # upsert orders table
+                    c.execute('SELECT id FROM orders WHERE client_order_id=?', (client_order_id,))
+                    row = c.fetchone()
+                    if row:
+                        c.execute('UPDATE orders SET status=?, order_id=?, final_ts=?, avg_price=?, slippage_pct=? WHERE client_order_id=?', (status, order_id, ts, avg_price, slippage, client_order_id))
+                    else:
+                        c.execute('INSERT INTO orders (client_order_id, intent_id, order_id, symbol, side, qty, status, placed_ts, final_ts, avg_price, slippage_pct) VALUES (?,?,?,?,?,?,?,?,?,?,?)', (client_order_id, intent_id, order_id, payload.get('symbol'), payload.get('side'), payload.get('filled_qty') or payload.get('qty'), status, ts, ts, avg_price, slippage))
+                    # record fill if filled
+                    if status == 'FILLED' and filled > 0:
+                        c.execute('INSERT INTO fills (order_id, filled_qty, avg_price, fee, slippage_pct, ts) VALUES (?,?,?,?,?,?)', (order_id, filled, avg_price, payload.get('fees') or 0.0, slippage, ts))
+
+                elif typ == 'buzz.wallet.balance':
+                    ts = int(payload.get('ts') or int(time.time()*1000)) / 1000.0
+                    balances = payload.get('balances', [])
+                    eth_free = eth_locked = usdt_free = usdt_locked = 0.0
+                    for b in balances:
+                        a = b.get('asset','').upper()
+                        if a == 'ETH':
+                            eth_free = float(b.get('free') or 0)
+                            eth_locked = float(b.get('locked') or 0)
+                        if a in ('USDT','USDC'):
+                            usdt_free = float(b.get('free') or 0)
+                            usdt_locked = float(b.get('locked') or 0)
+                    equity_est = float(payload.get('equity_usd_est') or 0)
+                    c.execute('INSERT INTO balances (ts, eth_free, eth_locked, usdt_free, usdt_locked, equity_est) VALUES (?,?,?,?,?,?)', (ts, eth_free, eth_locked, usdt_free, usdt_locked, equity_est))
+
+                elif typ == 'buzz.coordinator.decision':
+                    intent_id = payload.get('intent_id')
+                    c.execute('INSERT OR IGNORE INTO intents (intent_id, symbol, action, created_ts, final_outcome, reason, strategy) VALUES (?,?,?,?,?,?,?)', (intent_id, payload.get('symbol'), payload.get('action'), int(time.time()), None, payload.get('reason'), None))
+
+                self._conn.commit()
+            except Exception:
+                logging.exception('Project insert failed')
+
+    def _agg_loop(self):
+        # periodic aggregation; every 60s compute simple metrics and publish snapshot
+        while self._agg_running:
+            try:
+                snapshot = self._compute_snapshot(window_sec=300)
+                self.metrics_snapshot = snapshot
+                # publish to coordinator if present
+                try:
+                    if self.coordinator:
+                        self.coordinator.share_data('buzz.analytics.snapshot', snapshot)
+                except Exception:
+                    pass
+                # also persist metrics snapshot file
+                try:
+                    with open(self.metrics_file, 'w', encoding='utf-8') as f:
+                        json.dump(snapshot, f, indent=2, default=str)
+                except Exception:
+                    pass
+            except Exception:
+                logging.exception('Aggregator loop failed')
+            time.sleep(60)
+
+    def _compute_snapshot(self, window_sec: int = 300) -> Dict[str, Any]:
+        now = time.time()
+        cutoff = now - window_sec
+        out = {'window_sec': window_sec, 'symbol': getattr(self.coordinator.cfg, 'symbol', 'ETHUSDT') if self.coordinator and getattr(self.coordinator, 'cfg', None) else 'ETHUSDT'}
+        with self._db_lock:
+            c = self._conn.cursor()
+            try:
+                c.execute('SELECT COUNT(*) FROM orders WHERE placed_ts >= ?', (cutoff,))
+                trades = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM orders WHERE final_ts >= ? AND status='FILLED'", (cutoff,))
+                filled = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM orders WHERE final_ts >= ? AND status IN ('REJECTED','ERROR','PRECHECK_FAILED')", (cutoff,))
+                rejected = c.fetchone()[0]
+                c.execute('SELECT slippage_pct FROM fills WHERE ts >= ?', (cutoff,))
+                sl = [r[0] for r in c.fetchall() if r[0] is not None]
+                avg_slippage = statistics.mean(sl) if sl else 0.0
+                # latency: approximate using final_ts - placed_ts
+                c.execute('SELECT final_ts - placed_ts FROM orders WHERE final_ts >= ? AND placed_ts IS NOT NULL', (cutoff,))
+                lat_vals = [r[0] for r in c.fetchall() if r[0] is not None]
+                p95_latency = (statistics.quantiles(lat_vals, n=100)[94] if len(lat_vals) >= 2 else (lat_vals[0] if lat_vals else 0.0))
+                # stale event counts: scan raw_events for market_stale/wallet_stale reasons (simple text match)
+                c.execute("SELECT COUNT(*) FROM raw_events WHERE type LIKE '%market%' AND payload LIKE '%STALE%'")
+                market_stale = c.fetchone()[0]
+                c.execute("SELECT COUNT(*) FROM raw_events WHERE type LIKE '%wallet%' AND payload LIKE '%STALE%'")
+                wallet_stale = c.fetchone()[0]
+                out.update({'trades': trades, 'filled': filled, 'rejected': rejected, 'avg_slippage_pct': avg_slippage, 'p95_latency_ms': int(p95_latency*1000) if p95_latency else 0, 'market_stale_events': market_stale, 'wallet_stale_events': wallet_stale})
+            except Exception:
+                logging.exception('Snapshot compute failed')
+        return {'buzz': {'type': 'buzz.analytics.snapshot', 'source': 'ANALYTICS', 'ts': int(time.time()*1000)}, 'payload': out}
+
+    def get_recent_logs(self, limit: int = 10) -> List[tuple]:
+        """Get recent log entries as tuples for UI compatibility."""
+        recent = self.recent_logs[-limit:]
+        return [(i, log["timestamp"], log["level"], log["message"], log["agent"]) for i, log in enumerate(recent)]
+
+    def get_recent_trades(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Return most recent trades (latest first)."""
+        return list(reversed(self.trades[-limit:]))
+
+    def _load_trades(self) -> List[Dict[str, Any]]:
+        if os.path.exists(self.trade_log_file):
+            with open(self.trade_log_file, 'r') as f:
+                reader = csv.DictReader(f)
+                return list(reader)
+        return []
+
+    def _save_trades(self):
+        # Persist the in-memory trades buffer (only significant trades) to CSV.
+        if self.trades:
+            try:
+                with open(self.trade_log_file, 'w', newline='') as f:
+                    writer = csv.DictWriter(f, fieldnames=self.trades[0].keys())
+                    writer.writeheader()
+                    writer.writerows(self.trades)
+            except Exception:
+                logging.exception("Failed to write trades CSV from in-memory buffer")
+
+    def _load_metrics(self) -> Dict[str, Any]:
+        default = {
+            "total_trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "profit_loss": 0.0,
+            "win_rate": 0.0,
+            "max_drawdown": 0.0,
+            "peak_pnl": 0.0,
+            "drawdown_pct": 0.0,
+            "last_trade_result": None,
+            "total_pnl": 0.0
+        }
+        if os.path.exists(self.metrics_file):
+            try:
+                with open(self.metrics_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception:
+                logging.exception("Failed to load metrics.json (corrupt?) - resetting to defaults")
+                try:
+                    shutil.copy(self.metrics_file, self.metrics_file + '.bak')
+                except Exception:
+                    pass
+                try:
+                    with open(self.metrics_file, 'w', encoding='utf-8') as f:
+                        json.dump(default, f, indent=4)
+                except Exception:
+                    pass
+                return default
+        return default
+
+    def _save_metrics(self):
+        with open(self.metrics_file, 'w') as f:
+            json.dump(self.metrics, f, indent=4)
+
+    def log_trade(self, trade: Dict[str, Any]):
+        """Log a trade: {"timestamp", "symbol", "side", "quantity", "price", "order_id", "status"}"""
+        # mark timestamp server-side to keep CSV rows consistent
+        trade["timestamp"] = datetime.now().isoformat()
+
+        # Always append the trade to the CSV log (persist full history)
+        try:
+            write_header = not os.path.exists(self.trade_log_file)
+            with open(self.trade_log_file, 'a', newline='', encoding='utf-8') as f:
+                fieldnames = list(trade.keys())
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                if write_header:
+                    writer.writeheader()
+                writer.writerow({k: (v if v is not None else '') for k, v in trade.items()})
+        except Exception:
+            logging.exception("Failed to append trade to CSV")
+
+        # Decide whether to keep this trade in the in-memory buffer (only large prints)
+        try:
+            qty = float(trade.get('quantity') or trade.get('qty') or 0)
+            price = float(trade.get('price') or 0)
+            notional = qty * price
+        except Exception:
+            notional = 0.0
+
+        if notional >= self.min_notional_in_memory:
+            self.trades.append(trade)
+            # trim in-memory buffer to prevent unbounded growth
+            if len(self.trades) > self.max_trades_in_memory:
+                self.trades = self.trades[-self.max_trades_in_memory:]
+
+        logging.info(f"Trade logged: {trade}")
+
+    def update_metrics(self, new_trade: Dict[str, Any]):
+        """Update performance metrics after a trade."""
+        self.metrics["total_trades"] += 1
+        # Placeholder profit calculation; in real, track entry/exit prices
+        profit = float(new_trade.get("quantity", 0)) * float(new_trade.get("price", 0)) * 0.01  # dummy 1% profit per trade
+        if new_trade.get("side") == "SELL":
+            profit = -profit  # loss on sell for demo
+        self.metrics["profit_loss"] += profit
+        self.metrics["total_pnl"] = self.metrics["profit_loss"]
+
+        # Determine win/loss
+        self.metrics["last_trade_result"] = "win" if profit > 0 else "loss"
+        if profit > 0:
+            self.metrics["wins"] += 1
+        else:
+            self.metrics["losses"] += 1
+
+        self.metrics["win_rate"] = self.metrics["wins"] / self.metrics["total_trades"] if self.metrics["total_trades"] > 0 else 0.0
+
+        # Drawdown calculation
+        current_pnl = self.metrics["profit_loss"]
+        peak_pnl = max(self.metrics.get("peak_pnl", 0), current_pnl)
+        self.metrics["peak_pnl"] = peak_pnl
+        drawdown = peak_pnl - current_pnl
+        self.metrics["drawdown_pct"] = (drawdown / peak_pnl * 100) if peak_pnl > 0 else 0.0
+
+        # Max drawdown (lowest point)
+        self.metrics["max_drawdown"] = min(self.metrics.get("max_drawdown", 0), current_pnl)
+
+        self._save_metrics()
+        logging.info(f"Metrics updated: {self.metrics}")
+
+    def generate_report(self) -> str:
+        """Generate a simple text report."""
+        report = f"""
+Trading Report
+==============
+Total Trades: {self.metrics['total_trades']}
+Wins: {self.metrics['wins']}
+Losses: {self.metrics['losses']}
+Win Rate: {self.metrics['win_rate']:.2%}
+Profit/Loss: {self.metrics['profit_loss']:.2f}
+Max Drawdown: {self.metrics['max_drawdown']:.2f}
+"""
+        report_file = os.path.join(self.log_dir, "report.txt")
+        with open(report_file, 'w') as f:
+            f.write(report)
+        logging.info(f"Report generated: {report_file}")
+        return report
+
+    def get_recent_trades(self, limit: int = 10) -> List[Dict[str, Any]]:
+        return self.trades[-limit:]
+
+    def get_metrics(self) -> Dict[str, Any]:
+        # Return last computed snapshot payload for metrics endpoints
+        try:
+            return self.metrics_snapshot.get('payload', {}) if isinstance(self.metrics_snapshot, dict) else {}
+        except Exception:
+            return {}

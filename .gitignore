@@ -1,0 +1,36 @@
+# Godot
+.import/
+.export/
+.mono/
+*.import
+*.tmp
+worlds/*/cache/
+export_presets.cfg
+# Visual Studio
+.vscode/
+.vs/
+# OS files
+.DS_Store
+Thumbs.db
+# Build artifacts
+bin/
+obj/
+# Temporary files
+*.swp
+*.swo
+
+# Node & packages
+node_modules/
+.pnpm-store/
+
+# Binaries & caches
+quarantine/
+*.exe
+*.msi
+*.dll
+*.so
+*.jar
+
+# Large project artifacts
+luciferos/src/openJdk-25/lib/modules
+

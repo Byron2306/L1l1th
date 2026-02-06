@@ -1,0 +1,74 @@
+# Kill Switch Agent - Safety net for the swarm
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, Any, Tuple
+
+
+class KillSwitchAgent:
+    """
+    Kill Switch Agent: Monitors performance and triggers system stop on critical conditions.
+    """
+
+    def __init__(self, max_drawdown_pct: float, daily_loss_limit: float, max_consecutive_losses: int = 5):
+        self.max_drawdown_pct = max_drawdown_pct
+        self.daily_loss_limit = daily_loss_limit
+        self.max_consecutive_losses = max_consecutive_losses
+        self.paused = False
+        self.consecutive_losses = 0
+        self.daily_start_pnl = 0.0
+        self.last_reset_date = datetime.now().date()
+
+    def check_kill_switch(self, metrics: Dict[str, Any]) -> Tuple[bool, str]:
+        """
+        Check if kill switch conditions are met based on current metrics.
+        Returns (triggered, reason) or (False, None)
+        """
+        # Reset daily PNL if new day
+        today = datetime.now().date()
+        if today != self.last_reset_date:
+            self.daily_start_pnl = metrics.get('total_pnl', 0.0)
+            self.last_reset_date = today
+            self.consecutive_losses = 0  # Reset consecutive losses daily
+
+        # Check drawdown
+        drawdown_pct = metrics.get('drawdown_pct', 0.0)
+        if drawdown_pct > self.max_drawdown_pct:
+            return True, f"Drawdown {drawdown_pct:.2f}% exceeds max {self.max_drawdown_pct:.2f}%"
+
+        # Check daily loss
+        current_pnl = metrics.get('total_pnl', 0.0)
+        daily_loss = self.daily_start_pnl - current_pnl
+        if daily_loss > self.daily_loss_limit:
+            return True, f"Daily loss ${daily_loss:.2f} exceeds limit ${self.daily_loss_limit:.2f}"
+
+        # Check consecutive losses
+        if metrics.get('last_trade_result') == 'loss':
+            self.consecutive_losses += 1
+        else:
+            self.consecutive_losses = 0
+
+        if self.consecutive_losses >= self.max_consecutive_losses:
+            return True, f"Consecutive losses: {self.consecutive_losses} >= {self.max_consecutive_losses}"
+
+        # Check for system failures (e.g., no trades in last hour, but for now, placeholder)
+        # Could integrate with coordinator health
+
+        return False, None
+
+    def alert(self, message: str):
+        """Send alert (currently just logs, can extend to email/Telegram)."""
+        logging.error(f"KILL SWITCH ALERT: {message}")
+        # TODO: Integrate with notification services (email, Telegram, Discord)
+
+    def pause_swarm(self):
+        """Pause the swarm."""
+        self.paused = True
+        logging.warning("Swarm paused by Kill Switch.")
+
+    def resume_swarm(self):
+        """Resume the swarm."""
+        self.paused = False
+        logging.info("Swarm resumed.")
+
+    def is_paused(self) -> bool:
+        return self.paused
