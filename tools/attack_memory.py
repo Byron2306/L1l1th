@@ -99,6 +99,35 @@ class AttackMemory:
             timestamp TEXT
         )''')
         
+        # Generated attack code storage
+        c.execute('''CREATE TABLE IF NOT EXISTS generated_code (
+            id INTEGER PRIMARY KEY,
+            code_type TEXT,
+            target_type TEXT,
+            code_content TEXT,
+            language TEXT,
+            success_rate REAL DEFAULT 0.0,
+            times_used INTEGER DEFAULT 0,
+            times_successful INTEGER DEFAULT 0,
+            last_used TEXT,
+            created_at TEXT,
+            notes TEXT,
+            syntax_valid INTEGER DEFAULT 1,
+            tested_targets TEXT
+        )''')
+        
+        # Code generation learning patterns
+        c.execute('''CREATE TABLE IF NOT EXISTS code_patterns (
+            id INTEGER PRIMARY KEY,
+            pattern_type TEXT,
+            target_fingerprint TEXT,
+            successful_code_id INTEGER,
+            failure_reasons TEXT,
+            improvements_made TEXT,
+            learned_at TEXT,
+            FOREIGN KEY (successful_code_id) REFERENCES generated_code(id)
+        )''')
+        
         conn.commit()
         conn.close()
     
@@ -429,33 +458,386 @@ class AttackMemory:
         conn.close()
         return data
 
+    def learn_from_ai_response(self, prompt: str, response: str, 
+                              success: bool, provider: str, model: str,
+                              execution_time: float = None, tokens_used: int = None):
+        """Learn from AI responses to improve future prompts"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Create ai_learning table if it doesn't exist
+        c.execute('''CREATE TABLE IF NOT EXISTS ai_learning (
+            id INTEGER PRIMARY KEY,
+            prompt_hash TEXT UNIQUE,
+            prompt TEXT,
+            response TEXT,
+            success INTEGER,
+            provider TEXT,
+            model TEXT,
+            execution_time REAL,
+            tokens_used INTEGER,
+            timestamp TEXT,
+            lessons_learned TEXT
+        )''')
+        
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()[:16]
+        
+        c.execute('''INSERT OR REPLACE INTO ai_learning 
+                    (prompt_hash, prompt, response, success, provider, model, 
+                     execution_time, tokens_used, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                 (prompt_hash, prompt[:2000], response[:5000], 
+                  1 if success else 0, provider, model, execution_time, 
+                  tokens_used, datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_similar_prompts(self, prompt: str, limit: int = 5) -> List[Dict]:
+        """Find similar prompts and their outcomes"""
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()[:16]
+        
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Simple similarity based on keywords (could be improved with embeddings)
+        keywords = set(prompt.lower().split()[:10])  # First 10 words
+        
+        c.execute("SELECT * FROM ai_learning ORDER BY timestamp DESC LIMIT 100")
+        rows = c.fetchall()
+        
+        similar = []
+        for row in rows:
+            row_dict = dict(zip([d[0] for d in c.description], row))
+            stored_keywords = set(row_dict['prompt'].lower().split()[:10])
+            similarity = len(keywords.intersection(stored_keywords)) / len(keywords.union(stored_keywords))
+            
+            if similarity > 0.3:  # 30% keyword overlap
+                row_dict['similarity'] = similarity
+                similar.append(row_dict)
+        
+        conn.close()
+        return sorted(similar, key=lambda x: x['similarity'], reverse=True)[:limit]
+    
+    def adapt_prompt(self, original_prompt: str, failed_attempts: List[str] = None) -> str:
+        """Adapt a prompt based on learning from similar prompts"""
+        similar = self.get_similar_prompts(original_prompt)
+        
+        if not similar:
+            return original_prompt
+        
+        # Analyze successful vs failed patterns
+        successful = [s for s in similar if s['success']]
+        failed = [s for s in similar if not s['success']]
+        
+        adaptations = []
+        
+        if successful:
+            # Learn from successful prompts
+            avg_tokens = sum(s['tokens_used'] for s in successful if s['tokens_used']) / len([s for s in successful if s['tokens_used']])
+            adaptations.append(f"Based on {len(successful)} successful similar prompts, aim for ~{int(avg_tokens)} tokens")
+        
+        if failed:
+            # Avoid patterns that led to failure
+            failed_providers = set(s['provider'] for s in failed)
+            if len(failed_providers) > 0:
+                adaptations.append(f"Avoid providers: {', '.join(failed_providers)}")
+        
+        if adaptations:
+            adapted_prompt = original_prompt + "\n\nLEARNING ADAPTATIONS:\n" + "\n".join(adaptations)
+            return adapted_prompt
+        
+        return original_prompt
+    
+    def get_provider_performance(self) -> Dict[str, Dict]:
+        """Get performance statistics for each AI provider"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        c.execute("""SELECT provider, 
+                            COUNT(*) as total_calls,
+                            AVG(success) as success_rate,
+                            AVG(execution_time) as avg_time,
+                            AVG(tokens_used) as avg_tokens
+                     FROM ai_learning 
+                     GROUP BY provider
+                     ORDER BY success_rate DESC""")
+        
+        results = {}
+        for row in c.fetchall():
+            results[row[0]] = {
+                'total_calls': row[1],
+                'success_rate': row[2],
+                'avg_time': row[3],
+                'avg_tokens': row[4]
+            }
+        
+        conn.close()
+        return results
+    
+    def get_attack_success_patterns(self) -> Dict[str, Any]:
+        """Analyze patterns in successful vs failed attacks"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        patterns = {
+            'successful_vectors': [],
+            'failed_vectors': [],
+            'best_attack_types': [],
+            'worst_attack_types': []
+        }
+        
+        # Successful attack vectors
+        c.execute("""SELECT attack_vector, COUNT(*) as count
+                     FROM attacks WHERE success = 1
+                     GROUP BY attack_vector
+                     ORDER BY count DESC LIMIT 10""")
+        patterns['successful_vectors'] = [{'vector': r[0], 'count': r[1]} for r in c.fetchall()]
+        
+        # Failed attack vectors
+        c.execute("""SELECT attack_vector, COUNT(*) as count
+                     FROM attacks WHERE success = 0
+                     GROUP BY attack_vector
+                     ORDER BY count DESC LIMIT 10""")
+        patterns['failed_vectors'] = [{'vector': r[0], 'count': r[1]} for r in c.fetchall()]
+        
+        # Best attack types
+        c.execute("""SELECT attack_type, AVG(impact_score) as avg_impact, COUNT(*) as count
+                     FROM attacks WHERE success = 1
+                     GROUP BY attack_type
+                     HAVING count > 2
+                     ORDER BY avg_impact DESC LIMIT 5""")
+        patterns['best_attack_types'] = [{'type': r[0], 'avg_impact': r[1], 'count': r[2]} for r in c.fetchall()]
+        
+        # Worst attack types
+        c.execute("""SELECT attack_type, COUNT(*) as failures
+                     FROM attacks WHERE success = 0
+                     GROUP BY attack_type
+                     ORDER BY failures DESC LIMIT 5""")
+        patterns['worst_attack_types'] = [{'type': r[0], 'failures': r[1]} for r in c.fetchall()]
+        
+        conn.close()
+        return patterns
+    
+    def generate_strategy_adaptation(self, target_info: Dict) -> str:
+        """Generate adaptive strategy based on learned patterns"""
+        patterns = self.get_attack_success_patterns()
+        provider_perf = self.get_provider_performance()
+        
+        strategy = "ADAPTIVE ATTACK STRATEGY:\n\n"
+        
+        # Provider recommendations
+        if provider_perf:
+            best_provider = max(provider_perf.items(), key=lambda x: x[1]['success_rate'])
+            strategy += f"🤖 Use {best_provider[0]} (success rate: {best_provider[1]['success_rate']:.1%})\n"
+        
+        # Attack vector recommendations
+        if patterns['successful_vectors']:
+            top_vector = patterns['successful_vectors'][0]
+            strategy += f"🎯 Prioritize: {top_vector['vector']} (worked {top_vector['count']} times)\n"
+        
+        # Avoid failed vectors
+        if patterns['failed_vectors']:
+            avoid_vectors = [v['vector'] for v in patterns['failed_vectors'][:3]]
+            strategy += f"❌ Avoid: {', '.join(avoid_vectors)}\n"
+        
+        # Target-specific learning
+        if target_info.get('cms'):
+            cms_suggestions = self.suggest_attack(cms=target_info['cms'])
+            if cms_suggestions['confidence'] > 0.5:
+                strategy += f"🎪 CMS-specific: {cms_suggestions['suggestion']}\n"
+        
+        strategy += "\nLEARNED LESSONS:\n"
+        strategy += "- Always test small before scaling attacks\n"
+        strategy += "- Combine reconnaissance with exploitation\n"
+        strategy += "- Use multiple vectors for redundancy\n"
+        strategy += "- Document everything for future reference\n"
+        
+        return strategy
+    
+    def store_generated_code(self, code_type: str, target_type: str, 
+                           code_content: str, language: str = "python",
+                           syntax_valid: bool = True, notes: str = None) -> int:
+        """Store generated attack code for learning and reuse"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        c.execute('''INSERT INTO generated_code 
+                    (code_type, target_type, code_content, language, 
+                     syntax_valid, created_at, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                 (code_type, target_type, code_content, language,
+                  1 if syntax_valid else 0, datetime.now().isoformat(), notes))
+        
+        code_id = c.lastrowid
+        conn.commit()
+        conn.close()
+        return code_id
+    
+    def record_code_usage(self, code_id: int, success: bool, target_fingerprint: str = None):
+        """Record when generated code is used and its success"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Update usage statistics
+        success_increment = 1 if success else 0
+        c.execute('''UPDATE generated_code 
+                    SET times_used = times_used + 1,
+                        times_successful = times_successful + ?,
+                        last_used = ?,
+                        success_rate = CAST((times_successful + ?) AS REAL) / (times_used + 1)
+                    WHERE id = ?''',
+                 (success_increment, datetime.now().isoformat(), success_increment, code_id))
+        
+        # Add target to tested targets if provided
+        if target_fingerprint:
+            c.execute('''UPDATE generated_code 
+                        SET tested_targets = CASE 
+                            WHEN tested_targets IS NULL THEN ?
+                            WHEN instr(tested_targets, ?) = 0 THEN tested_targets || ',' || ?
+                            ELSE tested_targets
+                        END
+                        WHERE id = ?''',
+                     (target_fingerprint, target_fingerprint, target_fingerprint, code_id))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_best_code_for_target(self, code_type: str, target_type: str, 
+                               min_success_rate: float = 0.5) -> Optional[Dict]:
+        """Get the best performing code for a specific target type"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        c.execute('''SELECT id, code_content, language, success_rate, times_used, notes
+                    FROM generated_code 
+                    WHERE code_type = ? AND target_type = ? AND success_rate >= ?
+                    ORDER BY success_rate DESC, times_used DESC
+                    LIMIT 1''',
+                 (code_type, target_type, min_success_rate))
+        
+        result = c.fetchone()
+        conn.close()
+        
+        if result:
+            return {
+                'id': result[0],
+                'code': result[1],
+                'language': result[2],
+                'success_rate': result[3],
+                'times_used': result[4],
+                'notes': result[5]
+            }
+        return None
+    
+    def get_all_generated_code(self, code_type: str = None, target_type: str = None,
+                              language: str = None, min_success_rate: float = 0.0) -> List[Dict]:
+        """Get all generated code matching criteria"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        query = '''SELECT id, code_type, target_type, code_content, language, 
+                          success_rate, times_used, times_successful, last_used, 
+                          created_at, notes, syntax_valid, tested_targets
+                   FROM generated_code WHERE 1=1'''
+        params = []
+        
+        if code_type:
+            query += ' AND code_type = ?'
+            params.append(code_type)
+        
+        if target_type:
+            query += ' AND target_type = ?'
+            params.append(target_type)
+        
+        if language:
+            query += ' AND language = ?'
+            params.append(language)
+        
+        query += ' AND success_rate >= ?'
+        params.append(min_success_rate)
+        
+        query += ' ORDER BY created_at DESC'
+        
+        c.execute(query, params)
+        results = c.fetchall()
+        conn.close()
+        
+        return [{
+            'id': row[0],
+            'code_type': row[1],
+            'target_type': row[2],
+            'code_content': row[3],
+            'language': row[4],
+            'success_rate': row[5],
+            'times_used': row[6],
+            'times_successful': row[7],
+            'last_used': row[8],
+            'created_at': row[9],
+            'notes': row[10],
+            'syntax_valid': bool(row[11]),
+            'tested_targets': row[12]
+        } for row in results]
+    
+    def learn_from_code_generation(self, code_type: str, target_fingerprint: str,
+                                 successful_code: str, failure_reasons: List[str] = None,
+                                 improvements: List[str] = None):
+        """Learn from code generation attempts"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        
+        # Store successful code if provided
+        code_id = None
+        if successful_code:
+            code_id = self.store_generated_code(
+                code_type=code_type,
+                target_type=self._extract_target_type(target_fingerprint),
+                code_content=successful_code,
+                language=self._detect_language(successful_code)
+            )
+        
+        # Record learning pattern
+        if failure_reasons or improvements:
+            c.execute('''INSERT INTO code_patterns 
+                        (pattern_type, target_fingerprint, successful_code_id,
+                         failure_reasons, improvements_made, learned_at)
+                        VALUES (?, ?, ?, ?, ?, ?)''',
+                     (code_type, target_fingerprint, code_id,
+                      json.dumps(failure_reasons) if failure_reasons else None,
+                      json.dumps(improvements) if improvements else None,
+                      datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+    
+    def _extract_target_type(self, target_fingerprint: str) -> str:
+        """Extract target type from fingerprint (simplified)"""
+        # This would be enhanced to actually analyze the target
+        return "web"  # Default assumption
+    
+    def _detect_language(self, code: str) -> str:
+        """Detect programming language from code content"""
+        code_lower = code.lower()
+        if "import " in code_lower or "def " in code_lower or "class " in code_lower:
+            return "python"
+        elif "function" in code_lower or "var " in code_lower or "const " in code_lower:
+            return "javascript"
+        elif "<?php" in code_lower or "echo " in code_lower:
+            return "php"
+        elif "#include" in code_lower or "int main" in code_lower:
+            return "c/cpp"
+        elif "public class" in code_lower or "import java" in code_lower:
+            return "java"
+        else:
+            return "unknown"
+
 
 # Global instance
-_memory = None
+_memory_instance = None
 
 def get_memory() -> AttackMemory:
     """Get the global attack memory instance"""
-    global _memory
-    if _memory is None:
-        _memory = AttackMemory()
-    return _memory
-
-
-if __name__ == "__main__":
-    # Test the memory system
-    mem = AttackMemory()
-    
-    # Simulate learning
-    fp = mem.remember_target(
-        domain="example.com",
-        technologies=["PHP", "MySQL"],
-        cms="WordPress",
-        ports=[80, 443, 22]
-    )
-    
-    mem.record_attack(fp, "sqli", "/search?q=", "' OR 1=1--", True, 8.5)
-    mem.store_credential(fp, "admin", "password123", source="login_bruteforce")
-    mem.store_loot(fp, "cookies", [{"name": "session", "value": "abc123"}])
-    
-    print("Stats:", mem.get_stats())
-    print("Suggestion:", mem.suggest_attack(cms="WordPress"))
+    global _memory_instance
+    if _memory_instance is None:
+        _memory_instance = AttackMemory()
+    return _memory_instance

@@ -417,6 +417,36 @@ class LuciferOSStreamlined(QMainWindow):
         
         scroll_layout.addWidget(browser_section)
         
+        # === API MANAGEMENT ===
+        api_section = CollapsibleSection("🔑 API MANAGEMENT")
+        
+        reset_api_btn = QuickActionButton("🔄", "RESET ALL API KEYS", "#ff6600")
+        reset_api_btn.setToolTip("Generate new API keys for all AI providers")
+        reset_api_btn.clicked.connect(self.reset_api_keys)
+        api_section.addWidget(reset_api_btn)
+        
+        # API Status display
+        self.api_status_label = QLabel("API Status: Checking...")
+        self.api_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px;")
+        api_section.addWidget(self.api_status_label)
+        
+        scroll_layout.addWidget(api_section)
+        
+        # === LILITH LEARNING ===
+        learning_section = CollapsibleSection("🧠 LILITH LEARNING")
+        
+        learning_stats_btn = QuickActionButton("📊", "LEARNING STATS", "#9933ff")
+        learning_stats_btn.setToolTip("View LILITH's learning statistics and insights")
+        learning_stats_btn.clicked.connect(self.show_learning_stats)
+        learning_section.addWidget(learning_stats_btn)
+        
+        # Learning status display
+        self.learning_status_label = QLabel("Learning: Analyzing attacks...")
+        self.learning_status_label.setStyleSheet("color: #999; font-size: 10px; padding: 5px;")
+        learning_section.addWidget(self.learning_status_label)
+        
+        scroll_layout.addWidget(learning_section)
+        
         # === PHISHING ===
         phishing_section = CollapsibleSection("PHISHING")
         
@@ -924,9 +954,17 @@ class LuciferOSStreamlined(QMainWindow):
             total = ai_info.get('total_count', 0)
             self.status_label.setText(f"● ONLINE ({active}/{total} AI)")
             self.status_label.setStyleSheet("color: #00ff00; padding: 10px; font-size: 11px;")
+            # Update API status
+            self.update_api_status()
+            # Update learning status
+            self.update_learning_status()
         else:
             self.status_label.setText("● OFFLINE")
             self.status_label.setStyleSheet("color: #ff0000; padding: 10px; font-size: 11px;")
+            self.api_status_label.setText("APIs: Offline")
+            self.api_status_label.setStyleSheet("color: #f00; font-size: 10px; padding: 5px;")
+            self.learning_status_label.setText("Learning: Offline")
+            self.learning_status_label.setStyleSheet("color: #f00; font-size: 10px; padding: 5px;")
     
     def _poll_status(self):
         def _fetch():
@@ -2291,6 +2329,129 @@ TIPS:
   • Loot counter tracks captures (click 🔄)
   • LILITH is the sole agent - no Node.js needed
         """)
+    
+    def reset_api_keys(self):
+        """Reset all API keys and regenerate them"""
+        try:
+            # Call backend to reset API keys
+            response = requests.post(f"{self.backend_url}/reset-api-keys", timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                self.log_signal.emit(f"🔑 API Keys Reset: {result.get('message', 'Success')}")
+                # Update API status
+                self.update_api_status()
+            else:
+                self.log_signal.emit(f"❌ API Reset Failed: {response.status_code}")
+        except Exception as e:
+            self.log_signal.emit(f"❌ API Reset Error: {str(e)}")
+    
+    def update_api_status(self):
+        """Update API status display"""
+        try:
+            response = requests.get(f"{self.backend_url}/status", timeout=5)
+            if response.status_code == 200:
+                status = response.json()
+                providers = status.get('ai_providers', {})
+                active = providers.get('active_count', 0)
+                total = providers.get('total_count', 0)
+                self.api_status_label.setText(f"APIs: {active}/{total} active")
+                self.api_status_label.setStyleSheet("color: #0f0; font-size: 10px; padding: 5px;")
+            else:
+                self.api_status_label.setText("APIs: Status unknown")
+                self.api_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px;")
+        except:
+            self.api_status_label.setText("APIs: Offline")
+            self.api_status_label.setStyleSheet("color: #f00; font-size: 10px; padding: 5px;")
+    
+    def update_learning_status(self):
+        """Update learning status display"""
+        try:
+            response = requests.get(f"{self.backend_url}/learning/stats", timeout=5)
+            if response.status_code == 200:
+                stats = response.json().get('stats', {})
+                attacks = stats.get('total_attacks', 0)
+                success_rate = stats.get('success_rate', 0)
+                patterns = stats.get('patterns_learned', 0)
+                self.learning_status_label.setText(f"Learning: {attacks} attacks, {patterns} patterns ({success_rate:.0%})")
+                self.learning_status_label.setStyleSheet("color: #0ff; font-size: 10px; padding: 5px;")
+            else:
+                self.learning_status_label.setText("Learning: Status unknown")
+                self.learning_status_label.setStyleSheet("color: #666; font-size: 10px; padding: 5px;")
+        except:
+            self.learning_status_label.setText("Learning: Offline")
+            self.learning_status_label.setStyleSheet("color: #f00; font-size: 10px; padding: 5px;")
+    
+    def show_learning_stats(self):
+        """Show LILITH learning statistics in a dialog"""
+        try:
+            # Get learning stats
+            stats_response = requests.get(f"{self.backend_url}/learning/stats", timeout=5)
+            insights_response = requests.get(f"{self.backend_url}/learning/insights", timeout=5)
+            
+            if stats_response.status_code == 200 and insights_response.status_code == 200:
+                stats = stats_response.json().get('stats', {})
+                insights = insights_response.json().get('insights', [])
+                
+                # Create dialog
+                dialog = QDialog(self)
+                dialog.setWindowTitle("LILITH Learning Statistics")
+                dialog.setModal(True)
+                dialog.resize(800, 600)
+                
+                layout = QVBoxLayout(dialog)
+                
+                # Stats section
+                stats_group = QGroupBox("Learning Overview")
+                stats_layout = QVBoxLayout(stats_group)
+                
+                stats_text = f"""
+Total Attacks Analyzed: {stats.get('total_attacks', 0)}
+Success Rate: {stats.get('success_rate', 0):.1%}
+Total Tokens Used: {stats.get('total_tokens_used', 0):,}
+Average Tokens/Attack: {stats.get('avg_tokens_per_attack', 0):.1f}
+Patterns Learned: {stats.get('patterns_learned', 0)}
+Average Pattern Success: {stats.get('avg_pattern_success', 0):.1%}
+Token Efficiency: {stats.get('avg_token_efficiency', 0):.1%}
+Insights Generated: {stats.get('insights_generated', 0)}
+                """
+                
+                stats_label = QLabel(stats_text.strip())
+                stats_label.setStyleSheet("font-family: monospace; color: #0f0;")
+                stats_layout.addWidget(stats_label)
+                
+                layout.addWidget(stats_group)
+                
+                # Insights section
+                insights_group = QGroupBox(f"Recent Insights ({len(insights)})")
+                insights_layout = QVBoxLayout(insights_group)
+                
+                insights_text = QTextEdit()
+                insights_text.setReadOnly(True)
+                insights_text.setStyleSheet("background-color: #111; color: #0f0; font-family: monospace;")
+                
+                insights_content = ""
+                for insight in insights[:10]:  # Show last 10 insights
+                    insights_content += f"[{insight.get('created_at', '')[:19]}] {insight.get('category', '').upper()}\n"
+                    insights_content += f"  {insight.get('insight', '')}\n"
+                    insights_content += f"  Confidence: {insight.get('confidence', 0):.1%}\n\n"
+                
+                insights_text.setPlainText(insights_content.strip())
+                insights_layout.addWidget(insights_text)
+                
+                layout.addWidget(insights_group)
+                
+                # Close button
+                close_btn = QPushButton("Close")
+                close_btn.clicked.connect(dialog.accept)
+                close_btn.setStyleSheet("background-color: #333; color: white; padding: 10px;")
+                layout.addWidget(close_btn)
+                
+                dialog.exec_()
+            else:
+                QMessageBox.warning(self, "Error", "Failed to retrieve learning data")
+                
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to load learning stats: {str(e)}")
     
     def clear_inputs(self):
         """Clear all inputs"""

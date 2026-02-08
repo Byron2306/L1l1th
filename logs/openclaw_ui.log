@@ -1,0 +1,527 @@
+
+> openclaw@2026.2.4 dev /workspaces/LUCIFER-OS/openclaw
+> node scripts/run-node.mjs
+
+[openclaw] Building TypeScript (dist is stale).
+[34mℹ[39m tsdown [2mv0.20.3[22m powered by rolldown [2mv1.0.0-rc.3[22m
+[34mℹ[39m config file: [4m/workspaces/LUCIFER-OS/openclaw/tsdown.config.ts[24m 
+[34mℹ[39m entry: [34msrc/index.ts[39m
+[34mℹ[39m target: [34mnode22.12.0[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34msrc/entry.ts[39m
+[34mℹ[39m target: [34mnode22.12.0[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34msrc/plugin-sdk/index.ts[39m
+[34mℹ[39m target: [34mnode22.12.0[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m entry: [34msrc/extensionAPI.ts[39m
+[34mℹ[39m target: [34mnode22.12.0[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m Build start
+[34mℹ[39m Granting execute permission to [4mdist/entry.js[24m
+[34mℹ[39m Granting execute permission to [4mdist/index.js[24m
+[34mℹ[39m [2mdist/[22m[1mextensionAPI.js[22m                   [2m2365.36 kB[22m
+[34mℹ[39m [2mdist/[22mpi-embedded-helpers-BxqZh6U7.js   [2m 299.64 kB[22m [2m│ gzip: 66.33 kB[22m
+[34mℹ[39m [2mdist/[22mconfig-CG73z4h6.js                [2m 199.66 kB[22m [2m│ gzip: 39.73 kB[22m
+[34mℹ[39m [2mdist/[22mmanager-C4ILl-d3.js               [2m 105.84 kB[22m [2m│ gzip: 23.73 kB[22m
+[34mℹ[39m [2mdist/[22mmodel-selection-mzTqrNoj.js       [2m  90.39 kB[22m [2m│ gzip: 20.16 kB[22m
+[34mℹ[39m [2mdist/[22mdeliver-CZPhTA7x.js               [2m  83.15 kB[22m [2m│ gzip: 20.83 kB[22m
+[34mℹ[39m [2mdist/[22mchrome-B3IuUad-.js                [2m  62.08 kB[22m [2m│ gzip: 15.75 kB[22m
+[34mℹ[39m [2mdist/[22mpw-ai-tNPuRNn3.js                 [2m  54.74 kB[22m [2m│ gzip: 12.63 kB[22m
+[34mℹ[39m [2mdist/[22mimage-CgBndiQy.js                 [2m  38.52 kB[22m [2m│ gzip: 10.07 kB[22m
+[34mℹ[39m [2mdist/[22mexec-BMnoMcZW.js                  [2m  35.83 kB[22m [2m│ gzip: 10.59 kB[22m
+[34mℹ[39m [2mdist/[22magent-scope-Csu2B6AM.js           [2m  22.38 kB[22m [2m│ gzip:  5.34 kB[22m
+[34mℹ[39m [2mdist/[22mqmd-manager-CF52nuBg.js           [2m  20.70 kB[22m [2m│ gzip:  6.07 kB[22m
+[34mℹ[39m [2mdist/[22mlogin-qr-CcOWO_dR.js              [2m  16.05 kB[22m [2m│ gzip:  5.23 kB[22m
+[34mℹ[39m [2mdist/[22msqlite-Dnmf3LS7.js                [2m   6.74 kB[22m [2m│ gzip:  2.28 kB[22m
+[34mℹ[39m [2mdist/[22mpaths-B1kfl4h5.js                 [2m   6.06 kB[22m [2m│ gzip:  1.73 kB[22m
+[34mℹ[39m [2mdist/[22mgithub-copilot-token-B3SA95yo.js  [2m   3.97 kB[22m [2m│ gzip:  1.55 kB[22m
+[34mℹ[39m [2mdist/[22mredact-BIMJ3ntQ.js                [2m   3.51 kB[22m [2m│ gzip:  1.40 kB[22m
+[34mℹ[39m [2mdist/[22mpaths-B4kigINg.js                 [2m   2.06 kB[22m [2m│ gzip:  0.72 kB[22m
+[34mℹ[39m [2mdist/[22mcommand-format-CFzL448l.js        [2m   1.93 kB[22m [2m│ gzip:  0.74 kB[22m
+[34mℹ[39m [2mdist/[22mpi-model-discovery-EhM2JAQo.js    [2m   0.84 kB[22m [2m│ gzip:  0.37 kB[22m
+[34mℹ[39m [2mdist/[22mtranscript-events-JLH5W4He.js     [2m   0.59 kB[22m [2m│ gzip:  0.29 kB[22m
+[34mℹ[39m [2mdist/[22mrolldown-runtime-Cbj13DAv.js      [2m   0.42 kB[22m [2m│ gzip:  0.28 kB[22m
+[34mℹ[39m 22 files, total: 3420.47 kB
+[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in plugin `tsdown:external`. See https://rolldown.rs/options/checks#plugintimings for more details.
+
+[32m✔[39m Build complete in [32m29678ms[39m
+[34mℹ[39m [2mdist/plugin-sdk/[22m[1mindex.js[22m                        [2m808.04 kB[22m [2m│ gzip: 176.48 kB[22m
+[34mℹ[39m [2mdist/plugin-sdk/[22mpi-model-discovery-Dw3A6oXH.js  [2m  1.12 kB[22m [2m│ gzip:   0.52 kB[22m
+[34mℹ[39m [2mdist/plugin-sdk/[22m[32m[1mindex.d.ts[22m[39m                      [2m349.60 kB[22m [2m│ gzip:  66.44 kB[22m
+[34mℹ[39m 3 files, total: 1158.76 kB
+[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in plugin `rolldown-plugin-dts:generate`. See https://rolldown.rs/options/checks#plugintimings for more details.
+
+[32m✔[39m Build complete in [32m30357ms[39m
+[34mℹ[39m [2mdist/[22m[1mentry.js[22m                            [2m  44.79 kB[22m [2m│ gzip:  12.54 kB[22m
+[34mℹ[39m [2mdist/[22mloader-CDdQfi-9.js                  [2m2261.59 kB[22m
+[34mℹ[39m [2mdist/[22mgateway-cli-D3iKBOT6.js             [2m 630.78 kB[22m [2m│ gzip: 148.32 kB[22m
+[34mℹ[39m [2mdist/[22mconfig-guard-oGZbn3hN.js            [2m 226.52 kB[22m [2m│ gzip:  49.24 kB[22m
+[34mℹ[39m [2mdist/[22mconfig-Ckj13pS6.js                  [2m 177.09 kB[22m [2m│ gzip:  34.50 kB[22m
+[34mℹ[39m [2mdist/[22mstatus-DraWpAoR.js                  [2m 119.04 kB[22m [2m│ gzip:  30.75 kB[22m
+[34mℹ[39m [2mdist/[22monboard-skills-DQqmR2Td.js          [2m 115.29 kB[22m [2m│ gzip:  25.01 kB[22m
+[34mℹ[39m [2mdist/[22msandbox-DhAqmKV_.js                 [2m 108.37 kB[22m [2m│ gzip:  24.07 kB[22m
+[34mℹ[39m [2mdist/[22mmanager-COLo73Av.js                 [2m 105.90 kB[22m [2m│ gzip:  23.72 kB[22m
+[34mℹ[39m [2mdist/[22mdoctor-v7UHyBV7.js                  [2m  99.83 kB[22m [2m│ gzip:  25.37 kB[22m
+[34mℹ[39m [2mdist/[22mauth-profiles-DbS0IcEa.js           [2m  99.53 kB[22m [2m│ gzip:  22.16 kB[22m
+[34mℹ[39m [2mdist/[22mmodels-cli-BS26lBAd.js              [2m  97.96 kB[22m [2m│ gzip:  22.11 kB[22m
+[34mℹ[39m [2mdist/[22mdeliver-BGBiV-fB.js                 [2m  84.55 kB[22m [2m│ gzip:  21.11 kB[22m
+[34mℹ[39m [2mdist/[22mtui-CfTZ46lt.js                     [2m  84.02 kB[22m [2m│ gzip:  20.06 kB[22m
+[34mℹ[39m [2mdist/[22mroutes-C3rEpcie.js                  [2m  79.02 kB[22m [2m│ gzip:  15.64 kB[22m
+[34mℹ[39m [2mdist/[22maudit-DNHij-xy.js                   [2m  74.60 kB[22m [2m│ gzip:  18.24 kB[22m
+[34mℹ[39m [2mdist/[22mclient-CxbkcEZ7.js                  [2m  66.49 kB[22m [2m│ gzip:  11.96 kB[22m
+[34mℹ[39m [2mdist/[22merrors-DZf7Yd7a.js                  [2m  62.01 kB[22m [2m│ gzip:  15.75 kB[22m
+[34mℹ[39m [2mdist/[22mchannels-cli-sGVwkswP.js            [2m  55.48 kB[22m [2m│ gzip:  14.00 kB[22m
+[34mℹ[39m [2mdist/[22mpw-ai-C299E1H7.js                   [2m  54.76 kB[22m [2m│ gzip:  12.65 kB[22m
+[34mℹ[39m [2mdist/[22mhealth-format-CqNyN8E1.js           [2m  53.15 kB[22m [2m│ gzip:  12.91 kB[22m
+[34mℹ[39m [2mdist/[22mnodes-cli-Cfw1Nriy.js               [2m  51.74 kB[22m [2m│ gzip:  11.18 kB[22m
+[34mℹ[39m [2mdist/[22mnode-cli-DNrrKO0I.js                [2m  48.74 kB[22m [2m│ gzip:  12.30 kB[22m
+[34mℹ[39m [2mdist/[22mpi-embedded-helpers-BijkUcb2.js     [2m  44.91 kB[22m [2m│ gzip:  11.80 kB[22m
+[34mℹ[39m [2mdist/[22mupdate-runner-DgxpTivr.js           [2m  42.67 kB[22m [2m│ gzip:   9.40 kB[22m
+[34mℹ[39m [2mdist/[22mupdate-cli-Bmzh_S-D.js              [2m  38.84 kB[22m [2m│ gzip:  10.86 kB[22m
+[34mℹ[39m [2mdist/[22mgithub-copilot-auth-CJ0mhwwb.js     [2m  38.53 kB[22m [2m│ gzip:   7.62 kB[22m
+[34mℹ[39m [2mdist/[22mchannel-summary-jNwH9bqH.js         [2m  36.51 kB[22m [2m│ gzip:   8.48 kB[22m
+[34mℹ[39m [2mdist/[22mhooks-cli-0YHpazp7.js               [2m  35.59 kB[22m [2m│ gzip:   8.12 kB[22m
+[34mℹ[39m [2mdist/[22mconfigure-CPJpPonT.js               [2m  29.85 kB[22m [2m│ gzip:   7.80 kB[22m
+[34mℹ[39m [2mdist/[22mdaemon-cli-BX3tKaDF.js              [2m  29.78 kB[22m [2m│ gzip:   7.11 kB[22m
+[34mℹ[39m [2mdist/[22mexec-approvals-BCEFzcbC.js          [2m  29.48 kB[22m [2m│ gzip:   6.88 kB[22m
+[34mℹ[39m [2mdist/[22magent-DYgEfKeK.js                   [2m  28.75 kB[22m [2m│ gzip:   7.23 kB[22m
+[34mℹ[39m [2mdist/[22macp-cli-Qn0rCDJs.js                 [2m  28.73 kB[22m [2m│ gzip:   7.82 kB[22m
+[34mℹ[39m [2mdist/[22mserver-context-zBpoiFYQ.js          [2m  27.80 kB[22m [2m│ gzip:   7.23 kB[22m
+[34mℹ[39m [2mdist/[22mskills-N1DXsqpD.js                  [2m  26.75 kB[22m [2m│ gzip:   6.92 kB[22m
+[34mℹ[39m [2mdist/[22msession-cost-usage-BTXosU1k.js      [2m  25.33 kB[22m [2m│ gzip:   5.95 kB[22m
+[34mℹ[39m [2mdist/[22mcron-cli-BNi33B6D.js                [2m  23.56 kB[22m [2m│ gzip:   5.79 kB[22m
+[34mℹ[39m [2mdist/[22mservice-BPvFLYNj.js                 [2m  23.33 kB[22m [2m│ gzip:   5.56 kB[22m
+[34mℹ[39m [2mdist/[22monboard-channels-DkWyhb84.js        [2m  22.92 kB[22m [2m│ gzip:   5.85 kB[22m
+[34mℹ[39m [2mdist/[22mimage-DLVZSep0.js                   [2m  22.30 kB[22m [2m│ gzip:   6.53 kB[22m
+[34mℹ[39m [2mdist/[22msandbox-cli-C1EqgfnN.js             [2m  21.77 kB[22m [2m│ gzip:   5.61 kB[22m
+[34mℹ[39m [2mdist/[22mqmd-manager-CuNAM8_o.js             [2m  20.86 kB[22m [2m│ gzip:   6.11 kB[22m
+[34mℹ[39m [2mdist/[22mmanifest-registry-C69Z-I4v.js       [2m  20.25 kB[22m [2m│ gzip:   5.07 kB[22m
+[34mℹ[39m [2mdist/[22mservice-audit-qEJ4_ROo.js           [2m  18.73 kB[22m [2m│ gzip:   4.85 kB[22m
+[34mℹ[39m [2mdist/[22msecurity-cli-ChGZnFQf.js            [2m  18.46 kB[22m [2m│ gzip:   5.15 kB[22m
+[34mℹ[39m [2mdist/[22mdaemon-runtime-B9psDXAa.js          [2m  18.30 kB[22m [2m│ gzip:   5.10 kB[22m
+[34mℹ[39m [2mdist/[22mplugins-DvgRs-gV.js                 [2m  17.93 kB[22m [2m│ gzip:   3.93 kB[22m
+[34mℹ[39m [2mdist/[22mcompletion-cli-BizHZ98S.js          [2m  16.76 kB[22m [2m│ gzip:   4.45 kB[22m
+[34mℹ[39m [2mdist/[22mplugin-auto-enable-B9FX8k3G.js      [2m  16.66 kB[22m [2m│ gzip:   4.31 kB[22m
+[34mℹ[39m [2mdist/[22mtool-display-DmgKs6-V.js            [2m  16.39 kB[22m [2m│ gzip:   3.82 kB[22m
+[34mℹ[39m [2mdist/[22mlogin-qr-BTaSBXkr.js                [2m  16.16 kB[22m [2m│ gzip:   5.26 kB[22m
+[34mℹ[39m [2mdist/[22mplugins-cli-DZXuVgI2.js             [2m  16.13 kB[22m [2m│ gzip:   4.42 kB[22m
+[34mℹ[39m [2mdist/[22mhooks-status-Cya_we5J.js            [2m  16.06 kB[22m [2m│ gzip:   4.23 kB[22m
+[34mℹ[39m [2mdist/[22mgmail-setup-utils-Ht-vRncL.js       [2m  15.37 kB[22m [2m│ gzip:   4.46 kB[22m
+[34mℹ[39m [2mdist/[22mwebhooks-cli-D_7XC0d5.js            [2m  14.46 kB[22m [2m│ gzip:   3.95 kB[22m
+[34mℹ[39m [2mdist/[22msystemd-Dh08aRCt.js                 [2m  14.38 kB[22m [2m│ gzip:   4.13 kB[22m
+[34mℹ[39m [2mdist/[22minstalls-br6QbeOC.js                [2m  14.18 kB[22m [2m│ gzip:   3.51 kB[22m
+[34mℹ[39m [2mdist/[22mexec-approvals-cli-BUoI-Lmr.js      [2m  13.96 kB[22m [2m│ gzip:   3.50 kB[22m
+[34mℹ[39m [2mdist/[22magent-scope-GqD-abT-.js             [2m  13.45 kB[22m [2m│ gzip:   3.56 kB[22m
+[34mℹ[39m [2mdist/[22mpairing-store-Dd4ukWFP.js           [2m  11.94 kB[22m [2m│ gzip:   3.12 kB[22m
+[34mℹ[39m [2mdist/[22mskills-cli-DFzDkMub.js              [2m  11.83 kB[22m [2m│ gzip:   2.93 kB[22m
+[34mℹ[39m [2mdist/[22mws-log-DJIXahf0.js                  [2m  11.82 kB[22m [2m│ gzip:   2.86 kB[22m
+[34mℹ[39m [2mdist/[22mcall-D51UtAv7.js                    [2m  11.05 kB[22m [2m│ gzip:   3.31 kB[22m
+[34mℹ[39m [2mdist/[22mregister.subclis-kmDe4pJI.js        [2m  10.61 kB[22m [2m│ gzip:   2.90 kB[22m
+[34mℹ[39m [2mdist/[22maccounts-unUJOmVb.js                [2m   8.88 kB[22m [2m│ gzip:   2.57 kB[22m
+[34mℹ[39m [2mdist/[22mcommands-Cl-54u86.js                [2m   8.81 kB[22m [2m│ gzip:   2.43 kB[22m
+[34mℹ[39m [2mdist/[22mupdate-D0DSeBS_.js                  [2m   8.72 kB[22m [2m│ gzip:   2.20 kB[22m
+[34mℹ[39m [2mdist/[22mtable-CJSx0YID.js                   [2m   8.47 kB[22m [2m│ gzip:   2.75 kB[22m
+[34mℹ[39m [2mdist/[22mlogs-cli-CQ9rvCle.js                [2m   8.22 kB[22m [2m│ gzip:   2.77 kB[22m
+[34mℹ[39m [2mdist/[22mprogram-C9J-Uwxa.js                 [2m   8.14 kB[22m [2m│ gzip:   3.25 kB[22m
+[34mℹ[39m [2mdist/[22mtailscale-9MusRvOi.js               [2m   8.09 kB[22m [2m│ gzip:   2.48 kB[22m
+[34mℹ[39m [2mdist/[22mdirectory-cli-B3m92Vnk.js           [2m   7.79 kB[22m [2m│ gzip:   1.86 kB[22m
+[34mℹ[39m [2mdist/[22mskill-scanner-Mo7vMgqv.js           [2m   7.72 kB[22m [2m│ gzip:   2.56 kB[22m
+[34mℹ[39m [2mdist/[22mserver-node-events-x7LZW-lt.js      [2m   7.68 kB[22m [2m│ gzip:   2.20 kB[22m
+[34mℹ[39m [2mdist/[22mdns-cli-wDirthX-.js                 [2m   7.68 kB[22m [2m│ gzip:   2.85 kB[22m
+[34mℹ[39m [2mdist/[22msession-key-CZkcvAtx.js             [2m   7.39 kB[22m [2m│ gzip:   1.80 kB[22m
+[34mℹ[39m [2mdist/[22mskills-status-BtJ_zMUQ.js           [2m   7.28 kB[22m [2m│ gzip:   2.27 kB[22m
+[34mℹ[39m [2mdist/[22mrun-main-Dj-DwtV2.js                [2m   7.25 kB[22m [2m│ gzip:   2.82 kB[22m
+[34mℹ[39m [2mdist/[22mdevices-cli-B8fZevxg.js             [2m   7.17 kB[22m [2m│ gzip:   2.15 kB[22m
+[34mℹ[39m [2mdist/[22mexec-B8JKbXKW.js                    [2m   7.15 kB[22m [2m│ gzip:   2.38 kB[22m
+[34mℹ[39m [2mdist/[22mutils-DX85MiPR.js                   [2m   6.65 kB[22m [2m│ gzip:   2.47 kB[22m
+[34mℹ[39m [2mdist/[22mauth-DksjO6WG.js                    [2m   6.35 kB[22m [2m│ gzip:   1.80 kB[22m
+[34mℹ[39m [2mdist/[22msqlite-Bn627Qqo.js                  [2m   6.05 kB[22m [2m│ gzip:   2.03 kB[22m
+[34mℹ[39m [2mdist/[22mshared-DA1ybf-s.js                  [2m   5.68 kB[22m [2m│ gzip:   2.03 kB[22m
+[34mℹ[39m [2mdist/[22mdocs-cli-CxwzhyhO.js                [2m   5.47 kB[22m [2m│ gzip:   1.98 kB[22m
+[34mℹ[39m [2mdist/[22mpairing-cli-BkQ3933D.js             [2m   5.09 kB[22m [2m│ gzip:   1.88 kB[22m
+[34mℹ[39m [2mdist/[22mwidearea-dns-CsSylzXH.js            [2m   5.04 kB[22m [2m│ gzip:   1.93 kB[22m
+[34mℹ[39m [2mdist/[22mnodes-screen-DufGlxX3.js            [2m   4.96 kB[22m [2m│ gzip:   1.32 kB[22m
+[34mℹ[39m [2mdist/[22mauth-health-CL71YTst.js             [2m   4.93 kB[22m [2m│ gzip:   1.50 kB[22m
+[34mℹ[39m [2mdist/[22mnet-CWMMy37F.js                     [2m   4.39 kB[22m [2m│ gzip:   1.49 kB[22m
+[34mℹ[39m [2mdist/[22mmessage-channel-BlgPSDAh.js         [2m   4.29 kB[22m [2m│ gzip:   1.27 kB[22m
+[34mℹ[39m [2mdist/[22mprogress-Da1ehW-x.js                [2m   4.14 kB[22m [2m│ gzip:   1.37 kB[22m
+[34mℹ[39m [2mdist/[22mrpc-BFXfVF8t.js                     [2m   4.12 kB[22m [2m│ gzip:   1.74 kB[22m
+[34mℹ[39m [2mdist/[22mgithub-copilot-token-SLWintYd.js    [2m   3.96 kB[22m [2m│ gzip:   1.54 kB[22m
+[34mℹ[39m [2mdist/[22mwsl-CpaznHwP.js                     [2m   3.94 kB[22m [2m│ gzip:   1.60 kB[22m
+[34mℹ[39m [2mdist/[22msystem-cli-LqsCGsQR.js              [2m   3.79 kB[22m [2m│ gzip:   1.15 kB[22m
+[34mℹ[39m [2mdist/[22mredact-B8YiFlwn.js                  [2m   3.62 kB[22m [2m│ gzip:   1.43 kB[22m
+[34mℹ[39m [2mdist/[22mshared-Cl6SNEf6.js                  [2m   3.20 kB[22m [2m│ gzip:   1.15 kB[22m
+[34mℹ[39m [2mdist/[22msystemd-linger-Dos45V9U.js          [2m   3.19 kB[22m [2m│ gzip:   1.01 kB[22m
+[34mℹ[39m [2mdist/[22mports-B5UMWMNh.js                   [2m   3.14 kB[22m [2m│ gzip:   1.12 kB[22m
+[34mℹ[39m [2mdist/[22marchive-1r-XD_by.js                 [2m   3.07 kB[22m [2m│ gzip:   1.16 kB[22m
+[34mℹ[39m [2mdist/[22mcli-DQ2Uw2U7.js                     [2m   2.97 kB[22m [2m│ gzip:   1.27 kB[22m
+[34mℹ[39m [2mdist/[22mconstants-D1op9uGI.js               [2m   2.88 kB[22m [2m│ gzip:   0.79 kB[22m
+[34mℹ[39m [2mdist/[22mpath-env-h3xp5PqO.js                [2m   2.83 kB[22m [2m│ gzip:   1.10 kB[22m
+[34mℹ[39m [2mdist/[22mopenclaw-root-CCgjNlSQ.js           [2m   2.81 kB[22m [2m│ gzip:   0.80 kB[22m
+[34mℹ[39m [2mdist/[22mtui-cli-DM3KpMu7.js                 [2m   2.71 kB[22m [2m│ gzip:   1.26 kB[22m
+[34mℹ[39m [2mdist/[22mclack-prompter-DuBVnTKy.js          [2m   2.60 kB[22m [2m│ gzip:   0.84 kB[22m
+[34mℹ[39m [2mdist/[22mnote-Ci08TSbV.js                    [2m   2.45 kB[22m [2m│ gzip:   0.90 kB[22m
+[34mℹ[39m [2mdist/[22mcontrol-service-BpVRrdRg.js         [2m   2.42 kB[22m [2m│ gzip:   0.95 kB[22m
+[34mℹ[39m [2mdist/[22mpaths-CTg8F3AE.js                   [2m   2.24 kB[22m [2m│ gzip:   0.72 kB[22m
+[34mℹ[39m [2mdist/[22mnode-service-B4PSQKg4.js            [2m   2.09 kB[22m [2m│ gzip:   0.62 kB[22m
+[34mℹ[39m [2mdist/[22mchannel-selection-CWQe_Hbs.js       [2m   2.06 kB[22m [2m│ gzip:   0.73 kB[22m
+[34mℹ[39m [2mdist/[22mbrew-CcZV0dSS.js                    [2m   1.65 kB[22m [2m│ gzip:   0.58 kB[22m
+[34mℹ[39m [2mdist/[22mcommand-format-ayFsmwwz.js          [2m   1.58 kB[22m [2m│ gzip:   0.64 kB[22m
+[34mℹ[39m [2mdist/[22musage-format-E3bMcUMV.js            [2m   1.50 kB[22m [2m│ gzip:   0.58 kB[22m
+[34mℹ[39m [2mdist/[22mformat-CS7EI0xF.js                  [2m   1.28 kB[22m [2m│ gzip:   0.61 kB[22m
+[34mℹ[39m [2mdist/[22mparse-log-line-C6szvNBZ.js          [2m   1.23 kB[22m [2m│ gzip:   0.52 kB[22m
+[34mℹ[39m [2mdist/[22mtailnet-Byp3obcc.js                 [2m   1.21 kB[22m [2m│ gzip:   0.55 kB[22m
+[34mℹ[39m [2mdist/[22mchannel-options-D1eZTVa2.js         [2m   1.18 kB[22m [2m│ gzip:   0.56 kB[22m
+[34mℹ[39m [2mdist/[22mgateway-rpc-CaCqqdzQ.js             [2m   1.17 kB[22m [2m│ gzip:   0.63 kB[22m
+[34mℹ[39m [2mdist/[22mcommand-options-uXImNO90.js         [2m   1.13 kB[22m [2m│ gzip:   0.51 kB[22m
+[34mℹ[39m [2mdist/[22msystemd-hints-Wim4Bq6j.js           [2m   1.11 kB[22m [2m│ gzip:   0.55 kB[22m
+[34mℹ[39m [2mdist/[22mis-main-qJ675wPV.js                 [2m   1.00 kB[22m [2m│ gzip:   0.40 kB[22m
+[34mℹ[39m [2mdist/[22mcli-utils-ByANh4Sp.js               [2m   0.98 kB[22m [2m│ gzip:   0.47 kB[22m
+[34mℹ[39m [2mdist/[22mstatus-Dx9JP6ri.js                  [2m   0.96 kB[22m [2m│ gzip:   0.43 kB[22m
+[34mℹ[39m [2mdist/[22mpi-model-discovery-DzEIEgHL.js      [2m   0.84 kB[22m [2m│ gzip:   0.37 kB[22m
+[34mℹ[39m [2mdist/[22mstatus-CRIEi8Mc.js                  [2m   0.82 kB[22m [2m│ gzip:   0.35 kB[22m
+[34mℹ[39m [2mdist/[22mdeps-C-N-_9lc.js                    [2m   0.81 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22mhelpers-EKm3X92T.js                 [2m   0.79 kB[22m [2m│ gzip:   0.39 kB[22m
+[34mℹ[39m [2mdist/[22mparse-gTOGQPH6.js                   [2m   0.70 kB[22m [2m│ gzip:   0.36 kB[22m
+[34mℹ[39m [2mdist/[22mhelp-format-CfZ94KRN.js             [2m   0.66 kB[22m [2m│ gzip:   0.28 kB[22m
+[34mℹ[39m [2mdist/[22mtranscript-events-CZ8CG4ht.js       [2m   0.59 kB[22m [2m│ gzip:   0.29 kB[22m
+[34mℹ[39m [2mdist/[22mchannels-status-issues-CPr-JTKN.js  [2m   0.55 kB[22m [2m│ gzip:   0.30 kB[22m
+[34mℹ[39m [2mdist/[22mlinks-D0uzJbi6.js                   [2m   0.49 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22mlogging-Cc7m6PTv.js                 [2m   0.49 kB[22m [2m│ gzip:   0.29 kB[22m
+[34mℹ[39m [2mdist/[22mws-D091yo4M.js                      [2m   0.47 kB[22m [2m│ gzip:   0.24 kB[22m
+[34mℹ[39m [2mdist/[22mscan-ports-Dh3hBPiK.js              [2m   0.47 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22msql-inject-Tw_DKH9O.js              [2m   0.47 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22mparse-timeout-CbVKLZ4B.js           [2m   0.46 kB[22m [2m│ gzip:   0.26 kB[22m
+[34mℹ[39m [2mdist/[22mexfil-Z2nCxcnE.js                   [2m   0.45 kB[22m [2m│ gzip:   0.30 kB[22m
+[34mℹ[39m [2mdist/[22mprompt-style-Dc0C5HC9.js            [2m   0.44 kB[22m [2m│ gzip:   0.23 kB[22m
+[34mℹ[39m [2mdist/[22mfuzz-BpVmL_Pv.js                    [2m   0.43 kB[22m [2m│ gzip:   0.29 kB[22m
+[34mℹ[39m [2mdist/[22mrolldown-runtime-Cbj13DAv.js        [2m   0.42 kB[22m [2m│ gzip:   0.28 kB[22m
+[34mℹ[39m [2mdist/[22mhelpers-D66_XoIz.js                 [2m   0.41 kB[22m [2m│ gzip:   0.25 kB[22m
+[34mℹ[39m [2mdist/[22mpairing-labels-bH2kzmMm.js          [2m   0.26 kB[22m [2m│ gzip:   0.19 kB[22m
+[34mℹ[39m [2mdist/[22mprompts-CXLLIBwP.js                 [2m   0.24 kB[22m [2m│ gzip:   0.17 kB[22m
+[34mℹ[39m [2mdist/[22mlogging-CfEk_PnX.js                 [2m   0.01 kB[22m [2m│ gzip:   0.03 kB[22m
+[34mℹ[39m 148 files, total: 6011.23 kB
+[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in plugin `tsdown:external`. See https://rolldown.rs/options/checks#plugintimings for more details.
+
+[32m✔[39m Build complete in [32m30478ms[39m
+[34mℹ[39m [2mdist/[22m[1mindex.js[22m                            [2m 234.64 kB[22m [2m│ gzip:  52.22 kB[22m
+[34mℹ[39m [2mdist/[22mreply-CN1Xbmk2.js                   [2m2261.26 kB[22m
+[34mℹ[39m [2mdist/[22mgateway-cli-Dw9xEzDI.js             [2m 630.50 kB[22m [2m│ gzip: 148.34 kB[22m
+[34mℹ[39m [2mdist/[22mconfig-CAuZ-EkU.js                  [2m 177.14 kB[22m [2m│ gzip:  34.51 kB[22m
+[34mℹ[39m [2mdist/[22monboarding-go8Y_6iA.js              [2m 122.07 kB[22m [2m│ gzip:  31.70 kB[22m
+[34mℹ[39m [2mdist/[22monboard-skills-kr8U5Alx.js          [2m 115.30 kB[22m [2m│ gzip:  24.92 kB[22m
+[34mℹ[39m [2mdist/[22msandbox-CV8VwPij.js                 [2m 108.37 kB[22m [2m│ gzip:  24.24 kB[22m
+[34mℹ[39m [2mdist/[22mmanager-LpytrxUw.js                 [2m 105.92 kB[22m [2m│ gzip:  23.75 kB[22m
+[34mℹ[39m [2mdist/[22mdoctor-CVysn5Bb.js                  [2m  99.86 kB[22m [2m│ gzip:  25.40 kB[22m
+[34mℹ[39m [2mdist/[22mmodel-selection-DMUrNhQP.js         [2m  99.62 kB[22m [2m│ gzip:  21.87 kB[22m
+[34mℹ[39m [2mdist/[22mmodels-cli-B5V_upLF.js              [2m  98.06 kB[22m [2m│ gzip:  22.17 kB[22m
+[34mℹ[39m [2mdist/[22mdeliver-C3bnXkg5.js                 [2m  84.54 kB[22m [2m│ gzip:  21.11 kB[22m
+[34mℹ[39m [2mdist/[22mtui-XH6_v0qC.js                     [2m  84.07 kB[22m [2m│ gzip:  20.08 kB[22m
+[34mℹ[39m [2mdist/[22mroutes-DchZU3EK.js                  [2m  78.94 kB[22m [2m│ gzip:  15.60 kB[22m
+[34mℹ[39m [2mdist/[22maudit-ZY6Dk5Ec.js                   [2m  74.57 kB[22m [2m│ gzip:  18.25 kB[22m
+[34mℹ[39m [2mdist/[22mclient-BYVbRnuQ.js                  [2m  66.50 kB[22m [2m│ gzip:  11.96 kB[22m
+[34mℹ[39m [2mdist/[22mchrome-BNSd7Bie.js                  [2m  63.21 kB[22m [2m│ gzip:  16.15 kB[22m
+[34mℹ[39m [2mdist/[22mchannels-cli-DrhLBXmF.js            [2m  55.53 kB[22m [2m│ gzip:  14.03 kB[22m
+[34mℹ[39m [2mdist/[22mpw-ai-DYpQO6HI.js                   [2m  54.80 kB[22m [2m│ gzip:  12.66 kB[22m
+[34mℹ[39m [2mdist/[22mhealth-format-C87K9I60.js           [2m  53.19 kB[22m [2m│ gzip:  12.93 kB[22m
+[34mℹ[39m [2mdist/[22mnodes-cli-Bc5K-0Lt.js               [2m  51.83 kB[22m [2m│ gzip:  11.22 kB[22m
+[34mℹ[39m [2mdist/[22mnode-cli-2oYmIWJt.js                [2m  48.81 kB[22m [2m│ gzip:  12.35 kB[22m
+[34mℹ[39m [2mdist/[22mpi-embedded-helpers-BB4uACeq.js     [2m  44.89 kB[22m [2m│ gzip:  11.86 kB[22m
+[34mℹ[39m [2mdist/[22mupdate-runner-Ch3YKj-w.js           [2m  42.52 kB[22m [2m│ gzip:   9.38 kB[22m
+[34mℹ[39m [2mdist/[22mupdate-cli-ClChJcv7.js              [2m  38.86 kB[22m [2m│ gzip:  10.90 kB[22m
+[34mℹ[39m [2mdist/[22mgithub-copilot-auth-BNLXnH4M.js     [2m  38.55 kB[22m [2m│ gzip:   7.63 kB[22m
+[34mℹ[39m [2mdist/[22mchannel-summary-DUiKDBLv.js         [2m  36.52 kB[22m [2m│ gzip:   8.49 kB[22m
+[34mℹ[39m [2mdist/[22mhooks-cli-BDTU01El.js               [2m  35.59 kB[22m [2m│ gzip:   8.17 kB[22m
+[34mℹ[39m [2mdist/[22mconfigure-X5usWQ8o.js               [2m  29.91 kB[22m [2m│ gzip:   7.83 kB[22m
+[34mℹ[39m [2mdist/[22mdaemon-cli-Cc8c8tFm.js              [2m  29.83 kB[22m [2m│ gzip:   7.13 kB[22m
+[34mℹ[39m [2mdist/[22mexec-approvals-DZixgolZ.js          [2m  29.48 kB[22m [2m│ gzip:   6.88 kB[22m
+[34mℹ[39m [2mdist/[22macp-cli-BwcHtBDk.js                 [2m  28.84 kB[22m [2m│ gzip:   7.87 kB[22m
+[34mℹ[39m [2mdist/[22magent-NBT5Yqw-.js                   [2m  28.77 kB[22m [2m│ gzip:   7.21 kB[22m
+[34mℹ[39m [2mdist/[22msubsystem-CAq3uyo7.js               [2m  28.12 kB[22m [2m│ gzip:   8.09 kB[22m
+[34mℹ[39m [2mdist/[22mserver-context-vChIAqjH.js          [2m  27.81 kB[22m [2m│ gzip:   7.25 kB[22m
+[34mℹ[39m [2mdist/[22mskills-D5JDj3TR.js                  [2m  26.80 kB[22m [2m│ gzip:   6.94 kB[22m
+[34mℹ[39m [2mdist/[22mcompletion-cli-DXxvDbFm.js          [2m  26.79 kB[22m [2m│ gzip:   6.87 kB[22m
+[34mℹ[39m [2mdist/[22msession-cost-usage-CBP4Hv9D.js      [2m  25.33 kB[22m [2m│ gzip:   5.95 kB[22m
+[34mℹ[39m [2mdist/[22mcron-cli-Ys53MyTg.js                [2m  23.67 kB[22m [2m│ gzip:   5.84 kB[22m
+[34mℹ[39m [2mdist/[22mservice-BZesBIaG.js                 [2m  23.23 kB[22m [2m│ gzip:   5.57 kB[22m
+[34mℹ[39m [2mdist/[22monboard-channels-CAgFz7K9.js        [2m  22.93 kB[22m [2m│ gzip:   5.86 kB[22m
+[34mℹ[39m [2mdist/[22mimage-Ca_PtqY7.js                   [2m  22.26 kB[22m [2m│ gzip:   6.53 kB[22m
+[34mℹ[39m [2mdist/[22msandbox-cli-C0_Hrk7i.js             [2m  21.88 kB[22m [2m│ gzip:   5.66 kB[22m
+[34mℹ[39m [2mdist/[22mqmd-manager-B1rwd_mo.js             [2m  20.81 kB[22m [2m│ gzip:   6.12 kB[22m
+[34mℹ[39m [2mdist/[22mmanifest-registry-DHaa1SJb.js       [2m  20.25 kB[22m [2m│ gzip:   5.07 kB[22m
+[34mℹ[39m [2mdist/[22mservice-audit-C-IA4omi.js           [2m  18.65 kB[22m [2m│ gzip:   4.84 kB[22m
+[34mℹ[39m [2mdist/[22msecurity-cli-ncd8GI5Q.js            [2m  18.53 kB[22m [2m│ gzip:   5.21 kB[22m
+[34mℹ[39m [2mdist/[22mdaemon-runtime-DMd0mgTK.js          [2m  18.24 kB[22m [2m│ gzip:   5.12 kB[22m
+[34mℹ[39m [2mdist/[22mplugins-BYIWo0Cp.js                 [2m  17.98 kB[22m [2m│ gzip:   3.96 kB[22m
+[34mℹ[39m [2mdist/[22mplugin-auto-enable-Ci7TBlH2.js      [2m  16.67 kB[22m [2m│ gzip:   4.32 kB[22m
+[34mℹ[39m [2mdist/[22mtool-display-BxZG0o1b.js            [2m  16.39 kB[22m [2m│ gzip:   3.82 kB[22m
+[34mℹ[39m [2mdist/[22mplugins-cli-B_MG_9Ks.js             [2m  16.24 kB[22m [2m│ gzip:   4.48 kB[22m
+[34mℹ[39m [2mdist/[22mlogin-qr-BIlr0vwe.js                [2m  16.17 kB[22m [2m│ gzip:   5.28 kB[22m
+[34mℹ[39m [2mdist/[22mhooks-status-DepPyfBb.js            [2m  16.07 kB[22m [2m│ gzip:   4.24 kB[22m
+[34mℹ[39m [2mdist/[22mgmail-setup-utils-QpN7TEXS.js       [2m  15.38 kB[22m [2m│ gzip:   4.47 kB[22m
+[34mℹ[39m [2mdist/[22mwebhooks-cli-ZAn97osC.js            [2m  14.57 kB[22m [2m│ gzip:   4.00 kB[22m
+[34mℹ[39m [2mdist/[22msystemd-B-3NdMmA.js                 [2m  14.35 kB[22m [2m│ gzip:   4.14 kB[22m
+[34mℹ[39m [2mdist/[22minstalls-BhEjOqPy.js                [2m  14.05 kB[22m [2m│ gzip:   3.50 kB[22m
+[34mℹ[39m [2mdist/[22mexec-approvals-cli-DzLp5G7t.js      [2m  14.05 kB[22m [2m│ gzip:   3.54 kB[22m
+[34mℹ[39m [2mdist/[22magent-scope-CMs5Y7l-.js             [2m  13.38 kB[22m [2m│ gzip:   3.56 kB[22m
+[34mℹ[39m [2mdist/[22mpairing-store-DFq7WtOv.js           [2m  11.95 kB[22m [2m│ gzip:   3.13 kB[22m
+[34mℹ[39m [2mdist/[22mskills-cli-C1yJvIkL.js              [2m  11.94 kB[22m [2m│ gzip:   2.98 kB[22m
+[34mℹ[39m [2mdist/[22mws-log-B7UNLFLC.js                  [2m  11.83 kB[22m [2m│ gzip:   2.87 kB[22m
+[34mℹ[39m [2mdist/[22mcall-BTbA5OB4.js                    [2m  11.01 kB[22m [2m│ gzip:   3.31 kB[22m
+[34mℹ[39m [2mdist/[22mtailscale-BVGD9gSD.js               [2m   9.01 kB[22m [2m│ gzip:   2.82 kB[22m
+[34mℹ[39m [2mdist/[22maccounts-BgZmhIm6.js                [2m   8.89 kB[22m [2m│ gzip:   2.60 kB[22m
+[34mℹ[39m [2mdist/[22mpi-tools.policy-BQ8N5y8a.js         [2m   8.81 kB[22m [2m│ gzip:   2.44 kB[22m
+[34mℹ[39m [2mdist/[22mupdate-DzMcwy1G.js                  [2m   8.71 kB[22m [2m│ gzip:   2.19 kB[22m
+[34mℹ[39m [2mdist/[22mtable-CLtGjVsx.js                   [2m   8.48 kB[22m [2m│ gzip:   2.76 kB[22m
+[34mℹ[39m [2mdist/[22mlogs-cli-5L3NxTsc.js                [2m   8.33 kB[22m [2m│ gzip:   2.81 kB[22m
+[34mℹ[39m [2mdist/[22mdirectory-cli-CTtv_AB7.js           [2m   7.90 kB[22m [2m│ gzip:   1.92 kB[22m
+[34mℹ[39m [2mdist/[22mserver-node-events-CxdcGh5P.js      [2m   7.80 kB[22m [2m│ gzip:   2.24 kB[22m
+[34mℹ[39m [2mdist/[22mdns-cli-BRkJGLqK.js                 [2m   7.79 kB[22m [2m│ gzip:   2.90 kB[22m
+[34mℹ[39m [2mdist/[22mskill-scanner-BoGjHXUZ.js           [2m   7.68 kB[22m [2m│ gzip:   2.56 kB[22m
+[34mℹ[39m [2mdist/[22msession-key-Dm2EOhrH.js             [2m   7.39 kB[22m [2m│ gzip:   1.80 kB[22m
+[34mℹ[39m [2mdist/[22mskills-status-CEvVUD3U.js           [2m   7.29 kB[22m [2m│ gzip:   2.28 kB[22m
+[34mℹ[39m [2mdist/[22mdevices-cli-Cm0ENrXH.js             [2m   7.27 kB[22m [2m│ gzip:   2.20 kB[22m
+[34mℹ[39m [2mdist/[22mexec-HEWTMJ7j.js                    [2m   7.16 kB[22m [2m│ gzip:   2.39 kB[22m
+[34mℹ[39m [2mdist/[22mutils-CKSrBNwq.js                   [2m   6.83 kB[22m [2m│ gzip:   2.56 kB[22m
+[34mℹ[39m [2mdist/[22mpaths-scjhy7N2.js                   [2m   6.83 kB[22m [2m│ gzip:   1.95 kB[22m
+[34mℹ[39m [2mdist/[22msqlite-BKl1HJFe.js                  [2m   6.74 kB[22m [2m│ gzip:   2.28 kB[22m
+[34mℹ[39m [2mdist/[22mauth-CbhB03Rz.js                    [2m   6.35 kB[22m [2m│ gzip:   1.80 kB[22m
+[34mℹ[39m [2mdist/[22mshared-BmtNKsPq.js                  [2m   5.69 kB[22m [2m│ gzip:   2.04 kB[22m
+[34mℹ[39m [2mdist/[22mdocs-cli-Bh1Coji2.js                [2m   5.55 kB[22m [2m│ gzip:   2.02 kB[22m
+[34mℹ[39m [2mdist/[22mpairing-cli-i7wiTmYC.js             [2m   5.19 kB[22m [2m│ gzip:   1.93 kB[22m
+[34mℹ[39m [2mdist/[22mwidearea-dns-D9Al4QRv.js            [2m   5.04 kB[22m [2m│ gzip:   1.93 kB[22m
+[34mℹ[39m [2mdist/[22mnodes-screen-DT5HvhJV.js            [2m   4.96 kB[22m [2m│ gzip:   1.32 kB[22m
+[34mℹ[39m [2mdist/[22mauth-health-Ctf-_JFE.js             [2m   4.94 kB[22m [2m│ gzip:   1.51 kB[22m
+[34mℹ[39m [2mdist/[22mnet-C8YRVt16.js                     [2m   4.39 kB[22m [2m│ gzip:   1.49 kB[22m
+[34mℹ[39m [2mdist/[22mmessage-channel-Bpfe5l5f.js         [2m   4.30 kB[22m [2m│ gzip:   1.28 kB[22m
+[34mℹ[39m [2mdist/[22mprogress-xpLtQsNY.js                [2m   4.16 kB[22m [2m│ gzip:   1.38 kB[22m
+[34mℹ[39m [2mdist/[22mrpc-Vo2ACfn-.js                     [2m   4.12 kB[22m [2m│ gzip:   1.74 kB[22m
+[34mℹ[39m [2mdist/[22mgithub-copilot-token-pGSmVaW-.js    [2m   3.97 kB[22m [2m│ gzip:   1.55 kB[22m
+[34mℹ[39m [2mdist/[22mdispatcher-6oI-H42S.js              [2m   3.93 kB[22m [2m│ gzip:   1.58 kB[22m
+[34mℹ[39m [2mdist/[22msystem-cli-SJLtqI47.js              [2m   3.90 kB[22m [2m│ gzip:   1.20 kB[22m
+[34mℹ[39m [2mdist/[22mredact-DJCFY628.js                  [2m   3.62 kB[22m [2m│ gzip:   1.43 kB[22m
+[34mℹ[39m [2mdist/[22mshared-C8_5pNbb.js                  [2m   3.21 kB[22m [2m│ gzip:   1.16 kB[22m
+[34mℹ[39m [2mdist/[22msystemd-linger-N-cIaegf.js          [2m   3.19 kB[22m [2m│ gzip:   1.01 kB[22m
+[34mℹ[39m [2mdist/[22mcli-t6FPGV-N.js                     [2m   3.09 kB[22m [2m│ gzip:   1.32 kB[22m
+[34mℹ[39m [2mdist/[22marchive-Dy3Ezb-5.js                 [2m   3.00 kB[22m [2m│ gzip:   1.16 kB[22m
+[34mℹ[39m [2mdist/[22mconstants-HPrOsATF.js               [2m   2.88 kB[22m [2m│ gzip:   0.79 kB[22m
+[34mℹ[39m [2mdist/[22mpath-env-DP3DsVge.js                [2m   2.83 kB[22m [2m│ gzip:   1.11 kB[22m
+[34mℹ[39m [2mdist/[22mtui-cli-DRSIBDgZ.js                 [2m   2.81 kB[22m [2m│ gzip:   1.31 kB[22m
+[34mℹ[39m [2mdist/[22mopenclaw-root-Cvotktkd.js           [2m   2.80 kB[22m [2m│ gzip:   0.80 kB[22m
+[34mℹ[39m [2mdist/[22mclack-prompter-CEKDd_Vg.js          [2m   2.61 kB[22m [2m│ gzip:   0.86 kB[22m
+[34mℹ[39m [2mdist/[22mnote-B5HnoeZX.js                    [2m   2.46 kB[22m [2m│ gzip:   0.91 kB[22m
+[34mℹ[39m [2mdist/[22mcontrol-service-CS61Road.js         [2m   2.44 kB[22m [2m│ gzip:   0.95 kB[22m
+[34mℹ[39m [2mdist/[22mpaths-Bb0nwPeu.js                   [2m   2.25 kB[22m [2m│ gzip:   0.73 kB[22m
+[34mℹ[39m [2mdist/[22mchannel-options-C3uCfRnr.js         [2m   2.24 kB[22m [2m│ gzip:   0.92 kB[22m
+[34mℹ[39m [2mdist/[22mnode-service-BAYHx0E7.js            [2m   2.09 kB[22m [2m│ gzip:   0.62 kB[22m
+[34mℹ[39m [2mdist/[22mchannel-selection-CJWYmCLf.js       [2m   2.06 kB[22m [2m│ gzip:   0.73 kB[22m
+[34mℹ[39m [2mdist/[22mcommand-format-ChfKqObn.js          [2m   1.95 kB[22m [2m│ gzip:   0.74 kB[22m
+[34mℹ[39m [2mdist/[22mbrew-CAcErcKz.js                    [2m   1.65 kB[22m [2m│ gzip:   0.58 kB[22m
+[34mℹ[39m [2mdist/[22musage-format-DvowRSs-.js            [2m   1.50 kB[22m [2m│ gzip:   0.58 kB[22m
+[34mℹ[39m [2mdist/[22mformat-B7OjpGnt.js                  [2m   1.28 kB[22m [2m│ gzip:   0.61 kB[22m
+[34mℹ[39m [2mdist/[22mparse-log-line-CARp5QyJ.js          [2m   1.23 kB[22m [2m│ gzip:   0.52 kB[22m
+[34mℹ[39m [2mdist/[22menv-0_mKbEWW.js                     [2m   1.21 kB[22m [2m│ gzip:   0.58 kB[22m
+[34mℹ[39m [2mdist/[22mtailnet-DLDGNuH2.js                 [2m   1.21 kB[22m [2m│ gzip:   0.55 kB[22m
+[34mℹ[39m [2mdist/[22mgateway-rpc-C8rNIC0P.js             [2m   1.17 kB[22m [2m│ gzip:   0.62 kB[22m
+[34mℹ[39m [2mdist/[22msystemd-hints-DO88c_nD.js           [2m   1.11 kB[22m [2m│ gzip:   0.55 kB[22m
+[34mℹ[39m [2mdist/[22mis-main-B6kCyqsv.js                 [2m   1.00 kB[22m [2m│ gzip:   0.40 kB[22m
+[34mℹ[39m [2mdist/[22mcli-utils-BkRQdAoC.js               [2m   0.98 kB[22m [2m│ gzip:   0.47 kB[22m
+[34mℹ[39m [2mdist/[22mstatus-DDSh7G3P.js                  [2m   0.97 kB[22m [2m│ gzip:   0.44 kB[22m
+[34mℹ[39m [2mdist/[22mboolean-BgXe2hyu.js                 [2m   0.86 kB[22m [2m│ gzip:   0.38 kB[22m
+[34mℹ[39m [2mdist/[22mpi-model-discovery-CV2V1HHz.js      [2m   0.84 kB[22m [2m│ gzip:   0.37 kB[22m
+[34mℹ[39m [2mdist/[22mstatus-tCu4RWZH.js                  [2m   0.82 kB[22m [2m│ gzip:   0.35 kB[22m
+[34mℹ[39m [2mdist/[22mdeps-MCEBhlpI.js                    [2m   0.81 kB[22m [2m│ gzip:   0.32 kB[22m
+[34mℹ[39m [2mdist/[22mhelpers-5yebzF4C.js                 [2m   0.79 kB[22m [2m│ gzip:   0.39 kB[22m
+[34mℹ[39m [2mdist/[22mparse-BZz5lHzQ.js                   [2m   0.70 kB[22m [2m│ gzip:   0.36 kB[22m
+[34mℹ[39m [2mdist/[22mhelp-format-Bozi4K9H.js             [2m   0.67 kB[22m [2m│ gzip:   0.30 kB[22m
+[34mℹ[39m [2mdist/[22mtranscript-events-ChU6IQwp.js       [2m   0.59 kB[22m [2m│ gzip:   0.29 kB[22m
+[34mℹ[39m [2mdist/[22mchannels-status-issues-CrS1r5sr.js  [2m   0.55 kB[22m [2m│ gzip:   0.30 kB[22m
+[34mℹ[39m [2mdist/[22mlogging-TXWhN8jG.js                 [2m   0.50 kB[22m [2m│ gzip:   0.30 kB[22m
+[34mℹ[39m [2mdist/[22mlinks-B5pRdmo1.js                   [2m   0.49 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22mws-CEcdsnN9.js                      [2m   0.47 kB[22m [2m│ gzip:   0.24 kB[22m
+[34mℹ[39m [2mdist/[22mscan-ports-BmIasVK0.js              [2m   0.47 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22msql-inject-DsHWPrn8.js              [2m   0.47 kB[22m [2m│ gzip:   0.31 kB[22m
+[34mℹ[39m [2mdist/[22mparse-timeout-Du-wHHNi.js           [2m   0.46 kB[22m [2m│ gzip:   0.26 kB[22m
+[34mℹ[39m [2mdist/[22mprompt-style-vzh0MGHs.js            [2m   0.45 kB[22m [2m│ gzip:   0.25 kB[22m
+[34mℹ[39m [2mdist/[22mexfil-C577SFyX.js                   [2m   0.45 kB[22m [2m│ gzip:   0.30 kB[22m
+[34mℹ[39m [2mdist/[22mfuzz-B-_LZTfU.js                    [2m   0.43 kB[22m [2m│ gzip:   0.29 kB[22m
+[34mℹ[39m [2mdist/[22mrolldown-runtime-Cbj13DAv.js        [2m   0.42 kB[22m [2m│ gzip:   0.28 kB[22m
+[34mℹ[39m [2mdist/[22mhelpers-BIc7L8EF.js                 [2m   0.41 kB[22m [2m│ gzip:   0.26 kB[22m
+[34mℹ[39m [2mdist/[22mpairing-labels-CtqLxbG6.js          [2m   0.26 kB[22m [2m│ gzip:   0.19 kB[22m
+[34mℹ[39m [2mdist/[22mprompts-FbZThK8w.js                 [2m   0.24 kB[22m [2m│ gzip:   0.17 kB[22m
+[34mℹ[39m [2mdist/[22mlogging-BWRYHvLp.js                 [2m   0.01 kB[22m [2m│ gzip:   0.03 kB[22m
+[34mℹ[39m 146 files, total: 6000.22 kB
+[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in plugin `tsdown:external`. See https://rolldown.rs/options/checks#plugintimings for more details.
+
+[32m✔[39m Build complete in [32m30504ms[39m
+
+🦞 OpenClaw 2026.2.4 (c75275f) — Say "stop" and I'll stop—say "ship" and we'll both learn a lesson.
+
+Usage: openclaw [options] [command]
+
+Options:
+  --dev             Dev profile: isolate state under ~/.openclaw-dev, default
+                    gateway port 19001, and shift derived ports (browser/canvas)
+  -h, --help        display help for command
+  --no-color        Disable ANSI colors
+  --profile <name>  Use a named profile (isolates
+                    OPENCLAW_STATE_DIR/OPENCLAW_CONFIG_PATH under
+                    ~/.openclaw-<name>)
+  -V, --version     output the version number
+
+Commands:
+  acp               Agent Control Protocol tools
+  agent             Run an agent turn via the Gateway (use --local for embedded)
+  agents            Manage isolated agents (workspaces + auth + routing)
+  approvals         Exec approvals
+  browser           Manage OpenClaw's dedicated browser (Chrome/Chromium)
+  channels          Channel management
+  completion        Generate shell completion script
+  config            Config helpers (get/set/unset). Run without subcommand for
+                    the wizard.
+  configure         Interactive prompt to set up credentials, devices, and agent
+                    defaults
+  cron              Cron scheduler
+  daemon            Gateway service (legacy alias)
+  dashboard         Open the Control UI with your current token
+  devices           Device pairing + token management
+  directory         Directory commands
+  dns               DNS helpers
+  docs              Docs helpers
+  doctor            Health checks + quick fixes for the gateway and channels
+  gateway           Gateway control
+  health            Fetch health from the running gateway
+  help              display help for command
+  hooks             Hooks tooling
+  logs              Gateway logs
+  memory            Memory search tools
+  message           Send messages and channel actions
+  models            Model configuration
+  node              Node control
+  nodes             Node commands
+  onboard           Interactive wizard to set up the gateway, workspace, and
+                    skills
+  pairing           Pairing helpers
+  plugins           Plugin management
+  reset             Reset local config/state (keeps the CLI installed)
+  sandbox           Sandbox tools
+  security          Security helpers
+  sessions          List stored conversation sessions
+  setup             Initialize ~/.openclaw/openclaw.json and the agent workspace
+  skills            Skills management
+  status            Show channel health and recent session recipients
+  system            System events, heartbeat, and presence
+  tui               Terminal UI
+  uninstall         Uninstall the gateway service + local data (CLI remains)
+  update            CLI update helpers
+  webhooks          Webhook helpers
+
+Examples:
+  openclaw channels login --verbose
+    Link personal WhatsApp Web and show QR + connection logs.
+  openclaw message send --target +15555550123 --message "Hi" --json
+    Send via your web session and print JSON result.
+  openclaw gateway --port 18789
+    Run the WebSocket Gateway locally.
+  openclaw --dev gateway
+    Run a dev Gateway (isolated state/config) on ws://127.0.0.1:19001.
+  openclaw gateway --force
+    Kill anything bound to the default gateway port, then start it.
+  openclaw gateway ...
+    Gateway control via WebSocket.
+  openclaw agent --to +15555550123 --message "Run summary" --deliver
+    Talk directly to the agent using the Gateway; optionally send the WhatsApp reply.
+  openclaw message send --channel telegram --target @mychat --message "Hi"
+    Send via your Telegram bot.
+
+Docs: https://docs.openclaw.ai/cli
+
+ ELIFECYCLE  Command failed with exit code 1.
+
+> openclaw@2026.2.4 dev /workspaces/LUCIFER-OS/openclaw
+> node scripts/run-node.mjs
+
+
+🦞 OpenClaw 2026.2.4 (c75275f) — The only crab in your contacts you actually want to hear from. 🦞
+
+Usage: openclaw [options] [command]
+
+Options:
+  --dev             Dev profile: isolate state under ~/.openclaw-dev, default
+                    gateway port 19001, and shift derived ports (browser/canvas)
+  -h, --help        display help for command
+  --no-color        Disable ANSI colors
+  --profile <name>  Use a named profile (isolates
+                    OPENCLAW_STATE_DIR/OPENCLAW_CONFIG_PATH under
+                    ~/.openclaw-<name>)
+  -V, --version     output the version number
+
+Commands:
+  acp               Agent Control Protocol tools
+  agent             Run an agent turn via the Gateway (use --local for embedded)
+  agents            Manage isolated agents (workspaces + auth + routing)
+  approvals         Exec approvals
+  browser           Manage OpenClaw's dedicated browser (Chrome/Chromium)
+  channels          Channel management
+  completion        Generate shell completion script
+  config            Config helpers (get/set/unset). Run without subcommand for
+                    the wizard.
+  configure         Interactive prompt to set up credentials, devices, and agent
+                    defaults
+  cron              Cron scheduler
+  daemon            Gateway service (legacy alias)
+  dashboard         Open the Control UI with your current token
+  devices           Device pairing + token management
+  directory         Directory commands
+  dns               DNS helpers
+  docs              Docs helpers
+  doctor            Health checks + quick fixes for the gateway and channels
+  gateway           Gateway control
+  health            Fetch health from the running gateway
+  help              display help for command
+  hooks             Hooks tooling
+  logs              Gateway logs
+  memory            Memory search tools
+  message           Send messages and channel actions
+  models            Model configuration
+  node              Node control
+  nodes             Node commands
+  onboard           Interactive wizard to set up the gateway, workspace, and
+                    skills
+  pairing           Pairing helpers
+  plugins           Plugin management
+  reset             Reset local config/state (keeps the CLI installed)
+  sandbox           Sandbox tools
+  security          Security helpers
+  sessions          List stored conversation sessions
+  setup             Initialize ~/.openclaw/openclaw.json and the agent workspace
+  skills            Skills management
+  status            Show channel health and recent session recipients
+  system            System events, heartbeat, and presence
+  tui               Terminal UI
+  uninstall         Uninstall the gateway service + local data (CLI remains)
+  update            CLI update helpers
+  webhooks          Webhook helpers
+
+Examples:
+  openclaw channels login --verbose
+    Link personal WhatsApp Web and show QR + connection logs.
+  openclaw message send --target +15555550123 --message "Hi" --json
+    Send via your web session and print JSON result.
+  openclaw gateway --port 18789
+    Run the WebSocket Gateway locally.
+  openclaw --dev gateway
+    Run a dev Gateway (isolated state/config) on ws://127.0.0.1:19001.
+  openclaw gateway --force
+    Kill anything bound to the default gateway port, then start it.
+  openclaw gateway ...
+    Gateway control via WebSocket.
+  openclaw agent --to +15555550123 --message "Run summary" --deliver
+    Talk directly to the agent using the Gateway; optionally send the WhatsApp reply.
+  openclaw message send --channel telegram --target @mychat --message "Hi"
+    Send via your Telegram bot.
+
+Docs: https://docs.openclaw.ai/cli
+
+ ELIFECYCLE  Command failed with exit code 1.

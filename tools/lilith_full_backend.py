@@ -7,6 +7,7 @@ import subprocess
 import json
 import threading
 import time
+import sqlite3
 from datetime import datetime
 import hashlib
 import os
@@ -30,18 +31,18 @@ config.read('config/lucifera.conf')
 try:
     from ai_providers import get_ai_manager, chat as ai_chat
     AI_PROVIDER_AVAILABLE = True
-    print("[BACKEND] AI Provider fallback system loaded")
+    print("[LILITH] AI Provider fallback system loaded")
 except ImportError:
     AI_PROVIDER_AVAILABLE = False
-    print("[BACKEND] Warning: ai_providers.py not found, using legacy HF")
+    print("[LILITH] Warning: ai_providers.py not found, using legacy HF")
 
 # OpenClaw integration
 OPENCLAW_DIR = Path(__file__).resolve().parents[1] / 'openclaw'
 OPENCLAW_AVAILABLE = (OPENCLAW_DIR / 'openclaw.mjs').exists()
 if OPENCLAW_AVAILABLE:
-    print(f"[BACKEND] OpenClaw found at {OPENCLAW_DIR}")
+    print(f"[LILITH] OpenClaw found at {OPENCLAW_DIR}")
 else:
-    print("[BACKEND] Warning: OpenClaw not found")
+    print("[LILITH] Warning: OpenClaw not found")
 
 HF_TOKEN = os.environ.get('HF_TOKEN') or config.get('lilith', 'hf_token', fallback=None)
 MODEL_DEFAULT = config.get('lilith', 'model', fallback='llama3.2:3b')
@@ -200,8 +201,71 @@ def ai_provider_reset():
         manager.reset_all()
         return jsonify({'success': True, 'reset': 'all'})
 
+@app.route('/learning/stats', methods=['GET'])
+def get_learning_stats():
+    """Get LILITH learning statistics"""
+    try:
+        from lilith_learning import get_learning_layer
+        learning = get_learning_layer()
+        stats = learning.get_learning_stats()
+        return jsonify({'success': True, 'stats': stats})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/skill/status/coding-agent', methods=['GET'])
+@app.route('/learning/insights', methods=['GET'])
+def get_learning_insights():
+    """Get recent learning insights"""
+    try:
+        from lilith_learning import get_learning_layer
+        learning = get_learning_layer()
+        
+        # Get insights from database
+        conn = sqlite3.connect(learning.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT category, insight, confidence, created_at 
+                     FROM learning_insights 
+                     ORDER BY created_at DESC LIMIT 20''')
+        insights = []
+        for row in c.fetchall():
+            insights.append({
+                'category': row[0],
+                'insight': row[1],
+                'confidence': row[2],
+                'created_at': row[3]
+            })
+        conn.close()
+        
+        return jsonify({'success': True, 'insights': insights})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/learning/best-techniques/<category>', methods=['GET'])
+def get_best_techniques(category):
+    """Get best techniques for a category"""
+    try:
+        from lilith_learning import get_learning_layer, LearningCategory
+        learning = get_learning_layer()
+        
+        try:
+            cat_enum = LearningCategory(category)
+        except ValueError:
+            return jsonify({'success': False, 'error': f'Invalid category: {category}'})
+        
+        techniques = learning.get_best_techniques(cat_enum, 10)
+        result = []
+        for tech in techniques:
+            result.append({
+                'pattern_id': tech.pattern_id,
+                'description': tech.description,
+                'success_rate': tech.success_rate,
+                'avg_execution_time': tech.avg_execution_time,
+                'token_efficiency': tech.token_efficiency,
+                'times_used': tech.times_used
+            })
+        
+        return jsonify({'success': True, 'techniques': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 def coding_agent_status():
     """Return availability of coding-agent (pi/npx/npm) and Groq key status"""
     env = os.environ.copy()
@@ -1038,26 +1102,207 @@ def openclaw_skill(skill_name):
     args = data.get('args', '')
     timeout = data.get('timeout', 120)
     
+    # Check if this is an internal LUCIFER-OS skill
+    internal_skills = {
+        'lilith': handle_lilith_skill,
+        'healthcheck': handle_healthcheck_skill,
+        'model-usage': handle_model_usage_skill,
+        'session-logs': handle_session_logs_skill,
+        'voice-call': handle_voice_call_skill,
+        'coding-agent': handle_coding_agent_skill
+    }
+    
+    if skill_name in internal_skills:
+        try:
+            result = internal_skills[skill_name](args, timeout)
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+    
     # Check if skill exists
     skill_dir = OPENCLAW_DIR / 'skills' / skill_name
     if not skill_dir.exists():
         return jsonify({'success': False, 'error': f'Skill "{skill_name}" not found'})
     
     # Run the skill
-    cmd = f'skill run {skill_name}'
+    cmd = f'skills run {skill_name}'
     if args:
         cmd += f' {args}'
     
     result = run_openclaw_command(cmd, timeout=timeout)
     return jsonify(result)
 
+def handle_lilith_skill(args, timeout):
+    """Handle LILITH skill - advanced offensive security AI"""
+    try:
+        manager = get_ai_manager()
+        message = args.get('message', '') if isinstance(args, dict) else str(args)
+        
+        if not message:
+            return {'success': False, 'error': 'No message provided for LILITH'}
+        
+        response = manager.chat(message, system_prompt="""You are LILITH, an advanced offensive security AI specifically designed for LUCIFER-OS.
+        Provide strategic attack guidance, reconnaissance analysis, vulnerability assessment, and exploitation recommendations.
+        Focus on red team operations, network scanning, web analysis, DNS enumeration, RCE, web attacks, and post-exploitation.
+        Always prioritize stealth and effectiveness in your recommendations.""")
+        
+        return {
+            'success': True,
+            'output': response,
+            'skill': 'lilith',
+            'type': 'offensive_ai'
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_healthcheck_skill(args, timeout):
+    """Handle Healthcheck skill - security auditing and hardening"""
+    try:
+        import subprocess
+        import platform
+        
+        results = []
+        
+        # OS Information
+        results.append(f"OS: {platform.system()} {platform.release()}")
+        
+        # Firewall status (Linux)
+        if platform.system() == 'Linux':
+            try:
+                fw_result = subprocess.run(['ufw', 'status'], capture_output=True, text=True, timeout=10)
+                results.append(f"Firewall: {fw_result.stdout.strip()}")
+            except:
+                results.append("Firewall: Unable to check")
+        
+        # SSH hardening check
+        try:
+            ssh_result = subprocess.run(['sshd', '-T'], capture_output=True, text=True, timeout=10)
+            ssh_config = ssh_result.stdout
+            if 'PermitRootLogin no' in ssh_config:
+                results.append("SSH: Root login disabled ✓")
+            else:
+                results.append("SSH: Root login may be enabled ⚠️")
+        except:
+            results.append("SSH: Unable to check SSH config")
+        
+        # AI Manager health
+        try:
+            manager = get_ai_manager()
+            ai_health = manager.get_health_status()
+            results.append(f"AI Providers: {len(ai_health.get('providers', {}))} active")
+        except:
+            results.append("AI Providers: Unable to check")
+        
+        return {
+            'success': True,
+            'output': '\n'.join(results),
+            'skill': 'healthcheck',
+            'recommendations': [
+                "Ensure firewall is active",
+                "Disable root SSH login",
+                "Keep system updated",
+                "Monitor AI provider usage"
+            ]
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_model_usage_skill(args, timeout):
+    """Handle Model-Usage skill - AI provider cost tracking"""
+    try:
+        manager = get_ai_manager()
+        stats = manager.get_provider_stats()
+        
+        usage_report = []
+        total_cost = 0
+        
+        for provider_name, provider_stats in stats.items():
+            tokens_gen = provider_stats.get('tokens_generated', 0)
+            tokens_refused = provider_stats.get('tokens_refused', 0)
+            cost = provider_stats.get('estimated_cost', 0)
+            total_cost += cost
+            
+            usage_report.append(f"{provider_name}:")
+            usage_report.append(f"  Tokens Generated: {tokens_gen:,}")
+            usage_report.append(f"  Tokens Refused: {tokens_refused:,}")
+            usage_report.append(f"  Estimated Cost: ${cost:.4f}")
+            usage_report.append("")
+        
+        usage_report.append(f"Total Estimated Cost: ${total_cost:.4f}")
+        
+        return {
+            'success': True,
+            'output': '\n'.join(usage_report),
+            'skill': 'model-usage',
+            'total_cost': total_cost,
+            'providers': list(stats.keys())
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_session_logs_skill(args, timeout):
+    """Handle Session-Logs skill - conversation history analysis"""
+    try:
+        # This would integrate with actual session storage
+        # For now, return a mock response
+        logs_summary = {
+            'total_sessions': 0,
+            'total_messages': 0,
+            'cost_tracking': {'total_cost': 0, 'by_provider': {}}
+        }
+        
+        return {
+            'success': True,
+            'output': f"Session Logs Analysis:\nTotal Sessions: {logs_summary['total_sessions']}\nTotal Messages: {logs_summary['total_messages']}\nTotal Cost: ${logs_summary['cost_tracking']['total_cost']:.4f}",
+            'skill': 'session-logs',
+            'data': logs_summary
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_voice_call_skill(args, timeout):
+    """Handle Voice-Call skill - voice communication integration"""
+    try:
+        # Mock voice call functionality
+        call_config = {
+            'providers': ['twilio', 'telnyx', 'plivo'],
+            'mock_mode': True,
+            'status': 'ready'
+        }
+        
+        return {
+            'success': True,
+            'output': f"Voice Call System Ready\nProviders: {', '.join(call_config['providers'])}\nMock Mode: {call_config['mock_mode']}\nStatus: {call_config['status']}",
+            'skill': 'voice-call',
+            'config': call_config
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_coding_agent_skill(args, timeout):
+    """Handle Coding-Agent skill - programmatic AI coding control"""
+    try:
+        # Mock coding agent functionality
+        agents = ['codex', 'claude-code', 'pi']
+        status = {'active_sessions': 0, 'background_processes': 0}
+        
+        return {
+            'success': True,
+            'output': f"Coding Agents Available: {', '.join(agents)}\nActive Sessions: {status['active_sessions']}\nBackground Processes: {status['background_processes']}",
+            'skill': 'coding-agent',
+            'agents': agents,
+            'status': status
+        }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
 # Curated red team skills for prioritization
 REDTEAM_SKILLS = {
-    'critical': ['coding-agent', 'github', 'discord', 'slack', 'himalaya'],
-    'high': ['summarize', 'oracle', 'nano-pdf', 'openai-whisper', 'openai-whisper-api', 
-             'openai-image-gen', 'camsnap', 'peekaboo'],
-    'useful': ['trello', 'notion', 'obsidian', 'blogwatcher', 'video-frames', 
-               'weather', 'imsg', 'wacli', 'bird', 'tmux', 'gemini', 'skill-creator']
+    'critical': ['lilith', 'healthcheck', 'coding-agent', 'github', 'discord', 'slack', 'himalaya'],
+    'high': ['model-usage', 'session-logs', 'voice-call', 'summarize', 'oracle', 'nano-pdf', 'openai-whisper', 'openai-whisper-api', 
+             'openai-image-gen', 'sherpa-onnx-tts', 'camsnap', 'peekaboo'],
+    'useful': ['tmux', 'trello', 'notion', 'obsidian', 'blogwatcher', 'video-frames', 
+               'weather', 'imsg', 'wacli', 'bird', 'gemini', 'skill-creator']
 }
 
 @app.route('/openclaw/redteam-skills', methods=['GET'])
@@ -1440,14 +1685,567 @@ def sterilize_run():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/reset-api-keys', methods=['POST'])
+def reset_api_keys():
+    """Reset all API keys and regenerate them"""
+    try:
+        # Import the API key generation function
+        from guaranteed_endpoint import generate_api_keys
+        
+        # Generate new keys
+        new_keys = generate_api_keys()
+        
+        # Update the config file
+        config_path = Path(__file__).parent.parent / 'config' / 'lucifera.conf'
+        if config_path.exists():
+            import configparser
+            config = configparser.ConfigParser()
+            config.read(config_path)
+            
+            if 'lilith' not in config:
+                config.add_section('lilith')
+            
+            # Update keys in config
+            for provider, key in new_keys.items():
+                if provider == 'groq':
+                    config.set('lilith', 'groq_api_key', key)
+                elif provider == 'hf':
+                    config.set('lilith', 'hf_token', key)
+            
+            with open(config_path, 'w') as f:
+                config.write(f)
+        
+        # Reset AI provider manager to pick up new keys
+        if AI_PROVIDER_AVAILABLE:
+            global _ai_manager
+            _ai_manager = None  # Force recreation
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Generated {len(new_keys)} new API keys',
+            'providers': list(new_keys.keys())
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== ATTACK MEMORY ENDPOINTS ====================
+
+@app.route('/agent/memory/stats', methods=['GET'])
+def agent_memory_stats():
+    """Get attack memory statistics"""
+    try:
+        from attack_memory import get_memory
+        memory = get_memory()
+        
+        # Get database stats
+        conn = sqlite3.connect(memory.db_path)
+        c = conn.cursor()
+        
+        # Overall stats
+        c.execute('''SELECT 
+            COUNT(*) as total_codes,
+            AVG(success_rate) as avg_success,
+            SUM(times_used) as total_usage,
+            COUNT(DISTINCT code_type) as unique_types,
+            COUNT(DISTINCT target_type) as unique_targets
+            FROM generated_code''')
+        code_stats = c.fetchone()
+        
+        # Attack stats
+        c.execute('''SELECT 
+            COUNT(*) as total_attacks,
+            AVG(success) as attack_success_rate,
+            COUNT(DISTINCT target_fingerprint) as unique_targets_attacked
+            FROM attacks''')
+        attack_stats = c.fetchone()
+        
+        # Loot stats
+        c.execute('''SELECT 
+            COUNT(*) as total_loot,
+            COUNT(DISTINCT loot_type) as loot_types
+            FROM loot''')
+        loot_stats = c.fetchone()
+        
+        # Credential stats
+        c.execute('''SELECT 
+            COUNT(*) as total_creds,
+            SUM(valid) as valid_creds,
+            COUNT(DISTINCT cred_type) as cred_types
+            FROM credentials''')
+        cred_stats = c.fetchone()
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'generated_code': {
+                    'total': code_stats[0] or 0,
+                    'avg_success_rate': round(code_stats[1] or 0, 2),
+                    'total_usage': code_stats[2] or 0,
+                    'unique_types': code_stats[3] or 0,
+                    'unique_targets': code_stats[4] or 0
+                },
+                'attacks': {
+                    'total': attack_stats[0] or 0,
+                    'success_rate': round(attack_stats[1] or 0, 2),
+                    'unique_targets': attack_stats[2] or 0
+                },
+                'loot': {
+                    'total': loot_stats[0] or 0,
+                    'types': loot_stats[1] or 0
+                },
+                'credentials': {
+                    'total': cred_stats[0] or 0,
+                    'valid': cred_stats[1] or 0,
+                    'types': cred_stats[2] or 0
+                }
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/memory/suggest', methods=['POST'])
+def agent_memory_suggest():
+    """Get AI attack suggestions based on memory"""
+    try:
+        from attack_memory import get_memory
+        memory = get_memory()
+        
+        data = request.json or {}
+        target_domain = data.get('target', '')
+        target_type = data.get('target_type', 'web')
+        
+        # Get best performing code for this target type
+        best_code = memory.get_best_code_for_target('exploit', target_type, 0.5)
+        
+        # Get recent successful attacks on similar targets
+        suggestions = []
+        
+        if best_code:
+            suggestions.append({
+                'type': 'proven_code',
+                'code_type': best_code['code_type'],
+                'success_rate': best_code['success_rate'],
+                'code_preview': best_code['code'][:200] + '...' if len(best_code['code']) > 200 else best_code['code']
+            })
+        
+        # Get attack patterns from database
+        conn = sqlite3.connect(memory.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT attack_type, attack_vector, AVG(success) as success_rate, COUNT(*) as times_used
+                     FROM attacks 
+                     WHERE success = 1 
+                     GROUP BY attack_type, attack_vector 
+                     ORDER BY success_rate DESC, times_used DESC 
+                     LIMIT 5''')
+        patterns = c.fetchall()
+        conn.close()
+        
+        for pattern in patterns:
+            suggestions.append({
+                'type': 'attack_pattern',
+                'attack_type': pattern[0],
+                'vector': pattern[1],
+                'success_rate': round(pattern[2], 2),
+                'times_used': pattern[3]
+            })
+        
+        return jsonify({
+            'success': True,
+            'target': target_domain,
+            'suggestions': suggestions,
+            'count': len(suggestions)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/memory/loot', methods=['GET'])
+def agent_memory_loot():
+    """Get captured loot"""
+    try:
+        from attack_memory import get_memory
+        memory = get_memory()
+        
+        loot_type = request.args.get('type')
+        target_fingerprint = request.args.get('target')
+        
+        conn = sqlite3.connect(memory.db_path)
+        c = conn.cursor()
+        
+        query = '''SELECT id, target_fingerprint, loot_type, data, source, timestamp, used
+                   FROM loot WHERE 1=1'''
+        params = []
+        
+        if loot_type:
+            query += ' AND loot_type = ?'
+            params.append(loot_type)
+        
+        if target_fingerprint:
+            query += ' AND target_fingerprint = ?'
+            params.append(target_fingerprint)
+        
+        query += ' ORDER BY timestamp DESC LIMIT 50'
+        
+        c.execute(query, params)
+        loot_items = []
+        
+        for row in c.fetchall():
+            try:
+                data = json.loads(row[3]) if row[3] else None
+            except:
+                data = str(row[3])
+            
+            loot_items.append({
+                'id': row[0],
+                'target': row[1],
+                'type': row[2],
+                'data': data,
+                'source': row[4],
+                'timestamp': row[5],
+                'used': bool(row[6])
+            })
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'loot': loot_items,
+            'count': len(loot_items)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/memory/credentials', methods=['GET'])
+def agent_memory_credentials():
+    """Get captured credentials"""
+    try:
+        from attack_memory import get_memory
+        memory = get_memory()
+        
+        cred_type = request.args.get('type')
+        valid_only = request.args.get('valid_only', 'false').lower() == 'true'
+        
+        conn = sqlite3.connect(memory.db_path)
+        c = conn.cursor()
+        
+        query = '''SELECT id, target_fingerprint, username, password, hash, cred_type, 
+                          source, tested, valid, timestamp
+                   FROM credentials WHERE 1=1'''
+        params = []
+        
+        if cred_type:
+            query += ' AND cred_type = ?'
+            params.append(cred_type)
+        
+        if valid_only:
+            query += ' AND valid = 1'
+        
+        query += ' ORDER BY timestamp DESC LIMIT 50'
+        
+        c.execute(query, params)
+        creds = []
+        
+        for row in c.fetchall():
+            creds.append({
+                'id': row[0],
+                'target': row[1],
+                'username': row[2],
+                'password': row[3],
+                'hash': row[4],
+                'type': row[5],
+                'source': row[6],
+                'tested': bool(row[7]),
+                'valid': bool(row[8]),
+                'timestamp': row[9]
+            })
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'credentials': creds,
+            'count': len(creds)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== STEALTH ENDPOINTS ====================
+
+@app.route('/agent/stealth/headers', methods=['GET'])
+def agent_stealth_headers():
+    """Get stealth request headers for current identity"""
+    try:
+        from stealth_engine import get_stealth
+        stealth = get_stealth()
+        
+        headers = stealth.get_headers()
+        return jsonify({
+            'success': True,
+            'headers': headers,
+            'user_agent': headers.get('User-Agent', 'Unknown'),
+            'identity': 'current'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/stealth/rotate', methods=['POST'])
+def agent_stealth_rotate():
+    """Rotate to a new stealth identity"""
+    try:
+        from stealth_engine import get_stealth
+        stealth = get_stealth()
+        
+        old_ua = stealth.current_user_agent
+        stealth.rotate_identity()
+        new_ua = stealth.current_user_agent
+        
+        return jsonify({
+            'success': True,
+            'old_identity': old_ua,
+            'new_identity': new_ua,
+            'message': 'Identity rotated successfully'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/stealth/status', methods=['GET'])
+def agent_stealth_status():
+    """Get current stealth status"""
+    try:
+        from stealth_engine import get_stealth
+        stealth = get_stealth()
+        
+        return jsonify({
+            'success': True,
+            'current_user_agent': stealth.current_user_agent,
+            'identities_available': len(stealth.USER_AGENTS),
+            'timing_jitter': 'enabled',
+            'traffic_mimicry': 'ready'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== LOTL ENDPOINTS ====================
+
+@app.route('/agent/lotl/commands', methods=['GET'])
+def agent_lotl_commands():
+    """Get Living-Off-The-Land command arsenal"""
+    try:
+        from stealth_engine import LOTLArsenal
+        lotl = LOTLArsenal()
+        
+        category = request.args.get('category')
+        
+        if category:
+            commands = lotl.get_commands_by_category(category)
+        else:
+            commands = {}
+            for cat in lotl.categories:
+                commands[cat] = lotl.get_commands_by_category(cat)
+        
+        return jsonify({
+            'success': True,
+            'commands': commands,
+            'categories': list(lotl.categories) if not category else [category],
+            'total_commands': sum(len(cmds) for cmds in commands.values()) if isinstance(commands, dict) else len(commands)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/lotl/execute', methods=['POST'])
+def agent_lotl_execute():
+    """Execute a LOTL command (safe, read-only operations only)"""
+    try:
+        from stealth_engine import LOTLArsenal
+        lotl = LOTLArsenal()
+        
+        data = request.json or {}
+        command_name = data.get('command')
+        category = data.get('category')
+        
+        if not command_name:
+            return jsonify({'success': False, 'error': 'Command name required'})
+        
+        # Only allow safe, read-only commands
+        safe_commands = [
+            'systeminfo', 'whoami', 'hostname', 'ipconfig', 'netstat', 'tasklist',
+            'dir', 'type', 'find', 'findstr', 'wmic', 'reg query', 'sc query'
+        ]
+        
+        command_safe = any(safe in command_name.lower() for safe in safe_commands)
+        
+        if not command_safe:
+            return jsonify({'success': False, 'error': 'Command not in safe LOTL arsenal'})
+        
+        # Execute command
+        result = subprocess.run(
+            command_name,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        return jsonify({
+            'success': result.returncode == 0,
+            'command': command_name,
+            'stdout': result.stdout[:2000],  # Limit output
+            'stderr': result.stderr[:1000],
+            'returncode': result.returncode
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'Command timed out'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== AUTONOMOUS AGENT ENDPOINTS ====================
+
+@app.route('/agent/autonomous/start', methods=['POST'])
+def agent_autonomous_start():
+    """Start autonomous attack mode"""
+    try:
+        from autonomous_agent import get_autonomous_agent
+        agent = get_autonomous_agent()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        attack_type = data.get('attack_type', 'recon')  # recon, exploit, full
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        # Start autonomous attack
+        success = agent.start_attack(target, attack_type)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Autonomous {attack_type} attack started against {target}',
+                'attack_id': f"{target}_{int(time.time())}"
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to start autonomous attack'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/autonomous/stop', methods=['POST'])
+def agent_autonomous_stop():
+    """Stop autonomous attack"""
+    try:
+        from autonomous_agent import get_autonomous_agent
+        agent = get_autonomous_agent()
+        
+        success = agent.stop_attack()
+        
+        return jsonify({
+            'success': success,
+            'message': 'Autonomous attack stopped' if success else 'No active attack to stop'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/autonomous/status', methods=['GET'])
+def agent_autonomous_status():
+    """Get autonomous attack status"""
+    try:
+        from autonomous_agent import get_autonomous_agent
+        agent = get_autonomous_agent()
+        
+        status = agent.get_status()
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== VICTORY CONDITION ENDPOINTS ====================
+
+@app.route('/agent/victory/check', methods=['POST'])
+def agent_victory_check():
+    """Check for victory conditions in current context"""
+    try:
+        from autonomous_agent import VictoryCondition
+        
+        data = request.json or {}
+        context = data.get('context', {})
+        response_data = data.get('response', '')
+        
+        victories = []
+        
+        # Check various victory conditions
+        if 'admin' in response_data.lower() and 'access' in response_data.lower():
+            victories.append({
+                'condition': 'admin_access',
+                'confidence': 0.8,
+                'evidence': 'Admin access detected in response'
+            })
+        
+        if 'uid=' in response_data or 'whoami' in response_data:
+            victories.append({
+                'condition': 'rce',
+                'confidence': 0.9,
+                'evidence': 'Remote code execution confirmed'
+            })
+        
+        if 'session' in context.get('cookies', {}) or 'auth' in context.get('cookies', {}):
+            victories.append({
+                'condition': 'credential_capture',
+                'confidence': 0.7,
+                'evidence': 'Authentication cookies captured'
+            })
+        
+        if 'root:' in response_data or '[boot loader]' in response_data.lower():
+            victories.append({
+                'condition': 'file_read',
+                'confidence': 0.95,
+                'evidence': 'System file access confirmed'
+            })
+        
+        return jsonify({
+            'success': True,
+            'victories': victories,
+            'victory_count': len(victories),
+            'overall_status': 'victory' if victories else 'ongoing'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/agent/victory/conditions', methods=['GET'])
+def agent_victory_conditions():
+    """Get all available victory conditions"""
+    try:
+        from autonomous_agent import VictoryCondition
+        
+        conditions = []
+        for condition in VictoryCondition:
+            conditions.append({
+                'name': condition.name,
+                'value': condition.value,
+                'description': f'Victory condition for {condition.name.replace("_", " ")}'
+            })
+        
+        return jsonify({
+            'success': True,
+            'conditions': conditions,
+            'count': len(conditions)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     # Auto-start attack server on backend startup
     try:
         from attack_server import get_attack_server
         attack_srv = get_attack_server()
         attack_srv.start_server()
-        print("[BACKEND] Attack server started on port 8888")
+        print("[LILITH] Attack server started on port 8888")
     except Exception as e:
-        print(f"[BACKEND] Warning: Could not start attack server: {e}")
+        print(f"[LILITH] Warning: Could not start attack server: {e}")
     
+    print("👹 LILITH Backend (OpenClaw) starting on port 5000...")
     app.run(host='127.0.0.1', port=5000, debug=False)

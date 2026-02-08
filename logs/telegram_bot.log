@@ -1,0 +1,24 @@
+Enter your Telegram Bot Token (get from @BotFather):
+Traceback (most recent call last):
+  File "/workspaces/LUCIFER-OS/telegram_lilith_bot.py", line 171, in <module>
+    main()
+  File "/workspaces/LUCIFER-OS/telegram_lilith_bot.py", line 155, in main
+    token = input().strip()
+            ^^^^^^^
+EOFError: EOF when reading a line
+Enter your Telegram Bot Token (get from @BotFather):
+Traceback (most recent call last):
+  File "/workspaces/LUCIFER-OS/telegram_lilith_bot.py", line 171, in <module>
+    main()
+  File "/workspaces/LUCIFER-OS/telegram_lilith_bot.py", line 155, in main
+    token = input().strip()
+            ^^^^^^^
+EOFError: EOF when reading a line
+Enter your Telegram Bot Token (get from @BotFather):
+Traceback (most recent call last):
+  File "/workspaces/LUCIFER-OS/telegram_lilith_bot.py", line 171, in <module>
+    main()
+  File "/workspaces/LUCIFER-OS/telegram_lilith_bot.py", line 155, in main
+    token = input().strip()
+            ^^^^^^^
+EOFError: EOF when reading a line

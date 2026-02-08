@@ -517,3 +517,74 @@ if __name__ == "__main__":
     else:
         print(f"Unknown command or missing argument: {command}")
         print_help()
+
+
+class ReconToolkit:
+    """Class wrapper for reconnaissance tools"""
+    
+    def __init__(self):
+        self.results = []
+    
+    def scan_target(self, target):
+        """Perform comprehensive reconnaissance scan on target"""
+        try:
+            results = []
+            
+            # Parse target to extract domain/IP
+            if '://' in target:
+                parsed = urlparse(target)
+                domain = parsed.netloc
+            else:
+                domain = target
+            
+            # DNS lookup
+            dns_results = dns_lookup(domain)
+            if dns_results:
+                results.append({
+                    'type': 'dns',
+                    'data': dns_results,
+                    'risk': 'low'
+                })
+            
+            # Port scan (common ports)
+            port_results = port_scan(domain, [21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 445, 993, 995, 3389])
+            if port_results:
+                results.append({
+                    'type': 'ports',
+                    'data': port_results,
+                    'risk': 'medium'
+                })
+            
+            # Technology detection
+            tech_results = detect_technologies(target)
+            if tech_results:
+                results.append({
+                    'type': 'technologies',
+                    'data': tech_results,
+                    'risk': 'low'
+                })
+            
+            # SSL analysis if HTTPS
+            if target.startswith('https://'):
+                ssl_results = analyze_ssl(domain)
+                if ssl_results:
+                    results.append({
+                        'type': 'ssl',
+                        'data': ssl_results,
+                        'risk': 'medium'
+                    })
+            
+            # Subdomain discovery
+            subdomain_results = discover_subdomains(domain)
+            if subdomain_results:
+                results.append({
+                    'type': 'subdomains',
+                    'data': subdomain_results,
+                    'risk': 'low'
+                })
+            
+            self.results = results
+            return results
+            
+        except Exception as e:
+            return [{'type': 'error', 'data': str(e), 'risk': 'unknown'}]

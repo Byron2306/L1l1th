@@ -1,0 +1,2 @@
+2026-02-07T11:15:47.235Z Gateway auth is set to token, but no token is configured.
+Set gateway.auth.token (or OPENCLAW_GATEWAY_TOKEN), or pass --token.

@@ -1,7 +1,0 @@
-from gradio_client import Client
-
-client = Client("Byron230686/LuciferOS")
-result = client.predict(
-    api_name="/_check_login_status"
-)
-print(result)

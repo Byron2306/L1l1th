@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUCIFEROS - Ultimate Red Team Command Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/dashboard.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-light">
+    <!-- Header -->
+    <nav class="navbar navbar-dark bg-black border-bottom border-danger">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-skull-crossbones text-danger me-2"></i>
+                LUCIFEROS - Ultimate Red Team Command Center
+            </a>
+            <div class="d-flex">
+                <span id="system-status" class="badge bg-secondary me-2">
+                    <i class="fas fa-circle text-warning"></i> Initializing...
+                </span>
+                <button class="btn btn-outline-danger btn-sm" onclick="emergencyStop()">
+                    <i class="fas fa-stop"></i> Emergency Stop
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Sidebar - Control Panel -->
+            <div class="col-md-3">
+                <div class="card bg-black border-danger mb-3">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-cogs"></i> Control Panel</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Target Configuration -->
+                        <div class="mb-3">
+                            <label class="form-label text-danger">Target</label>
+                            <input type="text" id="target-input" class="form-control bg-dark text-light border-secondary" placeholder="Enter target URL/IP">
+                        </div>
+
+                        <!-- Attack Modes -->
+                        <div class="mb-3">
+                            <label class="form-label text-danger">Attack Mode</label>
+                            <select id="attack-mode" class="form-select bg-dark text-light border-secondary">
+                                <option value="recon">Reconnaissance</option>
+                                <option value="ai_autonomous">AI Autonomous</option>
+                                <option value="browser_hijack">Browser Hijack</option>
+                                <option value="web_attack">Web Attack</option>
+                                <option value="payload_injection">Payload Injection</option>
+                            </select>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-danger" onclick="startAttack()">
+                                <i class="fas fa-play"></i> Start Attack
+                            </button>
+                            <button class="btn btn-warning" onclick="stopAttack()">
+                                <i class="fas fa-stop"></i> Stop Attack
+                            </button>
+                        </div>
+
+                        <!-- AI Panel -->
+                        <div class="mt-3">
+                            <label class="form-label text-danger">AI Query</label>
+                            <textarea id="ai-query" class="form-control bg-dark text-light border-secondary" rows="3" placeholder="Ask AI for assistance..."></textarea>
+                            <select id="ai-provider" class="form-select mt-2 bg-dark text-light border-secondary">
+                                <option value="auto">Auto</option>
+                                <option value="groq">Groq</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
+                            </select>
+                            <button class="btn btn-info mt-2 w-100" onclick="sendAIQuery()">
+                                <i class="fas fa-brain"></i> Query AI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OpenClaw Integration -->
+                <div class="card bg-black border-info mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-robot"></i> OpenClaw</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-info small">Integrated AI agent system</p>
+                        <button class="btn btn-info w-100" onclick="openOpenClaw()">
+                            <i class="fas fa-external-link-alt"></i> Open Canvas
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-6">
+                <!-- Tabs -->
+                <ul class="nav nav-tabs bg-black border-bottom border-danger" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active text-light" id="progress-tab" data-bs-toggle="tab" data-bs-target="#progress" type="button" role="tab">
+                            <i class="fas fa-chart-line"></i> Progress
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-light" id="lilith-tab" data-bs-toggle="tab" data-bs-target="#lilith" type="button" role="tab">
+                            <i class="fas fa-skull"></i> LILITH
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-light" id="browser-tab" data-bs-toggle="tab" data-bs-target="#browser" type="button" role="tab">
+                            <i class="fas fa-globe"></i> Browser
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-light" id="recon-tab" data-bs-toggle="tab" data-bs-target="#recon" type="button" role="tab">
+                            <i class="fas fa-search"></i> Recon
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-light" id="payload-tab" data-bs-toggle="tab" data-bs-target="#payload" type="button" role="tab">
+                            <i class="fas fa-bomb"></i> Payloads
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content bg-black border border-danger rounded-bottom p-3" id="mainTabContent">
+                    <!-- Progress Tab -->
+                    <div class="tab-pane fade show active" id="progress" role="tabpanel">
+                        <h4 class="text-danger mb-3">Attack Progress</h4>
+                        <div id="progress-container">
+                            <div class="alert alert-secondary">
+                                <i class="fas fa-info-circle"></i> No active attacks
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LILITH Tab -->
+                    <div class="tab-pane fade" id="lilith" role="tabpanel">
+                        <h4 class="text-danger mb-3">LILITH AI Assistant</h4>
+                        <div id="lilith-responses" class="bg-dark border border-secondary rounded p-3" style="height: 400px; overflow-y: auto;">
+                            <div class="text-muted">AI responses will appear here...</div>
+                        </div>
+                    </div>
+
+                    <!-- Browser Tab -->
+                    <div class="tab-pane fade" id="browser" role="tabpanel">
+                        <h4 class="text-danger mb-3">Browser Control</h4>
+                        <div class="mb-3">
+                            <input type="url" id="browser-url" class="form-control bg-dark text-light border-secondary" placeholder="Enter URL to navigate">
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn btn-primary" onclick="browserNavigate()">
+                                    <i class="fas fa-arrow-right"></i> Navigate
+                                </button>
+                                <button class="btn btn-success" onclick="browserScreenshot()">
+                                    <i class="fas fa-camera"></i> Screenshot
+                                </button>
+                            </div>
+                        </div>
+                        <div id="browser-output" class="bg-dark border border-secondary rounded p-3">
+                            <div class="text-muted">Browser actions will appear here...</div>
+                        </div>
+                    </div>
+
+                    <!-- Recon Tab -->
+                    <div class="tab-pane fade" id="recon" role="tabpanel">
+                        <h4 class="text-danger mb-3">Reconnaissance</h4>
+                        <div class="mb-3">
+                            <select id="recon-type" class="form-select bg-dark text-light border-secondary">
+                                <option value="basic">Basic Scan</option>
+                                <option value="full">Full Scan</option>
+                                <option value="stealth">Stealth Scan</option>
+                            </select>
+                            <button class="btn btn-warning mt-2 w-100" onclick="startRecon()">
+                                <i class="fas fa-search"></i> Start Recon
+                            </button>
+                        </div>
+                        <div id="recon-results" class="bg-dark border border-secondary rounded p-3" style="height: 300px; overflow-y: auto;">
+                            <div class="text-muted">Recon results will appear here...</div>
+                        </div>
+                    </div>
+
+                    <!-- Payload Tab -->
+                    <div class="tab-pane fade" id="payload" role="tabpanel">
+                        <h4 class="text-danger mb-3">Payload Engineering</h4>
+                        <div class="mb-3">
+                            <select id="payload-type" class="form-select bg-dark text-light border-secondary">
+                                <option value="xss">XSS Payload</option>
+                                <option value="sql">SQL Injection</option>
+                                <option value="rce">Remote Code Execution</option>
+                                <option value="file_upload">File Upload</option>
+                            </select>
+                            <textarea id="payload-code" class="form-control mt-2 bg-dark text-light border-secondary" rows="6" placeholder="Custom payload code..."></textarea>
+                            <button class="btn btn-danger mt-2 w-100" onclick="generatePayload()">
+                                <i class="fas fa-code"></i> Generate Payload
+                            </button>
+                        </div>
+                        <div id="payload-output" class="bg-dark border border-secondary rounded p-3">
+                            <div class="text-muted">Generated payloads will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar - Monitoring & Logs -->
+            <div class="col-md-3">
+                <div class="card bg-black border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-terminal"></i> System Logs</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="log-container" class="bg-dark text-light p-3" style="height: 600px; overflow-y: auto; font-family: monospace; font-size: 0.8em;">
+                            <div class="text-muted">System logs will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

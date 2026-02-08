@@ -1,0 +1,75 @@
+/workspaces/LUCIFER-OS/start_integrated.sh: line 354: syntax error: unexpected end of file
+nohup: ignoring input
+2026-02-07 13:05:00 - === LUCIFER-OS OpenClaw Integrated Startup ===
+2026-02-07 13:05:00 - Starting integrated system...
+[0;34mℹ Starting LUCIFER-OS backend...[0m
+[1;33m⚠ Backend port 5000 is already in use[0m
+[1;33m⚠ Backend appears to already be running[0m
+[0;34mℹ Starting OpenClaw gateway...[0m
+/workspaces/LUCIFER-OS/start_integrated.sh: line 112: generate_gateway_token: command not found
+[0;31m✗ Failed to start OpenClaw gateway[0m
+2026-02-07 13:06:33 - === LUCIFER-OS OpenClaw Integrated Startup ===
+2026-02-07 13:06:33 - Starting integrated system...
+[0;34mℹ Starting LUCIFER-OS backend...[0m
+[1;33m⚠ Backend port 5000 is already in use[0m
+[1;33m⚠ Backend appears to already be running[0m
+[0;34mℹ Starting OpenClaw gateway...[0m
+[0;32m✓ Generated OpenClaw gateway token[0m
+[0;34mℹ Waiting for OpenClaw gateway to be ready...[0m
+2026-02-07T13:06:52.573Z Gateway failed to start: gateway already running (pid 187369); lock timeout after 5000ms
+If the gateway is supervised, stop it with: openclaw gateway stop
+2026-02-07T13:06:52.655Z Gateway service appears enabled. Stop it first.
+2026-02-07T13:06:52.656Z Tip: openclaw gateway stop
+2026-02-07T13:06:52.658Z Or: systemctl --user stop openclaw-gateway.service
+[0;31m✗ OpenClaw gateway failed to start within 60 seconds[0m
+[0;31m✗ Gateway failed to start[0m
+[0;31m✗ Failed to start OpenClaw gateway[0m
+2026-02-07 13:10:02 - === LUCIFER-OS OpenClaw Integrated Startup ===
+2026-02-07 13:10:02 - Starting integrated system...
+[0;34mℹ Starting LUCIFER-OS backend...[0m
+[1;33m⚠ Backend port 5000 is already in use[0m
+[1;33m⚠ Backend appears to already be running[0m
+[0;34mℹ Starting OpenClaw gateway...[0m
+[0;32m✓ Generated OpenClaw gateway token[0m
+[0;34mℹ Waiting for OpenClaw gateway to be ready...[0m
+[90m2026-02-07T13:10:15.030Z[39m [35m[canvas][39m [36mhost mounted at http://127.0.0.1:3000/__openclaw__/canvas/ (root /home/codespace/.openclaw/canvas)[39m
+[90m2026-02-07T13:10:15.542Z[39m [36m[heartbeat][39m [36mstarted[39m
+[90m2026-02-07T13:10:15.549Z[39m [36m[gateway][39m [36magent model: anthropic/claude-opus-4-6[39m
+[90m2026-02-07T13:10:15.550Z[39m [36m[gateway][39m [36mlistening on ws://127.0.0.1:3000 (PID 225277)[39m
+[90m2026-02-07T13:10:15.551Z[39m [36m[gateway][39m [36mlistening on ws://[::1]:3000[39m
+[90m2026-02-07T13:10:15.552Z[39m [36m[gateway][39m [36mlog file: /tmp/openclaw/openclaw-2026-02-07.log[39m
+[90m2026-02-07T13:10:15.568Z[39m [35m[browser/service][39m [36mBrowser control service ready (profiles=2)[39m
+[0;32m✓ OpenClaw gateway is ready[0m
+[0;32m✓ Gateway started successfully (PID: 225264)[0m
+[0;34mℹ Starting Telegram Lilith bot...[0m
+[0;32m✓ Telegram bot started (PID: 225485)[0m
+[0;34mℹ Starting UI components...[0m
+[0;34mℹ No DISPLAY; skipping PyQt dashboard (headless environment)[0m
+[0;32m✓ OpenClaw UI dev server started (PID: 225495)[0m
+[0;34mℹ Verifying LUCIFER-OS OpenClaw integration...[0m
+[0;32m✓ Backend skills endpoint responding[0m
+[0;32m✓ Gateway status endpoint responding[0m
+[0;34mℹ Testing LILITH skill execution...[0m
+[0;32m✓ LILITH skill test successful[0m
+[0;32m✓ Integration verification completed[0m
+
+[0;34mℹ === LUCIFER-OS OpenClaw Integration Status ===[0m
+
+[0;32m✓ ✓ LUCIFER-OS Backend: RUNNING (Port 5000)[0m
+[0;32m✓ ✓ OpenClaw Gateway: RUNNING (Port 3000)[0m
+[0;34mℹ Available Skills: 31[0m
+
+[0;34mℹ === Access URLs ===[0m
+LUCIFER-OS Dashboard: http://127.0.0.1:3000
+Web Dashboard: http://127.0.0.1:8080/
+Backend API: http://127.0.0.1:5000
+OpenClaw Gateway: http://127.0.0.1:3000
+
+[0;32m✓ LUCIFER-OS OpenClaw integration startup complete![0m
+2026-02-07 13:10:24 - System is ready for red team operations
+[0;34mℹ Press Ctrl+C to stop all services[0m
+[90m2026-02-07T13:10:32.786Z[39m [36m[gateway][39m [36msignal SIGTERM received[39m
+[90m2026-02-07T13:10:32.792Z[39m [36m[gateway][39m [36mreceived SIGTERM; shutting down[39m
+[90m2026-02-07T13:10:32.798Z[39m [36m[gateway][39m [36msignal SIGTERM received[39m
+[90m2026-02-07T13:10:32.800Z[39m [36m[gateway][39m [36mreceived SIGTERM during shutdown; ignoring[39m
+[90m2026-02-07T13:10:32.805Z[39m [34m[gmail-watcher][39m [36mgmail watcher stopped[39m

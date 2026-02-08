@@ -1,0 +1,64 @@
+Starting LUCIFER-OS web dashboard on http://127.0.0.1:8080/
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+2026-02-07 12:45:08,564 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-02-07 12:45:08,564 - INFO - [33mPress CTRL+C to quit[0m
+2026-02-07 12:45:28,427 - INFO - 127.0.0.1 - - [07/Feb/2026 12:45:28] "GET / HTTP/1.1" 200 -
+2026-02-07 12:45:30,261 - INFO - 127.0.0.1 - - [07/Feb/2026 12:45:30] "GET /api/status HTTP/1.1" 200 -
+2026-02-07 12:45:33,622 - INFO - 127.0.0.1 - - [07/Feb/2026 12:45:33] "GET /api/ai/status HTTP/1.1" 200 -
+2026-02-07 13:03:03,649 - INFO - 127.0.0.1 - - [07/Feb/2026 13:03:03] "GET / HTTP/1.1" 200 -
+2026-02-07 13:03:03,985 - INFO - 127.0.0.1 - - [07/Feb/2026 13:03:03] "GET /api/status HTTP/1.1" 200 -
+2026-02-07 13:03:04,021 - INFO - 127.0.0.1 - - [07/Feb/2026 13:03:04] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-07 13:11:01,304 - INFO - 127.0.0.1 - - [07/Feb/2026 13:11:01] "GET / HTTP/1.1" 200 -
+2026-02-07 13:11:03,160 - INFO - 127.0.0.1 - - [07/Feb/2026 13:11:03] "GET /api/status HTTP/1.1" 200 -
+2026-02-07 13:11:09,726 - INFO - 127.0.0.1 - - [07/Feb/2026 13:11:09] "GET /api/status HTTP/1.1" 200 -
+Starting LUCIFER-OS web dashboard on http://127.0.0.1:8080/
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+2026-02-07 13:14:21,505 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-02-07 13:14:21,505 - INFO - [33mPress CTRL+C to quit[0m
+2026-02-07 13:14:32,905 - INFO - 127.0.0.1 - - [07/Feb/2026 13:14:32] "GET / HTTP/1.1" 200 -
+2026-02-07 13:14:40,566 - INFO - 127.0.0.1 - - [07/Feb/2026 13:14:40] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:15:28,216 - INFO - 127.0.0.1 - - [07/Feb/2026 13:15:28] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:15:43,799 - INFO - 127.0.0.1 - - [07/Feb/2026 13:15:43] "GET /api/openclaw/skills HTTP/1.1" 200 -
+Starting LUCIFER-OS web dashboard on http://127.0.0.1:8080/
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+Address already in use
+Port 8080 is in use by another program. Either identify and stop that program, or start the server with a different port.
+2026-02-07 13:16:36,984 - INFO - 127.0.0.1 - - [07/Feb/2026 13:16:36] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:17:03,484 - INFO - 127.0.0.1 - - [07/Feb/2026 13:17:03] "GET /api/openclaw/skills HTTP/1.1" 200 -
+Starting LUCIFER-OS web dashboard on http://127.0.0.1:8080/
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+2026-02-07 13:22:16,580 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-02-07 13:22:16,580 - INFO - [33mPress CTRL+C to quit[0m
+2026-02-07 13:22:19,075 - INFO - 127.0.0.1 - - [07/Feb/2026 13:22:19] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:22:40,695 - INFO - 127.0.0.1 - - [07/Feb/2026 13:22:40] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:22:56,334 - INFO - 127.0.0.1 - - [07/Feb/2026 13:22:56] "GET /api/openclaw/skills HTTP/1.1" 200 -
+Starting LUCIFER-OS web dashboard on http://127.0.0.1:8080/
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+2026-02-07 13:23:15,378 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+2026-02-07 13:23:15,379 - INFO - [33mPress CTRL+C to quit[0m
+Starting LUCIFER-OS web dashboard on http://127.0.0.1:8080/
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+Address already in use
+Port 8080 is in use by another program. Either identify and stop that program, or start the server with a different port.
+2026-02-07 13:23:27,935 - INFO - 127.0.0.1 - - [07/Feb/2026 13:23:27] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:24:07,464 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:07] "GET / HTTP/1.1" 200 -
+2026-02-07 13:24:08,134 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:08] "GET /api/openclaw/skills HTTP/1.1" 200 -
+2026-02-07 13:24:08,173 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:08] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-07 13:24:08,196 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:08] "GET /api/status HTTP/1.1" 200 -
+2026-02-07 13:24:08,457 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:08] "GET /api/ai/status HTTP/1.1" 200 -
+2026-02-07 13:24:21,003 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:21] "POST /api/ai/force_keys HTTP/1.1" 200 -
+2026-02-07 13:24:22,540 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:22] "GET /api/status HTTP/1.1" 200 -
+2026-02-07 13:24:22,774 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:22] "GET /api/ai/status HTTP/1.1" 200 -
+2026-02-07 13:24:35,200 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:35] "GET /api/status HTTP/1.1" 200 -
+2026-02-07 13:24:35,511 - INFO - 127.0.0.1 - - [07/Feb/2026 13:24:35] "GET /api/ai/status HTTP/1.1" 200 -
+2026-02-07 13:27:08,735 - INFO - 127.0.0.1 - - [07/Feb/2026 13:27:08] "GET /api/status HTTP/1.1" 200 -

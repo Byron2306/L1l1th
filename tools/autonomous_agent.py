@@ -21,7 +21,10 @@ try:
     from stealth_engine import get_stealth, StealthEngine, LOTLArsenal
 except ImportError:
     import sys
-    sys.path.insert(0, '.')
+    import os
+    # Add the tools directory to path
+    tools_dir = os.path.join(os.path.dirname(__file__), '..', 'tools')
+    sys.path.insert(0, os.path.abspath(tools_dir))
     from attack_memory import get_memory, AttackMemory
     from stealth_engine import get_stealth, StealthEngine, LOTLArsenal
 

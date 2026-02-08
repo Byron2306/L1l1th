@@ -3,3 +3,16 @@
 [2026-01-31T21:41:10.257996] Starting backend with: C:\LuciferOS_FULL\.venv\Scripts\python.exe c:\LuciferOS_FULL\tools\lilith_complete.py
 [2026-01-31T21:41:10.265817] Started backend PID 20004
 [2026-01-31T21:41:12.273915] Backend responded to health check.
+[2026-02-07T11:19:12.601411] Starting backend watchdog...
+[2026-02-07T11:19:12.602905] Starting backend with: /home/codespace/.python/current/bin/python3 /workspaces/LUCIFER-OS/tools/lilith_complete.py
+[2026-02-07T11:19:12.603317] Started backend PID 147541
+[2026-02-07T11:19:34.630005] Backend did not respond in time; terminating and retrying with backoff.
+[2026-02-07T11:19:35.631455] Starting backend with: /home/codespace/.python/current/bin/python3 /workspaces/LUCIFER-OS/tools/lilith_complete.py
+[2026-02-07T11:19:35.631978] Started backend PID 147756
+[2026-02-07T11:19:57.657304] Backend did not respond in time; terminating and retrying with backoff.
+[2026-02-07T11:19:59.658853] Starting backend with: /home/codespace/.python/current/bin/python3 /workspaces/LUCIFER-OS/tools/lilith_complete.py
+[2026-02-07T11:19:59.660378] Started backend PID 147975
+[2026-02-07T11:20:21.686667] Backend did not respond in time; terminating and retrying with backoff.
+[2026-02-07T11:20:25.688050] Starting backend with: /home/codespace/.python/current/bin/python3 /workspaces/LUCIFER-OS/tools/lilith_complete.py
+[2026-02-07T11:20:25.688609] Started backend PID 148186
+[2026-02-07T11:20:39.004589] Watchdog interrupted, exiting.

@@ -1,2 +1,6 @@
+[LILITH] AI Provider fallback system loaded
+[LILITH] OpenClaw found at /workspaces/LUCIFER-OS/openclaw
+[LILITH] Attack server started on port 8888
+👹 LILITH Backend (OpenClaw) starting on port 5000...
  * Serving Flask app 'lilith_full_backend'
  * Debug mode: off
