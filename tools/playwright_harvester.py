@@ -72,29 +72,49 @@ async def create_temp_email() -> Tuple[str, str]:
 class PlaywrightHarvester:
     """Playwright-based API key harvester"""
     
-    def __init__(self):
+    def __init__(self, headless: bool = False, manual_captcha: bool = True):
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
+        self.playwright = None
+        self.headless = headless
+        self.manual_captcha = manual_captcha
         
     async def init_browser(self):
-        """Initialize headless browser"""
+        """Initialize browser - headed mode for manual CAPTCHA solving"""
         if not PLAYWRIGHT_AVAILABLE:
             raise Exception("Playwright not installed")
-            
-        add_log("🌐 Initializing Playwright browser...")
-        playwright = await async_playwright().start()
-        self.browser = await playwright.chromium.launch(
-            headless=True,
+        
+        mode = "headless" if self.headless else "HEADED (visible)"
+        add_log(f"🌐 Initializing Playwright browser in {mode} mode...")
+        
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(
+            headless=self.headless,
             args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu'
+                '--disable-blink-features=AutomationControlled'
             ]
         )
-        self.page = await self.browser.new_page()
-        await self.page.set_viewport_size({"width": 1920, "height": 1080})
-        add_log("✓ Browser initialized (headless mode)")
+        
+        # Create context with realistic fingerprint
+        context = await self.browser.new_context(
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport={'width': 1280, 'height': 800},
+            locale='en-US'
+        )
+        
+        # Anti-detection script
+        await context.add_init_script('''
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            window.chrome = {runtime: {}};
+        ''')
+        
+        self.page = await context.new_page()
+        add_log(f"✓ Browser initialized ({mode})")
+        if self.manual_captcha and not self.headless:
+            add_log("📝 Manual CAPTCHA mode: Browser window will open for you to solve CAPTCHAs")
         
     async def close_browser(self):
         """Close browser"""
