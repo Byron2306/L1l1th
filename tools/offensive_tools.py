@@ -268,19 +268,21 @@ class SQLMapScanner:
     """SQLMap wrapper for SQL injection testing"""
     
     def __init__(self):
-        self.available = shutil.which('sqlmap') is not None
+        # Check both system path and venv
+        self.available = shutil.which('sqlmap') is not None or os.path.exists('/root/.venv/bin/sqlmap')
+        self.sqlmap_path = shutil.which('sqlmap') or '/root/.venv/bin/sqlmap'
     
     def test_injection(self, url: str, params: Dict = None) -> Dict:
         """Test for SQL injection vulnerabilities"""
-        if not self.available:
+        if not self.available or not os.path.exists(self.sqlmap_path):
             return self._get_manual_payloads(url)
         
         try:
-            cmd = ['sqlmap', '-u', url, '--batch', '--level=3', '--risk=2', '--forms', '--dbs']
+            cmd = [self.sqlmap_path, '-u', url, '--batch', '--level=2', '--risk=1', '--forms', '--dbs', '--threads=4']
             
             if params:
                 for key, value in params.items():
-                    cmd.extend([f'-p', key])
+                    cmd.extend(['-p', key])
             
             result = subprocess.run(
                 cmd,
@@ -291,10 +293,14 @@ class SQLMapScanner:
             
             return {
                 'success': True,
-                'output': result.stdout,
-                'vulnerable': 'is vulnerable' in result.stdout.lower(),
+                'tool': 'sqlmap',
+                'target': url,
+                'output': result.stdout[-3000:] if len(result.stdout) > 3000 else result.stdout,
+                'vulnerable': 'is vulnerable' in result.stdout.lower() or 'parameter' in result.stdout.lower(),
                 'databases': self._extract_databases(result.stdout)
             }
+        except subprocess.TimeoutExpired:
+            return {'success': False, 'error': 'SQLMap timeout - target may be slow or not injectable'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
