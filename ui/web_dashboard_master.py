@@ -1698,6 +1698,17 @@ MASTER_TEMPLATE = """
                     document.getElementById('rotation-generated').textContent = data.stats.total_generated || 0;
                     document.getElementById('rotation-tested').textContent = data.stats.total_tested || 0;
                     document.getElementById('rotation-valid').textContent = data.stats.valid_keys_found || 0;
+                    document.getElementById('rotation-rate-limited').textContent = data.stats.rate_limited_count || 0;
+                    
+                    // Update mode display
+                    document.getElementById('rotation-mode-display').textContent = data.generation_mode || '-';
+                    
+                    // Update generation breakdown
+                    if (data.stats.by_mode) {
+                        document.getElementById('gen-leaked').textContent = data.stats.by_mode.leaked || 0;
+                        document.getElementById('gen-stuffed').textContent = data.stats.by_mode.stuffing || 0;
+                        document.getElementById('gen-random').textContent = data.stats.by_mode.random || 0;
+                    }
                     
                     // Update status
                     if (data.running) {
