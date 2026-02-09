@@ -645,45 +645,68 @@ MASTER_TEMPLATE = """
 
             <!-- API Key Harvester Tab -->
             <div class="tab-content" id="tab-harvester">
-                <div class="panel-title">🔑 AUTONOMOUS API KEY HARVESTER</div>
-                <div class="status-box">
-                    <h6 style="color: var(--primary-red);">Harvesting Status</h6>
-                    <div class="status-item">
-                        <span class="status-label">Status:</span>
-                        <span class="status-value" id="harvest-status">Idle</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Phase:</span>
-                        <span class="status-value" id="harvest-phase">-</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Progress:</span>
-                        <span class="status-value" id="harvest-progress">0%</span>
-                    </div>
-                </div>
-                <div class="progress-bar-custom" style="margin: 15px 0;">
-                    <div class="progress-fill" id="harvest-progress-bar">0%</div>
-                </div>
+                <div class="panel-title">🔑 API KEY HARVESTER</div>
+                
+                <!-- Provider Selection -->
                 <div class="input-group">
-                    <label>Select Provider</label>
+                    <label>Select AI Provider</label>
                     <select id="harvest-provider">
                         <option value="groq">Groq (Fast, Free, 70B Llama models)</option>
                         <option value="huggingface">HuggingFace (Free, Unlimited)</option>
                         <option value="together">Together.ai ($25 free credits)</option>
                         <option value="mistral">Mistral AI (Free tier available)</option>
-                        <option value="venice">Venice.ai (Uncensored models)</option>
-                        <option value="deepinfra">DeepInfra (Free credits)</option>
                         <option value="openrouter">OpenRouter (Multi-model access)</option>
                         <option value="cerebras">Cerebras (Ultra-fast inference)</option>
+                        <option value="deepinfra">DeepInfra (Free credits)</option>
                         <option value="sambanova">SambaNova (Enterprise-grade)</option>
                         <option value="fireworks">Fireworks.ai (Fast inference)</option>
+                        <option value="dolphin">Dolphin (Uncensored AI)</option>
+                        <option value="deepseek">DeepSeek (Coding & Reasoning)</option>
                     </select>
                 </div>
-                <button class="launch-attack-btn" onclick="startHarvesting()" id="harvest-btn">
-                    🚀 START AUTONOMOUS HARVESTING
-                </button>
                 
-                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <!-- MANUAL HARVEST - Opens in YOUR browser -->
+                <div class="status-box" style="margin: 15px 0; background: #1a2a1a; border-color: #00ff00;">
+                    <h6 style="color: #00ff00;">🖱️ MANUAL MODE (Recommended)</h6>
+                    <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
+                        Opens the provider's website in YOUR browser. You login, solve CAPTCHA, get the key, and paste it below.
+                    </p>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="launch-attack-btn" onclick="openProviderSignup()" style="flex: 2; background: #1a4d1a;">
+                            🌐 OPEN PROVIDER WEBSITE
+                        </button>
+                        <button class="attack-mode-btn" onclick="openProviderKeys()" style="flex: 1;">
+                            🔑 Keys Page
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <input type="text" id="manual-api-key" placeholder="Paste your API key here after signup..." 
+                               style="width: 100%; padding: 10px; background: #0d0d1a; border: 1px solid #333; color: #00ff00; font-family: monospace;">
+                        <button class="launch-attack-btn" onclick="saveManualKey()" style="margin-top: 10px; background: #1a4d1a;">
+                            💾 SAVE API KEY
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- AUTO HARVEST - Server-side automation -->
+                <div class="status-box" style="margin: 15px 0; background: #2a1a1a; border-color: #ff3333;">
+                    <h6 style="color: #ff3333;">🤖 AUTO MODE (Experimental)</h6>
+                    <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
+                        Server-side automation with temp email. May get blocked by CAPTCHAs. Use VNC tab to monitor.
+                    </p>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="attack-mode-btn" onclick="startHarvesting()" id="harvest-btn" style="flex: 2; background: #4d1a1a;">
+                            🚀 START AUTO HARVEST
+                        </button>
+                        <span id="harvest-status" style="color: #666; font-size: 11px;">Idle</span>
+                    </div>
+                    <div class="progress-bar-custom" style="margin-top: 10px; height: 8px;">
+                        <div class="progress-fill" id="harvest-progress-bar" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="attack-mode-btn" onclick="applyHarvestedKeys()" id="apply-keys-btn">
                         ⚡ APPLY KEYS TO SESSION
                     </button>
@@ -692,14 +715,17 @@ MASTER_TEMPLATE = """
                     </button>
                 </div>
                 
+                <!-- Harvested Keys -->
                 <div class="status-box" style="margin-top: 15px;">
-                    <h6 style="color: var(--text-green);">Harvested Keys Database</h6>
-                    <div id="harvested-keys-list" style="font-size: 11px; max-height: 100px; overflow-y: auto;">
+                    <h6 style="color: var(--text-green);">📦 Harvested Keys Database</h6>
+                    <div id="harvested-keys-list" style="font-size: 11px; max-height: 120px; overflow-y: auto;">
                         Loading...
                     </div>
                 </div>
-                <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Live Harvesting Log</div>
-                <div class="output-display" id="harvest-log" style="height: 300px;"></div>
+                
+                <!-- Log -->
+                <div class="panel-title" style="font-size: 14px; margin-top: 15px;">Live Log</div>
+                <div class="output-display" id="harvest-log" style="height: 200px;"></div>
             </div>
 
             <!-- VNC Browser Viewer Tab -->
