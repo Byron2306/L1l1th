@@ -1213,7 +1213,7 @@ MASTER_TEMPLATE = """
 def index():
     return render_template_string(MASTER_TEMPLATE, backend_url=BACKEND_URL)
 
-@app.route("/api/status")
+@app.route("/_dash/status")
 def api_status():
     data = {"backend": None}
     try:
