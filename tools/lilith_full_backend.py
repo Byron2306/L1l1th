@@ -2244,7 +2244,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('BACKEND_PORT', '5000'))
     
     print(f"[LILITH] Starting backend on {host}:{port}")
-    print(f"[LILITH] OpenClaw: {OPENCLAW_PATH}")
-    print(f"[LILITH] AI Providers: {len(ai_manager.providers) if ai_manager else 0}")
+    print(f"[LILITH] OpenClaw available")
+    print(f"[LILITH] AI Providers initialized")
     
     app.run(host=host, port=port, debug=False)
