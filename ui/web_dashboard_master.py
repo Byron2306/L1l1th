@@ -878,6 +878,37 @@ MASTER_TEMPLATE = """
                         <input type="number" id="payload-lport" placeholder="LPORT (4444)" value="4444" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
                         <button onclick="generateReverseShell()" style="width: 100%; padding: 8px; background: #4d1a4d; border: none; color: #fff; cursor: pointer;">Generate Reverse Shells</button>
                     </div>
+                    
+                    <!-- Metasploit-lite -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #ff0000; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff0000; margin: 0 0 10px 0; font-size: 14px;">🔥 Metasploit-Lite</h3>
+                        <input type="text" id="msf-search" placeholder="Search exploits..." style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                            <button onclick="searchExploits()" style="flex: 1; padding: 8px; background: #4d1a1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Exploits</button>
+                            <button onclick="searchPayloads()" style="flex: 1; padding: 8px; background: #4d1a1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Payloads</button>
+                        </div>
+                        <button onclick="generateAllShells()" style="width: 100%; padding: 8px; background: #660000; border: none; color: #fff; cursor: pointer;">Generate ALL Shells</button>
+                    </div>
+                    
+                    <!-- Hashcat -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #ffff00; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ffff00; margin: 0 0 10px 0; font-size: 14px;">⚡ Hashcat (CPU)</h3>
+                        <input type="text" id="hashcat-hash" placeholder="Hash to crack/identify" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                        <select id="hashcat-mode" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                            <option value="0">0 - MD5</option>
+                            <option value="100">100 - SHA1</option>
+                            <option value="1000">1000 - NTLM</option>
+                            <option value="1400">1400 - SHA256</option>
+                            <option value="1700">1700 - SHA512</option>
+                            <option value="3200">3200 - bcrypt</option>
+                            <option value="1800">1800 - SHA512crypt</option>
+                        </select>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="identifyHash()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Identify</button>
+                            <button onclick="crackHash()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Crack</button>
+                            <button onclick="runBenchmark()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Bench</button>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Output Area -->
@@ -885,19 +916,6 @@ MASTER_TEMPLATE = """
                 <div class="output-display" id="advanced-output" style="height: 200px;"></div>
             </div>
         </div>
-
-        <!-- RIGHT PANEL: Monitoring -->
-        <div class="right-panel">
-            <div class="panel-title">📊 SYSTEM MONITOR</div>
-
-            <!-- System Status -->
-            <div class="status-box">
-                <h6 style="color: var(--primary-red); margin-bottom: 10px;">System Status</h6>
-                <div class="status-item">
-                    <span class="status-label">Backend:</span>
-                    <span class="status-value" id="status-backend">●</span>
-                </div>
-                <div class="status-item">
                     <span class="status-label">OpenClaw:</span>
                     <span class="status-value" id="status-openclaw">●</span>
                 </div>
