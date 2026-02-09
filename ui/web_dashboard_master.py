@@ -1939,6 +1939,144 @@ def restart_backend():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== ADVANCED CAPABILITIES PROXY ENDPOINTS ====================
+
+@app.route('/_dash/capabilities/recon/passive', methods=['POST'])
+def cap_recon_passive():
+    """Proxy passive recon to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/recon/passive", json=request.json, timeout=60)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/recon/active', methods=['POST'])
+def cap_recon_active():
+    """Proxy active recon to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/recon/active", json=request.json, timeout=60)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/recon/full', methods=['POST'])
+def cap_recon_full():
+    """Proxy full recon to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/recon/full", json=request.json, timeout=120)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/nlp/phishing', methods=['POST'])
+def cap_nlp_phishing():
+    """Proxy phishing generation to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/nlp/phishing", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/nlp/vishing', methods=['POST'])
+def cap_nlp_vishing():
+    """Proxy vishing script to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/nlp/vishing", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/ml/anomaly', methods=['POST'])
+def cap_ml_anomaly():
+    """Proxy anomaly detection to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/ml/anomaly", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/crypto/analyze', methods=['POST'])
+def cap_crypto_analyze():
+    """Proxy crypto analysis to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/crypto/analyze", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/crypto/keygen', methods=['POST'])
+def cap_crypto_keygen():
+    """Proxy key generation to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/crypto/keygen", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/exploit/generate', methods=['POST'])
+def cap_exploit_generate():
+    """Proxy exploit generation to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/exploit/generate", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/evasion/techniques', methods=['GET'])
+def cap_evasion():
+    """Proxy evasion techniques to backend"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/capabilities/evasion/techniques", timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/persistence/methods', methods=['GET'])
+def cap_persistence():
+    """Proxy persistence methods to backend"""
+    try:
+        os_type = request.args.get('os', 'linux')
+        response = requests.get(f"{BACKEND_URL}/capabilities/persistence/methods?os={os_type}", timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/wireless/attacks', methods=['GET'])
+def cap_wireless():
+    """Proxy wireless attacks to backend"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/capabilities/wireless/attacks", timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/physical/bypass', methods=['GET'])
+def cap_physical():
+    """Proxy physical bypass to backend"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/capabilities/physical/bypass", timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/supply-chain/analyze', methods=['POST'])
+def cap_supply_chain():
+    """Proxy supply chain analysis to backend"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/capabilities/supply-chain/analyze", json=request.json, timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/capabilities/zeroday/methodology', methods=['GET'])
+def cap_zeroday():
+    """Proxy zero-day methodology to backend"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/capabilities/zeroday/methodology", timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
