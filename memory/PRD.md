@@ -6,19 +6,28 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 ## What's Been Implemented
 
 ### Core Features
-- [x] Web Dashboard with multiple tabs (LILITH AI, Progress, Browser, Recon, Payload, Coding, Learning, Memory, Harvester, Advanced)
+- [x] Web Dashboard with multiple tabs (LILITH AI, Progress, Browser, Recon, Payload, Coding, Learning, Memory, Harvester, VNC, Advanced)
 - [x] AI Chat Interface (LILITH)
 - [x] Attack mode selection and execution
 - [x] System monitoring and live logs
 
-### API Key Harvester (Fully Automated)
+### API Key Harvester (Semi-Automated with Manual CAPTCHA Support)
 - [x] Stealth Playwright browser automation
+- [x] **Visible browser mode** - Browser runs on virtual display (:99)
+- [x] **Screenshot-based browser viewer** - See the browser in the VNC tab
+- [x] **Manual action waiting** - Harvester pauses for login/CAPTCHA (up to 3 minutes)
 - [x] Temp email service integration (mail.tm, GuerrillaMail, 1secmail)
 - [x] Multi-provider support:
   - Groq, HuggingFace, Together.ai, Mistral, Venice, DeepInfra, OpenRouter, Cerebras, SambaNova, Fireworks
-- [x] Auto email verification handling
 - [x] Key extraction and storage
 - [x] Apply keys to session functionality
+
+### VNC/Browser Viewer
+- [x] Virtual display (Xvfb :99)
+- [x] VNC server (x11vnc)
+- [x] Screenshot capture endpoint
+- [x] Auto-refresh screenshot option
+- **Limitation**: Direct browser interaction not available through web (screenshots only)
 
 ### Advanced Capabilities
 - [x] Reconnaissance module
@@ -38,6 +47,7 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - nmap, sqlmap, hydra, john, masscan, dirb
 - scapy, pyshark (Python network libraries)
 - Playwright for browser automation
+- Xvfb, x11vnc, noVNC for virtual display
 
 ## Architecture
 
