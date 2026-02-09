@@ -2130,15 +2130,126 @@ MASTER_TEMPLATE = """
             addLog('[PAYLOAD] Generating shells for ' + lhost + ':' + lport);
             
             try {
-                const response = await fetch('/_dash/network/metasploit/payloads', {
+                const response = await fetch('/_dash/msf/shells', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        payload: 'cmd/unix/reverse_bash',
-                        lhost: lhost,
-                        lport: lport
-                    })
+                    body: JSON.stringify({ lhost: lhost, lport: lport })
                 });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        // ==================== METASPLOIT-LITE FUNCTIONS ====================
+        
+        async function searchExploits() {
+            const search = document.getElementById('msf-search').value;
+            showAdvancedResult({status: 'Searching exploits...'});
+            
+            try {
+                const response = await fetch('/_dash/msf/exploits?search=' + encodeURIComponent(search));
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function searchPayloads() {
+            const search = document.getElementById('msf-search').value;
+            showAdvancedResult({status: 'Searching payloads...'});
+            
+            try {
+                const response = await fetch('/_dash/msf/payloads?search=' + encodeURIComponent(search));
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function generateAllShells() {
+            const lhost = document.getElementById('payload-lhost').value;
+            const lport = parseInt(document.getElementById('payload-lport').value) || 4444;
+            
+            if (!lhost) {
+                alert('Enter LHOST in the Payload Generator section first!');
+                return;
+            }
+            
+            showAdvancedResult({status: 'Generating ALL reverse shells...'});
+            addLog('[MSF] Generating complete shell collection for ' + lhost + ':' + lport);
+            
+            try {
+                const response = await fetch('/_dash/msf/shells', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ lhost: lhost, lport: lport })
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        // ==================== HASHCAT FUNCTIONS ====================
+        
+        async function identifyHash() {
+            const hash = document.getElementById('hashcat-hash').value;
+            if (!hash) {
+                alert('Enter a hash to identify');
+                return;
+            }
+            
+            showAdvancedResult({status: 'Identifying hash type...'});
+            
+            try {
+                const response = await fetch('/_dash/hashcat/identify', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ hash: hash })
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function crackHash() {
+            const hash = document.getElementById('hashcat-hash').value;
+            const mode = document.getElementById('hashcat-mode').value;
+            
+            if (!hash) {
+                alert('Enter a hash to crack');
+                return;
+            }
+            
+            showAdvancedResult({status: 'Attempting to crack hash (CPU mode)... This may take a while.'});
+            addLog('[HASHCAT] Cracking hash with mode ' + mode);
+            
+            try {
+                const response = await fetch('/_dash/hashcat/crack', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ hash: hash, mode: parseInt(mode) })
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function runBenchmark() {
+            showAdvancedResult({status: 'Running hashcat benchmark (CPU)...'});
+            addLog('[HASHCAT] Running performance benchmark');
+            
+            try {
+                const response = await fetch('/_dash/hashcat/benchmark');
                 const data = await response.json();
                 showAdvancedResult(data);
             } catch (e) {
