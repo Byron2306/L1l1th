@@ -1254,13 +1254,40 @@ def recon_start():
     data = request.json or {}
     target = data.get('target', '')
     
+    if not target:
+        return jsonify({'success': False, 'error': 'No target specified'})
+    
     try:
-        response = requests.post(
-            f"{BACKEND_URL}/analyze_target",
-            json={'target': target},
-            timeout=10
-        )
-        return jsonify(response.json())
+        # Perform basic recon
+        import socket
+        
+        results = {
+            'target': target,
+            'timestamp': datetime.now().isoformat(),
+            'dns': {},
+            'ports': []
+        }
+        
+        # Try to resolve hostname
+        try:
+            ip = socket.gethostbyname(target)
+            results['dns']['ip'] = ip
+            results['dns']['resolved'] = True
+        except:
+            results['dns']['resolved'] = False
+            results['dns']['error'] = 'Could not resolve hostname'
+        
+        # Check common ports
+        common_ports = [21, 22, 80, 443, 3306, 8080]
+        for port in common_ports:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            result = sock.connect_ex((target, port))
+            if result == 0:
+                results['ports'].append({'port': port, 'state': 'open'})
+            sock.close()
+        
+        return jsonify({'success': True, 'results': results})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
