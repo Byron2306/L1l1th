@@ -594,7 +594,7 @@ class StealthPlaywrightHarvester:
             add_log(f"❌ TOGETHER error: {str(e)}")
             return (f"{''.join(random.choices('0123456789abcdef', k=64))}", False)
     
-    async def harvest_openrouter(self) -> Optional[str]:
+    async def harvest_openrouter(self) -> Tuple[Optional[str], bool]:
         """Harvest API key from OpenRouter"""
         global harvest_status
         
@@ -617,15 +617,15 @@ class StealthPlaywrightHarvester:
             
             if key:
                 add_log(f"✓ Found key: {key[:20]}...")
-                return key
+                return (key, True)
             
             harvest_status['progress'] = 85
             add_log("⚠️ No existing session - generating demo key")
-            return f"sk-or-v1-{''.join(random.choices('0123456789abcdef', k=64))}"
+            return (f"sk-or-v1-{''.join(random.choices('0123456789abcdef', k=64))}", False)
             
         except Exception as e:
             add_log(f"❌ OPENROUTER error: {str(e)}")
-            return f"sk-or-v1-{''.join(random.choices('0123456789abcdef', k=64))}"
+            return (f"sk-or-v1-{''.join(random.choices('0123456789abcdef', k=64))}", False)
     
     async def harvest_mistral(self) -> Optional[str]:
         """Harvest API key from Mistral AI"""
