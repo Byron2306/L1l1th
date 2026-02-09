@@ -1125,6 +1125,83 @@ MASTER_TEMPLATE = """
             addMessage('lilith', 'LILITH AI Attack Assistant online. All systems operational. Ready for tasking.');
             addMessage('lilith', '🧠 Learning system active | 💾 Memory system ready | 👨‍💻 Coding agent available');
         }, 1000);
+
+        // Harvesting Functions
+        let harvestInterval = null;
+
+        async function startHarvesting() {
+            const provider = document.getElementById('harvest-provider').value;
+            const btn = document.getElementById('harvest-btn');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ HARVESTING IN PROGRESS...';
+            
+            addLog(`[HARVESTER] Starting autonomous harvesting for ${provider}`);
+            
+            try {
+                const response = await fetch('/api/harvest/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[HARVESTER] Harvesting initiated successfully');
+                    
+                    // Start polling for status updates
+                    harvestInterval = setInterval(updateHarvestStatus, 1000);
+                } else {
+                    addLog(`[HARVESTER] Error: ${data.error}`);
+                    btn.disabled = false;
+                    btn.textContent = '🚀 START AUTONOMOUS HARVESTING';
+                }
+            } catch (error) {
+                addLog(`[HARVESTER] Error: ${error.message}`);
+                btn.disabled = false;
+                btn.textContent = '🚀 START AUTONOMOUS HARVESTING';
+            }
+        }
+
+        async function updateHarvestStatus() {
+            try {
+                const response = await fetch('/api/harvest/status');
+                const status = await response.json();
+                
+                // Update status display
+                document.getElementById('harvest-status').textContent = status.active ? 'Active' : 'Idle';
+                document.getElementById('harvest-phase').textContent = status.phase || '-';
+                document.getElementById('harvest-progress').textContent = status.progress + '%';
+                document.getElementById('harvest-progress-bar').style.width = status.progress + '%';
+                document.getElementById('harvest-progress-bar').textContent = status.progress + '%';
+                
+                // Update log
+                const logDiv = document.getElementById('harvest-log');
+                logDiv.textContent = status.logs.join('\\n');
+                logDiv.scrollTop = logDiv.scrollHeight;
+                
+                // Check if complete
+                if (!status.active && status.progress === 100) {
+                    clearInterval(harvestInterval);
+                    document.getElementById('harvest-btn').disabled = false;
+                    document.getElementById('harvest-btn').textContent = '🚀 START AUTONOMOUS HARVESTING';
+                    
+                    addLog('[HARVESTER] ✓ Harvesting complete!');
+                    if (status.api_key) {
+                        addMessage('system', `API Key harvested successfully: ${status.api_key.substring(0, 20)}...`);
+                        addMessage('system', 'Restart backend to activate new key');
+                    }
+                } else if (status.error) {
+                    clearInterval(harvestInterval);
+                    document.getElementById('harvest-btn').disabled = false;
+                    document.getElementById('harvest-btn').textContent = '🚀 START AUTONOMOUS HARVESTING';
+                    addLog(`[HARVESTER] ✗ Error: ${status.error}`);
+                }
+            } catch (error) {
+                console.error('Status update error:', error);
+            }
+        }
     </script>
 </body>
 </html>
