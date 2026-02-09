@@ -2858,6 +2858,121 @@ def check_temp_email():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== METASPLOIT-LITE ROUTES ====================
+
+@app.route('/_dash/msf/exploits', methods=['GET'])
+def get_msf_exploits():
+    """Get Metasploit-lite exploits"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from metasploit_lite import get_metasploit
+        
+        search = request.args.get('search', None)
+        msf = get_metasploit()
+        result = msf.get_exploits(search)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/msf/payloads', methods=['GET'])
+def get_msf_payloads():
+    """Get Metasploit-lite payloads"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from metasploit_lite import get_metasploit
+        
+        search = request.args.get('search', None)
+        msf = get_metasploit()
+        result = msf.get_payloads(search)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/msf/shells', methods=['POST'])
+def generate_msf_shells():
+    """Generate all reverse shells"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from metasploit_lite import get_metasploit
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '127.0.0.1')
+        lport = data.get('lport', 4444)
+        
+        msf = get_metasploit()
+        result = msf.generate_all_shells(lhost, lport)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== HASHCAT ROUTES ====================
+
+@app.route('/_dash/hashcat/identify', methods=['POST'])
+def identify_hash_type():
+    """Identify hash type"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from metasploit_lite import get_hashcat
+        
+        data = request.json or {}
+        hash_value = data.get('hash', '')
+        
+        if not hash_value:
+            return jsonify({'success': False, 'error': 'No hash provided'})
+        
+        hc = get_hashcat()
+        result = hc.identify_hash(hash_value)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/hashcat/crack', methods=['POST'])
+def crack_hash_route():
+    """Crack hash using hashcat"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from metasploit_lite import get_hashcat
+        
+        data = request.json or {}
+        hash_value = data.get('hash', '')
+        mode = data.get('mode', 0)
+        
+        if not hash_value:
+            return jsonify({'success': False, 'error': 'No hash provided'})
+        
+        hc = get_hashcat()
+        
+        if not hc.available:
+            return jsonify({'success': False, 'error': 'Hashcat not installed'})
+        
+        result = hc.crack_hash(hash_value, mode=mode)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/hashcat/benchmark', methods=['GET'])
+def hashcat_benchmark():
+    """Run hashcat benchmark"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from metasploit_lite import get_hashcat
+        
+        hc = get_hashcat()
+        
+        if not hc.available:
+            return jsonify({'success': False, 'error': 'Hashcat not installed'})
+        
+        result = hc.benchmark()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/harvest/apply', methods=['POST'])
 def apply_harvested_keys():
     """Apply harvested keys to the running backend session"""
