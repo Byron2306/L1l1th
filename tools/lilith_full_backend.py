@@ -2866,7 +2866,7 @@ def dir_brute():
 
 @app.route('/offensive/password/brute', methods=['POST'])
 def password_brute():
-    """Brute force passwords"""
+    """Brute force passwords using Hydra"""
     try:
         from offensive_tools import get_password_cracker
         cracker = get_password_cracker()
@@ -2878,8 +2878,32 @@ def password_brute():
         if not target:
             return jsonify({'success': False, 'error': 'Target required'})
         
-        result = cracker.brute_login(target, service, data.get('userlist'), data.get('passlist'))
+        result = cracker.brute_login(
+            target=target, 
+            service=service, 
+            userlist=data.get('userlist'),
+            passlist=data.get('passlist'),
+            username=data.get('username'),
+            password=data.get('password'),
+            port=data.get('port'),
+            threads=data.get('threads', 4)
+        )
         return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/hydra/services', methods=['GET'])
+def hydra_services():
+    """Get supported Hydra services"""
+    try:
+        from offensive_tools import get_password_cracker
+        cracker = get_password_cracker()
+        
+        return jsonify({
+            'success': True,
+            'services': cracker.get_supported_services(),
+            'hydra_available': cracker.hydra_available
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
