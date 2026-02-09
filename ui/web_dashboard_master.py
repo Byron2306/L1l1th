@@ -2054,8 +2054,28 @@ def openclaw_skills():
 # ==================== VNC ROUTES ====================
 
 @app.route('/_vnc/')
+def vnc_index():
+    """Serve noVNC main page"""
+    try:
+        vnc_url = "http://localhost:6080/vnc_lite.html?autoconnect=true&resize=scale"
+        return f'''
+        <html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; background: #0a0a0a; overflow: hidden; }}
+                iframe {{ width: 100%; height: 100vh; border: none; }}
+            </style>
+        </head>
+        <body>
+            <iframe src="{vnc_url}" allowfullscreen></iframe>
+        </body>
+        </html>
+        '''
+    except Exception as e:
+        return f'VNC Error: {e}', 500
+
 @app.route('/_vnc/<path:path>')
-def vnc_proxy(path='vnc.html'):
+def vnc_proxy(path):
     """Proxy to noVNC server"""
     try:
         # noVNC runs on port 6080
@@ -2064,22 +2084,16 @@ def vnc_proxy(path='vnc.html'):
         
         # Determine content type
         content_type = response.headers.get('Content-Type', 'text/html')
+        if path.endswith('.js'):
+            content_type = 'application/javascript'
+        elif path.endswith('.css'):
+            content_type = 'text/css'
+        elif path.endswith('.html'):
+            content_type = 'text/html'
         
         return response.content, response.status_code, {'Content-Type': content_type}
     except Exception as e:
-        return f'''
-        <html>
-        <head><style>
-            body {{ background: #0a0a0a; color: #ff0000; font-family: monospace; padding: 50px; text-align: center; }}
-        </style></head>
-        <body>
-            <h2>VNC Not Available</h2>
-            <p>The VNC server is not running.</p>
-            <p>Error: {str(e)}</p>
-            <p style="color: #999;">Start a harvest to activate the browser viewer.</p>
-        </body>
-        </html>
-        ''', 503
+        return f'VNC Error: {str(e)}', 503
 
 @app.route('/_dash/vnc/status', methods=['GET'])
 def vnc_status():
