@@ -19,6 +19,7 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - [x] Temp email service integration (mail.tm, GuerrillaMail, 1secmail)
 - [x] Multi-provider support:
   - Groq, HuggingFace, Together.ai, Mistral, Venice, DeepInfra, OpenRouter, Cerebras, SambaNova, Fireworks
+- [x] **Real key vs Demo key tracking** - Keys are marked as REAL or DEMO
 - [x] Key extraction and storage
 - [x] Apply keys to session functionality
 
@@ -29,22 +30,20 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - [x] Auto-refresh screenshot option
 - **Limitation**: Direct browser interaction not available through web (screenshots only)
 
-### Advanced Capabilities
-- [x] Reconnaissance module
-- [x] Social Engineering tools
-- [x] ML Anomaly Detection
+### Advanced Capabilities (NOW VISIBLE AND WORKING)
+- [x] **Offensive Tools** - Nmap, SQLMap, DirBrute (REAL TOOLS INTEGRATED)
+- [x] Advanced Recon (Passive/Active)
+- [x] Social Engineering (Phishing, Vishing)
+- [x] Exploit Framework (SQLi, XSS, RCE, Buffer Overflow)
 - [x] Crypto Analysis
-- [x] Exploit Framework
-- [x] Evasion Techniques
-- [x] Wireless Attack methods
-- [x] Physical Security bypass
-- [x] Supply Chain analysis
-- [x] Zero-Day research framework
-- [x] Offensive Tools (Nmap, SQLMap, DirBrute)
-- [x] CAPTCHA Bypass info
+- [x] Evasion Techniques (AV/EDR Bypass, Persistence)
+- [x] Results Output panel
 
-### Security Tools Installed
-- nmap, sqlmap, hydra, john, masscan, dirb
+### Security Tools Installed & Working
+- **nmap** ✓ (TCP connect scan working)
+- **sqlmap** ✓ (SQL injection testing)
+- **hydra** ✓ (Password brute forcing)
+- **dirb** ✓ (Directory brute forcing)
 - scapy, pyshark (Python network libraries)
 - Playwright for browser automation
 - Xvfb, x11vnc, noVNC for virtual display
