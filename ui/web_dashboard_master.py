@@ -2874,6 +2874,123 @@ def generate_credentials():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== API KEY GENERATOR ROUTES ====================
+
+@app.route('/_dash/keygen/generate', methods=['POST'])
+def generate_api_key():
+    """Generate API key for specified provider"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from api_key_generator import get_key_generator
+        
+        data = request.json or {}
+        provider = data.get('provider', 'generic')
+        count = data.get('count', 1)
+        include_checksum = data.get('include_checksum', False)
+        
+        gen = get_key_generator()
+        
+        if count == 1:
+            result = gen.generate_key(provider, include_checksum=include_checksum)
+            return jsonify({
+                'success': True,
+                'key': result['key'],
+                'provider': result['provider'],
+                'length': result['length'],
+                'generated_at': result['generated_at']
+            })
+        else:
+            results = gen.generate_batch(provider, min(count, 50))
+            return jsonify({
+                'success': True,
+                'keys': [r['key'] for r in results],
+                'provider': provider,
+                'count': len(results)
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/keygen/providers', methods=['GET'])
+def list_key_providers():
+    """List all supported providers"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from api_key_generator import get_key_generator
+        
+        gen = get_key_generator()
+        providers = gen.list_providers()
+        
+        return jsonify({
+            'success': True,
+            'providers': providers,
+            'count': len(providers)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/keygen/validate', methods=['POST'])
+def validate_api_key():
+    """Validate an API key format"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from api_key_generator import get_key_generator
+        
+        data = request.json or {}
+        key = data.get('key', '')
+        provider = data.get('provider')
+        
+        gen = get_key_generator()
+        result = gen.validate_key(key, provider)
+        
+        return jsonify({
+            'success': True,
+            **result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/keygen/batch', methods=['POST'])
+def batch_generate_keys():
+    """Generate keys for multiple providers"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from api_key_generator import get_key_generator
+        
+        data = request.json or {}
+        providers = data.get('providers', ['openai', 'groq', 'anthropic'])
+        count_per_provider = data.get('count_per_provider', 1)
+        
+        gen = get_key_generator()
+        results = gen.generate_multi_provider(providers, min(count_per_provider, 10))
+        
+        # Flatten for easy use
+        all_keys = {}
+        for provider, keys in results.items():
+            all_keys[provider] = [k['key'] for k in keys]
+        
+        return jsonify({
+            'success': True,
+            'keys': all_keys,
+            'providers': list(all_keys.keys())
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/keygen/stats', methods=['GET'])
+def keygen_stats():
+    """Get key generation statistics"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from api_key_generator import get_key_generator
+        
+        gen = get_key_generator()
+        return jsonify({
+            'success': True,
+            'stats': gen.get_stats()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/harvest/check-email', methods=['POST'])
 def check_temp_email():
     """Check temp email inbox"""
