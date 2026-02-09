@@ -508,6 +508,7 @@ MASTER_TEMPLATE = """
                 <button class="tab" onclick="switchTab('coding')">👨‍💻 Coding</button>
                 <button class="tab" onclick="switchTab('learning')">🧠 Learning</button>
                 <button class="tab" onclick="switchTab('memory')">💾 Memory</button>
+                <button class="tab" onclick="switchTab('harvester')">🔑 Harvester</button>
             </div>
 
             <!-- LILITH Tab -->
@@ -636,6 +637,42 @@ MASTER_TEMPLATE = """
                 <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Memory Recall</div>
                 <button class="attack-mode-btn" onclick="recallMemory()">Recall Memories</button>
                 <div class="output-display" id="memory-output"></div>
+            </div>
+
+            <!-- API Key Harvester Tab -->
+            <div class="tab-content" id="tab-harvester">
+                <div class="panel-title">🔑 AUTONOMOUS API KEY HARVESTER</div>
+                <div class="status-box">
+                    <h6 style="color: var(--primary-red);">Harvesting Status</h6>
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span class="status-value" id="harvest-status">Idle</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Phase:</span>
+                        <span class="status-value" id="harvest-phase">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Progress:</span>
+                        <span class="status-value" id="harvest-progress">0%</span>
+                    </div>
+                </div>
+                <div class="progress-bar-custom" style="margin: 15px 0;">
+                    <div class="progress-fill" id="harvest-progress-bar">0%</div>
+                </div>
+                <div class="input-group">
+                    <label>Select Provider</label>
+                    <select id="harvest-provider">
+                        <option value="groq">Groq (Fast, Free, 70B models)</option>
+                        <option value="huggingface">HuggingFace (Free, Unlimited)</option>
+                        <option value="together">Together.ai ($25 free credits)</option>
+                    </select>
+                </div>
+                <button class="launch-attack-btn" onclick="startHarvesting()" id="harvest-btn">
+                    🚀 START AUTONOMOUS HARVESTING
+                </button>
+                <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Live Harvesting Log</div>
+                <div class="output-display" id="harvest-log" style="height: 300px;"></div>
             </div>
         </div>
 
