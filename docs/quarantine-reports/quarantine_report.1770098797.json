@@ -2593,7 +2593,7 @@
       "pid": 28492,
       "name": "Code.exe",
       "exe": "C:\\Users\\User\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",
-      "cmdline": "C:\\Users\\User\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe --type=crashpad-handler --user-data-dir=C:\\Users\\User\\AppData\\Roaming\\Code /prefetch:4 --no-rate-limit --monitor-self-annotation=ptype=crashpad-handler --database=C:\\Users\\User\\AppData\\Roaming\\Code\\Crashpad --url=appcenter://code?aid=a4e3233c-699c-46ec-b4f4-9c2a77254662&uid=0b422744-694c-4df9-afb9-0c62d28ba4f4&iid=0b422744-694c-4df9-afb9-0c62d28ba4f4&sid=0b422744-694c-4df9-afb9-0c62d28ba4f4 --annotation=_companyName=Microsoft --annotation=_productName=VSCode --annotation=_version=1.108.2 --annotation=plat=Win64 --annotation=prod=Electron --annotation=ver=39.2.7 --initial-client-data=0x4d4,0x4d8,0x4dc,0x4d0,0x4e0,0x7ff79a68b1ec,0x7ff79a68b1f8,0x7ff79a68b208",
+      "cmdline": "C:\\Users\\User\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe --type=crashpad-handler --user-data-dir=C:\\Users\\User\\AppData\\Roaming\\Code /prefetch:4 --no-rate-limit --monitor-self-annotation=ptype=crashpad-handler --database=C:\\Users\\User\\AppData\\Roaming\\Code\\Crashpad --url=appcenter://code?aid=dash-validator-1&uid=dash-validator-1&iid=dash-validator-1&sid=dash-validator-1 --annotation=_companyName=Microsoft --annotation=_productName=VSCode --annotation=_version=1.108.2 --annotation=plat=Win64 --annotation=prod=Electron --annotation=ver=39.2.7 --initial-client-data=0x4d4,0x4d8,0x4dc,0x4d0,0x4e0,0x7ff79a68b1ec,0x7ff79a68b1f8,0x7ff79a68b208",
       "suspicious": true,
       "reason": [
         "in_temp_or_downloads"
