@@ -8,12 +8,13 @@ const path = require('path');
 const appDir = path.join(__dirname, '..');
 const backendPath = path.join(appDir, 'tools', 'lilith_full_backend.py');
 const dashboardPath = path.join(appDir, 'ui', 'web_dashboard_master.py');
+const pythonPath = '/root/.venv/bin/python3';
 
 console.log('Starting LuciferOS System...');
 
 // Start Flask backend first
 console.log('1. Starting LILITH Backend on port 5000...');
-const backend = spawn('python3', [backendPath], {
+const backend = spawn(pythonPath, [backendPath], {
     env: {
         ...process.env,
         BACKEND_HOST: '0.0.0.0',
@@ -30,7 +31,7 @@ backend.on('error', (err) => {
 // Wait a bit then start dashboard
 setTimeout(() => {
     console.log('2. Starting Web Dashboard on port 3000...');
-    const dashboard = spawn('python3', [dashboardPath], {
+    const dashboard = spawn(pythonPath, [dashboardPath], {
         env: {
             ...process.env,
             WEB_DASHBOARD_PORT: '3000',
