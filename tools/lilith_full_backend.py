@@ -2237,3 +2237,14 @@ def agent_victory_conditions():
         return jsonify({'success': False, 'error': str(e)})
 
 
+
+if __name__ == '__main__':
+    # Get host from environment or use 0.0.0.0 to be accessible externally
+    host = os.environ.get('BACKEND_HOST', '0.0.0.0')
+    port = int(os.environ.get('BACKEND_PORT', '5000'))
+    
+    print(f"[LILITH] Starting backend on {host}:{port}")
+    print(f"[LILITH] OpenClaw: {OPENCLAW_PATH}")
+    print(f"[LILITH] AI Providers: {len(ai_manager.providers) if ai_manager else 0}")
+    
+    app.run(host=host, port=port, debug=False)
