@@ -726,8 +726,15 @@ class StealthPlaywrightHarvester:
         return await self.harvest_generic('fireworks', 'https://fireworks.ai/', r'fw_[a-zA-Z0-9]{30,}', 'fw_', 44)
 
 
-def save_harvested_key(provider: str, api_key: str, email: str):
-    """Save harvested key to database"""
+def save_harvested_key(provider: str, api_key: str, email: str, is_real: bool = False):
+    """Save harvested key to database
+    
+    Args:
+        provider: The AI provider name
+        api_key: The API key
+        email: Email used for signup
+        is_real: Whether this is a real key (not generated/demo)
+    """
     try:
         keys_path = Path('/app/config/harvested_keys.json')
         keys_path.parent.mkdir(parents=True, exist_ok=True)
@@ -740,22 +747,21 @@ def save_harvested_key(provider: str, api_key: str, email: str):
         # Remove existing key for this provider
         harvested_keys = [k for k in harvested_keys if k.get('provider') != provider]
         
-        # Determine if real or demo
-        is_demo = any(x in api_key for x in ['demo', 'test']) or email == 'automated'
-        
         harvested_keys.append({
             'provider': provider,
             'key': api_key,
             'email': email or 'automated',
             'harvested_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'method': 'playwright_stealth',
-            'is_demo': is_demo
+            'is_real': is_real,
+            'status': 'verified' if is_real else 'demo/unverified'
         })
         
         with open(keys_path, 'w') as f:
             json.dump(harvested_keys, f, indent=2)
         
-        add_log("✓ Key saved to database")
+        status = "REAL" if is_real else "DEMO"
+        add_log(f"✓ Key saved to database ({status})")
         return True
     except Exception as e:
         add_log(f"⚠️ Database save error: {str(e)}")
