@@ -2676,6 +2676,136 @@ def proxy_captcha():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== NETWORK CAPTURE ROUTES ====================
+
+@app.route('/_dash/network/capture/start', methods=['POST'])
+def start_network_capture():
+    """Start packet capture"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_packet_capture
+        
+        data = request.json or {}
+        interface = data.get('interface', None)
+        count = data.get('count', 100)
+        timeout = data.get('timeout', 60)
+        filter_str = data.get('filter', None)
+        
+        capture = get_packet_capture(interface)
+        result = capture.start_capture(count=count, timeout=timeout, filter_str=filter_str)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/capture/status', methods=['GET'])
+def network_capture_status():
+    """Get capture status"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_packet_capture
+        
+        capture = get_packet_capture()
+        result = capture.get_results()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/arp/scan', methods=['POST'])
+def arp_scan():
+    """Scan network using ARP"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_arp_scanner
+        
+        data = request.json or {}
+        ip_range = data.get('range', '192.168.1.0/24')
+        
+        scanner = get_arp_scanner()
+        result = scanner.scan_network(ip_range)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/hash/identify', methods=['POST'])
+def identify_hash():
+    """Identify hash type"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_hash_cracker
+        
+        data = request.json or {}
+        hash_value = data.get('hash', '')
+        
+        if not hash_value:
+            return jsonify({'success': False, 'error': 'No hash provided'})
+        
+        cracker = get_hash_cracker()
+        result = cracker.identify_hash(hash_value)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/hash/crack', methods=['POST'])
+def crack_hash():
+    """Crack hash"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_hash_cracker
+        
+        data = request.json or {}
+        hash_value = data.get('hash', '')
+        hash_type = data.get('type', 0)
+        wordlist = data.get('wordlist', None)
+        
+        if not hash_value:
+            return jsonify({'success': False, 'error': 'No hash provided'})
+        
+        cracker = get_hash_cracker()
+        result = cracker.crack_with_john(hash_value, wordlist=wordlist)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/metasploit/exploits', methods=['GET'])
+def get_exploits():
+    """Get Metasploit exploits"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_metasploit
+        
+        search = request.args.get('search', None)
+        
+        msf = get_metasploit()
+        result = msf.get_exploits(search)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/metasploit/payloads', methods=['POST'])
+def generate_payload():
+    """Generate Metasploit payload"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_metasploit
+        
+        data = request.json or {}
+        payload = data.get('payload', 'cmd/unix/reverse_bash')
+        lhost = data.get('lhost', '127.0.0.1')
+        lport = data.get('lport', 4444)
+        
+        msf = get_metasploit()
+        result = msf.generate_payload(payload, lhost, lport)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
