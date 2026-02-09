@@ -2339,6 +2339,380 @@ def agent_victory_conditions():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# ==================== ADVANCED CAPABILITIES ENDPOINTS ====================
+
+@app.route('/capabilities/list', methods=['GET'])
+def list_capabilities():
+    """List all 15 advanced capabilities"""
+    try:
+        from advanced_capabilities import list_capabilities as get_caps
+        caps = get_caps()
+        return jsonify({
+            'success': True,
+            'capabilities': caps,
+            'count': len(caps)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/run', methods=['POST'])
+def run_capability():
+    """Run a specific capability"""
+    try:
+        from advanced_capabilities import run_capability as exec_cap
+        
+        data = request.json or {}
+        capability_id = data.get('capability_id', '')
+        method = data.get('method', '')
+        kwargs = data.get('params', {})
+        
+        if not capability_id or not method:
+            return jsonify({'success': False, 'error': 'Missing capability_id or method'})
+        
+        result = exec_cap(capability_id, method, **kwargs)
+        return jsonify({
+            'success': True,
+            'capability': capability_id,
+            'method': method,
+            'result': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/recon/passive', methods=['POST'])
+def recon_passive():
+    """Run passive reconnaissance"""
+    try:
+        from advanced_capabilities import get_advanced_recon
+        recon = get_advanced_recon()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        results = recon.passive_recon(target)
+        return jsonify({
+            'success': True,
+            'target': target,
+            'results': results
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/recon/active', methods=['POST'])
+def recon_active():
+    """Run active reconnaissance"""
+    try:
+        from advanced_capabilities import get_advanced_recon
+        recon = get_advanced_recon()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        results = recon.active_recon(target)
+        return jsonify({
+            'success': True,
+            'target': target,
+            'results': results
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/recon/full', methods=['POST'])
+def recon_full():
+    """Run full reconnaissance suite"""
+    try:
+        from advanced_capabilities import get_advanced_recon
+        recon = get_advanced_recon()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        results = recon.full_recon(target)
+        return jsonify({
+            'success': True,
+            'target': target,
+            'results': results
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/nlp/sentiment', methods=['POST'])
+def nlp_sentiment():
+    """Analyze text sentiment"""
+    try:
+        from advanced_capabilities import get_nlp_engine
+        nlp = get_nlp_engine()
+        
+        data = request.json or {}
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'success': False, 'error': 'Text required'})
+        
+        result = nlp.analyze_sentiment(text)
+        return jsonify({
+            'success': True,
+            'result': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/nlp/phishing', methods=['POST'])
+def nlp_phishing():
+    """Generate phishing campaign"""
+    try:
+        from advanced_capabilities import get_nlp_engine
+        nlp = get_nlp_engine()
+        
+        data = request.json or {}
+        target_info = data.get('target_info', {})
+        
+        result = nlp.generate_phishing_campaign(target_info)
+        return jsonify({
+            'success': True,
+            'campaign': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/nlp/vishing', methods=['POST'])
+def nlp_vishing():
+    """Generate vishing script"""
+    try:
+        from advanced_capabilities import get_nlp_engine
+        nlp = get_nlp_engine()
+        
+        data = request.json or {}
+        target_info = data.get('target_info', {})
+        
+        result = nlp.generate_vishing_script(target_info)
+        return jsonify({
+            'success': True,
+            'script': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/ml/anomaly', methods=['POST'])
+def ml_anomaly():
+    """Detect anomalies in data"""
+    try:
+        from advanced_capabilities import get_ml_detector
+        detector = get_ml_detector()
+        
+        data = request.json or {}
+        input_data = data.get('data', [])
+        
+        result = detector.detect_anomalies(input_data)
+        return jsonify({
+            'success': True,
+            'result': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/ml/predict', methods=['POST'])
+def ml_predict():
+    """Predict threats"""
+    try:
+        from advanced_capabilities import get_ml_detector
+        detector = get_ml_detector()
+        
+        data = request.json or {}
+        activity = data.get('activity', {})
+        
+        result = detector.predict_threat(activity)
+        return jsonify({
+            'success': True,
+            'prediction': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/crypto/analyze', methods=['POST'])
+def crypto_analyze():
+    """Analyze hash or encryption"""
+    try:
+        from advanced_capabilities import get_crypto_analyzer
+        crypto = get_crypto_analyzer()
+        
+        data = request.json or {}
+        hash_value = data.get('hash', '')
+        
+        if hash_value:
+            result = crypto.analyze_hash(hash_value)
+        else:
+            result = {'error': 'Hash value required'}
+        
+        return jsonify({
+            'success': True,
+            'result': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/crypto/keygen', methods=['POST'])
+def crypto_keygen():
+    """Generate cryptographic key material"""
+    try:
+        from advanced_capabilities import get_crypto_analyzer
+        crypto = get_crypto_analyzer()
+        
+        data = request.json or {}
+        algorithm = data.get('algorithm', 'AES')
+        bits = data.get('bits', 256)
+        
+        result = crypto.generate_key_material(algorithm, bits)
+        return jsonify({
+            'success': True,
+            'key_material': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/exploit/generate', methods=['POST'])
+def exploit_generate():
+    """Generate exploit payload"""
+    try:
+        from advanced_capabilities import get_exploit_framework
+        exploit = get_exploit_framework()
+        
+        data = request.json or {}
+        vuln_type = data.get('vuln_type', 'sqli')
+        target_info = data.get('target_info', {})
+        
+        result = exploit.generate_exploit(vuln_type, target_info)
+        return jsonify({
+            'success': True,
+            'exploit': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/exploit/payloads', methods=['GET'])
+def exploit_payloads():
+    """Get available exploit payloads"""
+    try:
+        from advanced_capabilities import get_exploit_framework
+        exploit = get_exploit_framework()
+        
+        payload_type = request.args.get('type', 'web')
+        
+        payloads = exploit.payloads.get(payload_type, {})
+        return jsonify({
+            'success': True,
+            'type': payload_type,
+            'payloads': payloads
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/persistence/methods', methods=['GET'])
+def persistence_methods():
+    """Get persistence methods for OS"""
+    try:
+        from advanced_capabilities import get_persistence_mechanism
+        persistence = get_persistence_mechanism()
+        
+        os_type = request.args.get('os', 'linux')
+        
+        methods = persistence.get_persistence_methods(os_type)
+        return jsonify({
+            'success': True,
+            'os': os_type,
+            'methods': methods
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/evasion/techniques', methods=['GET'])
+def evasion_techniques():
+    """Get AV/EDR evasion techniques"""
+    try:
+        from advanced_capabilities import get_evasion_techniques
+        evasion = get_evasion_techniques()
+        
+        methods = evasion.get_evasion_methods()
+        return jsonify({
+            'success': True,
+            'techniques': methods
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/wireless/attacks', methods=['GET'])
+def wireless_attacks():
+    """Get wireless attack methods"""
+    try:
+        from advanced_capabilities import get_wireless_attacks
+        wireless = get_wireless_attacks()
+        
+        attacks = wireless.get_wifi_attacks()
+        return jsonify({
+            'success': True,
+            'attacks': attacks
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/physical/bypass', methods=['GET'])
+def physical_bypass():
+    """Get physical security bypass techniques"""
+    try:
+        from advanced_capabilities import get_physical_security
+        physical = get_physical_security()
+        
+        techniques = physical.get_bypass_techniques()
+        return jsonify({
+            'success': True,
+            'techniques': techniques
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/supply-chain/analyze', methods=['POST'])
+def supply_chain_analyze():
+    """Analyze supply chain attack vectors"""
+    try:
+        from advanced_capabilities import get_supply_chain
+        supply = get_supply_chain()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        result = supply.analyze_supply_chain(target)
+        return jsonify({
+            'success': True,
+            'analysis': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/capabilities/zeroday/methodology', methods=['GET'])
+def zeroday_methodology():
+    """Get zero-day research methodology"""
+    try:
+        from advanced_capabilities import get_zeroday_research
+        zeroday = get_zeroday_research()
+        
+        methodology = zeroday.get_research_methodology()
+        return jsonify({
+            'success': True,
+            'methodology': methodology
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
