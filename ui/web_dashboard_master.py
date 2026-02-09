@@ -1356,6 +1356,37 @@ def openclaw_skills():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/harvest/start', methods=['POST'])
+def start_harvest():
+    """Start autonomous API key harvesting"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from harvest_integration import start_harvesting_thread
+        
+        data = request.json or {}
+        provider = data.get('provider', 'groq')
+        
+        success = start_harvesting_thread(provider)
+        
+        if success:
+            return jsonify({'success': True, 'message': f'Harvesting started for {provider}'})
+        else:
+            return jsonify({'success': False, 'error': 'Harvesting already in progress'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/harvest/status', methods=['GET'])
+def harvest_status():
+    """Get harvesting status"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from harvest_integration import get_harvest_status
+        
+        status = get_harvest_status()
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'active': False, 'error': str(e), 'logs': [], 'progress': 0})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
