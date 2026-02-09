@@ -1291,6 +1291,86 @@ MASTER_TEMPLATE = """
             addMessage('lilith', '🧠 Learning system active | 💾 Memory system ready | 👨‍💻 Coding agent available');
         }, 1000);
 
+        // ==================== PROVIDER URLs ====================
+        const providerUrls = {
+            groq: { signup: 'https://console.groq.com/login', keys: 'https://console.groq.com/keys' },
+            huggingface: { signup: 'https://huggingface.co/join', keys: 'https://huggingface.co/settings/tokens' },
+            together: { signup: 'https://api.together.xyz/', keys: 'https://api.together.xyz/settings/api-keys' },
+            mistral: { signup: 'https://console.mistral.ai/', keys: 'https://console.mistral.ai/api-keys/' },
+            openrouter: { signup: 'https://openrouter.ai/', keys: 'https://openrouter.ai/keys' },
+            cerebras: { signup: 'https://cloud.cerebras.ai/', keys: 'https://cloud.cerebras.ai/platform' },
+            deepinfra: { signup: 'https://deepinfra.com/', keys: 'https://deepinfra.com/dash/api_keys' },
+            sambanova: { signup: 'https://cloud.sambanova.ai/', keys: 'https://cloud.sambanova.ai/' },
+            fireworks: { signup: 'https://fireworks.ai/', keys: 'https://fireworks.ai/api-keys' },
+            dolphin: { signup: 'https://dolphin.api.ai/', keys: 'https://dolphin.api.ai/keys' },
+            deepseek: { signup: 'https://platform.deepseek.com/', keys: 'https://platform.deepseek.com/api_keys' },
+            venice: { signup: 'https://venice.ai/', keys: 'https://venice.ai/settings/api' }
+        };
+
+        function openProviderSignup() {
+            const provider = document.getElementById('harvest-provider').value;
+            const urls = providerUrls[provider];
+            if (urls) {
+                addLog(`[HARVESTER] 🌐 Opening ${provider.toUpperCase()} signup page...`);
+                addLog(`[HARVESTER] 👉 Complete signup, then go to Keys page to get your API key`);
+                window.open(urls.signup, '_blank');
+            } else {
+                addLog(`[HARVESTER] ❌ Unknown provider: ${provider}`);
+            }
+        }
+
+        function openProviderKeys() {
+            const provider = document.getElementById('harvest-provider').value;
+            const urls = providerUrls[provider];
+            if (urls) {
+                addLog(`[HARVESTER] 🔑 Opening ${provider.toUpperCase()} API keys page...`);
+                addLog(`[HARVESTER] 👉 Create a new key and paste it below`);
+                window.open(urls.keys, '_blank');
+            } else {
+                addLog(`[HARVESTER] ❌ Unknown provider: ${provider}`);
+            }
+        }
+
+        async function saveManualKey() {
+            const provider = document.getElementById('harvest-provider').value;
+            const apiKey = document.getElementById('manual-api-key').value.trim();
+            
+            if (!apiKey) {
+                addLog('[HARVESTER] ❌ Please paste an API key first');
+                alert('Please paste an API key first!');
+                return;
+            }
+            
+            addLog(`[HARVESTER] 💾 Saving ${provider.toUpperCase()} key...`);
+            
+            try {
+                const response = await fetch('/_dash/harvest/save-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        provider: provider, 
+                        key: apiKey,
+                        is_real: true,
+                        method: 'manual'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`[HARVESTER] ✅ ${provider.toUpperCase()} key saved successfully!`);
+                    addLog(`[HARVESTER] Key: ${apiKey.substring(0, 15)}...${apiKey.slice(-5)}`);
+                    document.getElementById('manual-api-key').value = '';
+                    loadHarvestedKeys();
+                    addMessage('system', `✅ ${provider.toUpperCase()} API key saved! Click "Apply Keys to Session" to activate.`);
+                } else {
+                    addLog(`[HARVESTER] ❌ Error: ${data.error}`);
+                }
+            } catch (error) {
+                addLog(`[HARVESTER] ❌ Error saving key: ${error.message}`);
+            }
+        }
+
         // Harvesting Functions
         let harvestInterval = null;
 
