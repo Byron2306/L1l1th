@@ -1421,6 +1421,6 @@ if __name__ == "__main__":
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
     print(f"Starting LUCIFEROS Master Dashboard on http://{host}:{port}/")
     try:
-        app.run(host=host, port=port, debug=False)
+        app.run(host=host, port=port, debug=False, threaded=True)
     except Exception as exc:
         print("Failed to start dashboard:", exc)
