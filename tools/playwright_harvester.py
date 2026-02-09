@@ -557,7 +557,7 @@ class StealthPlaywrightHarvester:
             add_log(f"❌ HUGGINGFACE error: {str(e)}")
             return (f"hf_{''.join(random.choices(string.ascii_letters + string.digits, k=34))}", False)
     
-    async def harvest_together(self) -> Optional[str]:
+    async def harvest_together(self) -> Tuple[Optional[str], bool]:
         """Harvest API key from Together.ai"""
         global harvest_status
         
@@ -584,15 +584,15 @@ class StealthPlaywrightHarvester:
             
             if key:
                 add_log(f"✓ Found key: {key[:20]}...")
-                return key
+                return (key, True)
             
             # Generate demo key
             add_log("⚠️ Generating demo key")
-            return f"{''.join(random.choices('0123456789abcdef', k=64))}"
+            return (f"{''.join(random.choices('0123456789abcdef', k=64))}", False)
             
         except Exception as e:
             add_log(f"❌ TOGETHER error: {str(e)}")
-            return f"{''.join(random.choices('0123456789abcdef', k=64))}"
+            return (f"{''.join(random.choices('0123456789abcdef', k=64))}", False)
     
     async def harvest_openrouter(self) -> Optional[str]:
         """Harvest API key from OpenRouter"""
