@@ -742,40 +742,45 @@ MASTER_TEMPLATE = """
 
     <!-- VNC Browser Viewer Tab -->
     <div class="tab-content" id="tab-vnc">
-        <div class="panel-title">📺 VNC BROWSER VIEWER - Manual CAPTCHA Solving</div>
+        <div class="panel-title">📺 BROWSER VIEWER - Manual CAPTCHA Solving</div>
         <div class="status-box" style="margin-bottom: 15px;">
-            <h6 style="color: var(--primary-red);">Instructions</h6>
+            <h6 style="color: var(--primary-red);">How it works</h6>
             <p style="font-size: 12px; color: #999; margin: 5px 0;">
                 1. Start harvesting from the <strong>Harvester</strong> tab<br>
-                2. When prompted for manual action (login, CAPTCHA), come here<br>
-                3. Click <strong>Open VNC Viewer</strong> to see the browser<br>
-                4. Interact with the browser to complete login/CAPTCHA<br>
-                5. The harvester will automatically continue once complete
+                2. When login/CAPTCHA is needed, the browser screenshot appears here<br>
+                3. Watch the harvester logs for instructions<br>
+                4. <strong>Unfortunately, direct browser interaction requires local access.</strong><br>
+                5. For OAuth providers, the harvester will wait for you to complete login.
             </p>
         </div>
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button class="launch-attack-btn" onclick="openVNCWindow()" style="flex: 2;">🖥️ OPEN VNC VIEWER (New Window)</button>
-            <button class="attack-mode-btn" onclick="checkVNCStatus()" style="flex: 1;">🔄 Check Status</button>
+            <button class="attack-mode-btn" onclick="takeScreenshot()" style="flex: 1;">📸 Take Screenshot</button>
+            <button class="attack-mode-btn" onclick="toggleAutoScreenshot()" id="auto-screenshot-btn" style="flex: 1;">🔄 Auto-Refresh: OFF</button>
+            <button class="attack-mode-btn" onclick="checkVNCStatus()" style="flex: 1;">📊 Check Status</button>
         </div>
         <div class="status-box">
             <div class="status-item">
-                <span class="status-label">VNC Server:</span>
+                <span class="status-label">Browser Status:</span>
                 <span class="status-value" id="vnc-status">Checking...</span>
             </div>
             <div class="status-item">
-                <span class="status-label">Display:</span>
-                <span class="status-value">:99 (1920x1080)</span>
+                <span class="status-label">Last Screenshot:</span>
+                <span class="status-value" id="screenshot-time">Never</span>
+            </div>
+        </div>
+        <div style="background: #0a0a0a; border: 2px solid var(--primary-red); border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;">
+            <img id="browser-screenshot" src="" style="max-width: 100%; max-height: 500px; display: none;" />
+            <div id="screenshot-placeholder" style="color: #666; padding: 100px;">
+                📺 Screenshot will appear here when browser is active.<br>
+                Start a harvest to see the browser.
             </div>
         </div>
         <div class="status-box" style="margin-top: 15px;">
-            <h6 style="color: var(--text-yellow);">⚠️ Note</h6>
+            <h6 style="color: var(--text-yellow);">⚠️ Interactive Mode Coming Soon</h6>
             <p style="font-size: 12px; color: #999; margin: 5px 0;">
-                The VNC viewer opens in a new window because websocket connections require direct access.<br>
-                If the window doesn't open, check your browser's popup blocker.
+                Full interactive browser control requires WebSocket support.<br>
+                For now, you can view screenshots. The harvester automatically waits when action is needed.
             </p>
-        </div>
-        <div class="output-display" style="margin-top: 15px; height: 200px;" id="vnc-log">
-            VNC viewer ready. Start a harvest and click "Open VNC Viewer" to see the browser.
         </div>
     </div>
 
