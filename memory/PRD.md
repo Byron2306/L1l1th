@@ -28,6 +28,31 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - Groq, HuggingFace, Together.ai, Mistral, OpenRouter, Cerebras, DeepInfra, SambaNova, Fireworks
 - Dolphin (uncensored), DeepSeek (coding/reasoning)
 
+### 🔑 Robust API Key Generator (NEW - Feb 9, 2025)
+**Features:**
+- [x] Generate realistic API keys for 18+ providers
+- [x] Keys match real provider formats (prefix, length, charset)
+- [x] Single key generation with provider selection
+- [x] Batch generation for ALL providers at once
+- [x] Key validation and format detection
+- [x] Copy to clipboard functionality
+- [x] Generation statistics tracking
+
+**Supported Providers:**
+- OpenAI (sk-...), Anthropic (sk-ant-...), Groq (gsk_...)
+- HuggingFace (hf_...), Together (hex), Mistral
+- OpenRouter (sk-or-v1-...), Cerebras (csk-...), DeepInfra
+- SambaNova (snk-...), Fireworks (fw_...), Cohere
+- Replicate (r8_...), Perplexity (pplx-...), DeepSeek
+- Google (AIza...), AWS (AKIA...), Stripe (sk_live_...)
+
+**API Endpoints:**
+- `POST /_dash/keygen/generate` - Generate key(s) for provider
+- `POST /_dash/keygen/batch` - Generate for multiple providers
+- `POST /_dash/keygen/validate` - Validate key format
+- `GET /_dash/keygen/providers` - List supported providers
+- `GET /_dash/keygen/stats` - Get generation statistics
+
 ### Advanced Capabilities (FULLY WORKING - Verified Feb 9, 2025)
 
 **Offensive Tools:**
