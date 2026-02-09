@@ -27,5 +27,13 @@
     "harvested_at": "2026-02-09 19:58:55",
     "method": "playwright_stealth",
     "is_demo": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "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",
+    "email": "lilithyj9t784t@virgilian.com",
+    "harvested_at": "2026-02-09 20:00:23",
+    "method": "playwright_stealth",
+    "is_demo": false
   }
 ]
