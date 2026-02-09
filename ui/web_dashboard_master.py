@@ -1578,13 +1578,14 @@ MASTER_TEMPLATE = """
         async function startKeyRotation() {
             const select = document.getElementById('rotation-providers');
             const providers = Array.from(select.selectedOptions).map(opt => opt.value);
+            const mode = document.getElementById('rotation-mode').value;
             
             if (providers.length === 0) {
                 alert('Select at least one provider');
                 return;
             }
             
-            addLog('[ROTATION] 🚀 Starting key rotation...');
+            addLog(`[ROTATION] 🚀 Starting key rotation (${mode} mode)...`);
             
             try {
                 const response = await fetch('/_dash/rotation/start', {
@@ -1592,8 +1593,9 @@ MASTER_TEMPLATE = """
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         providers: providers,
-                        keys_per_batch: 5,
-                        max_per_provider: 1
+                        keys_per_batch: 10,
+                        max_per_provider: 1,
+                        mode: mode
                     })
                 });
                 
