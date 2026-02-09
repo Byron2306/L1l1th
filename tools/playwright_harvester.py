@@ -772,12 +772,17 @@ async def run_harvest(provider: str, headless: bool = False, manual_captcha: boo
         harvest_status['active'] = False
 
 
-def start_harvest_async(provider: str):
-    """Start harvesting in async context"""
+def start_harvest_async(provider: str, headless: bool = False):
+    """Start harvesting in async context
+    
+    Args:
+        provider: The AI provider to harvest from
+        headless: If False (default), opens visible browser for manual CAPTCHA solving
+    """
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(run_harvest(provider))
+        loop.run_until_complete(run_harvest(provider, headless=headless, manual_captcha=True))
     except Exception as e:
         harvest_status['error'] = str(e)
         harvest_status['active'] = False
