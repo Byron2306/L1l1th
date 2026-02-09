@@ -511,6 +511,7 @@ MASTER_TEMPLATE = """
                 <button class="tab" onclick="switchTab('learning')">🧠 Learning</button>
                 <button class="tab" onclick="switchTab('memory')">💾 Memory</button>
                 <button class="tab" onclick="switchTab('harvester')">🔑 Harvester</button>
+                <button class="tab" onclick="switchTab('vnc')">📺 VNC</button>
                 <button class="tab" onclick="switchTab('advanced')">⚔️ Advanced</button>
             </div>
 
