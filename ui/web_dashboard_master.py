@@ -1347,17 +1347,105 @@ MASTER_TEMPLATE = """
             deepinfra: { signup: 'https://deepinfra.com/', keys: 'https://deepinfra.com/dash/api_keys' },
             sambanova: { signup: 'https://cloud.sambanova.ai/', keys: 'https://cloud.sambanova.ai/' },
             fireworks: { signup: 'https://fireworks.ai/', keys: 'https://fireworks.ai/api-keys' },
-            dolphin: { signup: 'https://dolphin.api.ai/', keys: 'https://dolphin.api.ai/keys' },
+            dolphin: { signup: 'https://openrouter.ai/', keys: 'https://openrouter.ai/keys' },
             deepseek: { signup: 'https://platform.deepseek.com/', keys: 'https://platform.deepseek.com/api_keys' },
             venice: { signup: 'https://venice.ai/', keys: 'https://venice.ai/settings/api' }
         };
+
+        // Store current credentials
+        let currentCredentials = { email: null, password: null, token: null, provider: null };
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            el.select();
+            document.execCommand('copy');
+            addLog('[HARVESTER] 📋 Copied to clipboard!');
+        }
+
+        async function generateCredentials() {
+            addLog('[HARVESTER] 🎲 Generating temp email and password...');
+            
+            try {
+                const response = await fetch('/_dash/harvest/generate-credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('generated-email').value = data.email;
+                    document.getElementById('generated-password').value = data.password;
+                    currentCredentials = {
+                        email: data.email,
+                        password: data.password,
+                        token: data.token,
+                        provider: data.email_provider
+                    };
+                    
+                    addLog(`[HARVESTER] ✅ Email: ${data.email}`);
+                    addLog(`[HARVESTER] ✅ Password: ${data.password}`);
+                    addLog(`[HARVESTER] 📧 Provider: ${data.email_provider}`);
+                    addLog('[HARVESTER] 👉 Copy these and use them to sign up!');
+                } else {
+                    addLog(`[HARVESTER] ❌ Error: ${data.error}`);
+                }
+            } catch (error) {
+                addLog(`[HARVESTER] ❌ Error: ${error.message}`);
+            }
+        }
+
+        async function checkTempEmail() {
+            if (!currentCredentials.email) {
+                addLog('[HARVESTER] ❌ Generate credentials first!');
+                alert('Generate credentials first!');
+                return;
+            }
+            
+            addLog('[HARVESTER] 📬 Checking inbox...');
+            document.getElementById('email-inbox').style.display = 'block';
+            document.getElementById('email-inbox').innerHTML = '<span style="color: #888;">Checking...</span>';
+            
+            try {
+                const response = await fetch('/_dash/harvest/check-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentCredentials.email,
+                        token: currentCredentials.token,
+                        provider: currentCredentials.provider
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.messages && data.messages.length > 0) {
+                    let html = '<div style="color: #00ff00; margin-bottom: 10px;">📬 ' + data.messages.length + ' message(s) found:</div>';
+                    data.messages.forEach((msg, i) => {
+                        html += `<div style="padding: 8px; background: #1a1a2e; margin-bottom: 5px; border-radius: 3px;">
+                            <div style="color: #ff6600;">${msg.subject || 'No Subject'}</div>
+                            <div style="color: #888; font-size: 10px;">From: ${msg.from || 'Unknown'}</div>
+                            ${msg.verification_link ? `<a href="${msg.verification_link}" target="_blank" style="color: #00ff00;">🔗 Verification Link</a>` : ''}
+                        </div>`;
+                    });
+                    document.getElementById('email-inbox').innerHTML = html;
+                    addLog(`[HARVESTER] ✅ Found ${data.messages.length} email(s)`);
+                } else {
+                    document.getElementById('email-inbox').innerHTML = '<span style="color: #888;">No emails yet. Try again in a few seconds...</span>';
+                    addLog('[HARVESTER] 📭 No emails yet');
+                }
+            } catch (error) {
+                document.getElementById('email-inbox').innerHTML = '<span style="color: #ff0000;">Error checking email</span>';
+                addLog(`[HARVESTER] ❌ Error: ${error.message}`);
+            }
+        }
 
         function openProviderSignup() {
             const provider = document.getElementById('harvest-provider').value;
             const urls = providerUrls[provider];
             if (urls) {
                 addLog(`[HARVESTER] 🌐 Opening ${provider.toUpperCase()} signup page...`);
-                addLog(`[HARVESTER] 👉 Complete signup, then go to Keys page to get your API key`);
+                addLog(`[HARVESTER] 👉 Use the email and password generated above!`);
                 window.open(urls.signup, '_blank');
             } else {
                 addLog(`[HARVESTER] ❌ Unknown provider: ${provider}`);
@@ -1369,7 +1457,6 @@ MASTER_TEMPLATE = """
             const urls = providerUrls[provider];
             if (urls) {
                 addLog(`[HARVESTER] 🔑 Opening ${provider.toUpperCase()} API keys page...`);
-                addLog(`[HARVESTER] 👉 Create a new key and paste it below`);
                 window.open(urls.keys, '_blank');
             } else {
                 addLog(`[HARVESTER] ❌ Unknown provider: ${provider}`);
@@ -1395,6 +1482,7 @@ MASTER_TEMPLATE = """
                     body: JSON.stringify({ 
                         provider: provider, 
                         key: apiKey,
+                        email: currentCredentials.email || 'manual_entry',
                         is_real: true,
                         method: 'manual'
                     })
