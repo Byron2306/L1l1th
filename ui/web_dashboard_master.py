@@ -505,6 +505,9 @@ MASTER_TEMPLATE = """
                 <button class="tab" onclick="switchTab('browser')">🌐 Browser</button>
                 <button class="tab" onclick="switchTab('recon')">🔍 Recon</button>
                 <button class="tab" onclick="switchTab('payload')">💣 Payload</button>
+                <button class="tab" onclick="switchTab('coding')">👨‍💻 Coding</button>
+                <button class="tab" onclick="switchTab('learning')">🧠 Learning</button>
+                <button class="tab" onclick="switchTab('memory')">💾 Memory</button>
             </div>
 
             <!-- LILITH Tab -->
