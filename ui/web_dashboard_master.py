@@ -3279,6 +3279,24 @@ def proxy_dir_brute():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/_dash/offensive/password/brute', methods=['POST'])
+def proxy_password_brute():
+    """Proxy Hydra password brute force"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/offensive/password/brute", json=request.json, timeout=300)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/offensive/hydra/services', methods=['GET'])
+def proxy_hydra_services():
+    """Get Hydra supported services"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/offensive/hydra/services", timeout=30)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/ml/analyze-events', methods=['POST'])
 def proxy_ml_events():
     """Proxy ML events analysis"""
