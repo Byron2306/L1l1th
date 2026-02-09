@@ -929,7 +929,9 @@ async def run_harvest(provider: str, headless: bool = False, manual_captcha: boo
             'openrouter': harvester.harvest_openrouter,
             'cerebras': harvester.harvest_cerebras,
             'sambanova': harvester.harvest_sambanova,
-            'fireworks': harvester.harvest_fireworks
+            'fireworks': harvester.harvest_fireworks,
+            'dolphin': harvester.harvest_dolphin,
+            'deepseek': harvester.harvest_deepseek
         }
         
         harvest_func = harvest_methods.get(provider.lower())
