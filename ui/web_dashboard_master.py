@@ -701,6 +701,118 @@ MASTER_TEMPLATE = """
                 <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Live Harvesting Log</div>
                 <div class="output-display" id="harvest-log" style="height: 300px;"></div>
             </div>
+
+            <!-- VNC Browser Viewer Tab -->
+            <div class="tab-content" id="tab-vnc">
+                <div class="panel-title">📺 BROWSER VIEWER - Manual CAPTCHA Solving</div>
+                <div class="status-box" style="margin-bottom: 15px;">
+                    <h6 style="color: var(--primary-red);">How it works</h6>
+                    <p style="font-size: 12px; color: #999; margin: 5px 0;">
+                        1. Start harvesting from the <strong>Harvester</strong> tab<br>
+                        2. When login/CAPTCHA is needed, the browser screenshot appears here<br>
+                        3. Watch the harvester logs for instructions<br>
+                        4. <strong>Unfortunately, direct browser interaction requires local access.</strong><br>
+                        5. For OAuth providers, the harvester will wait for you to complete login.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button class="attack-mode-btn" onclick="takeScreenshot()" style="flex: 1;">📸 Take Screenshot</button>
+                    <button class="attack-mode-btn" onclick="toggleAutoScreenshot()" id="auto-screenshot-btn" style="flex: 1;">🔄 Auto-Refresh: OFF</button>
+                    <button class="attack-mode-btn" onclick="checkVNCStatus()" style="flex: 1;">📊 Check Status</button>
+                </div>
+                <div class="status-box">
+                    <div class="status-item">
+                        <span class="status-label">Browser Status:</span>
+                        <span class="status-value" id="vnc-status">Checking...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Last Screenshot:</span>
+                        <span class="status-value" id="screenshot-time">Never</span>
+                    </div>
+                </div>
+                <div style="background: #0a0a0a; border: 2px solid var(--primary-red); border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;">
+                    <img id="browser-screenshot" src="" style="max-width: 100%; max-height: 500px; display: none;" />
+                    <div id="screenshot-placeholder" style="color: #666; padding: 100px;">
+                        📺 Screenshot will appear here when browser is active.<br>
+                        Start a harvest to see the browser.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Capabilities Tab -->
+            <div class="tab-content" id="tab-advanced">
+                <div class="panel-title">⚔️ ADVANCED RED TEAM CAPABILITIES</div>
+                <div style="color: #00ff00; margin-bottom: 15px; font-size: 12px;">
+                    Real offensive tools: Nmap ✓ | SQLMap ✓ | Hydra ✓ | Dirb ✓
+                </div>
+                <div class="advanced-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    
+                    <!-- Offensive Tools -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #ff3333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff3333; margin: 0 0 10px 0; font-size: 14px;">🔧 Offensive Tools</h3>
+                        <input type="text" id="offensive-target" placeholder="Target IP/Domain" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <button onclick="runNmapScan()" style="flex: 1; padding: 6px; background: #3d1a1a; border: none; color: #fff; cursor: pointer; font-size: 10px;">Nmap</button>
+                            <button onclick="runSQLMapTest()" style="flex: 1; padding: 6px; background: #3d1a1a; border: none; color: #fff; cursor: pointer; font-size: 10px;">SQLMap</button>
+                            <button onclick="runDirBrute()" style="flex: 1; padding: 6px; background: #3d1a1a; border: none; color: #fff; cursor: pointer; font-size: 10px;">DirBrute</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Recon Module -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #00ff00; margin: 0 0 10px 0; font-size: 14px;">🔍 Advanced Recon</h3>
+                        <input type="text" id="recon-target" placeholder="Target domain" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="runPassiveRecon()" style="flex: 1; padding: 8px; background: #1a4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Passive</button>
+                            <button onclick="runActiveRecon()" style="flex: 1; padding: 8px; background: #4d1a1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Active</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Social Engineering -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff00ff; margin: 0 0 10px 0; font-size: 14px;">🎭 Social Engineering</h3>
+                        <input type="text" id="phish-name" placeholder="Target name" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                        <input type="text" id="phish-company" placeholder="Company" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="genPhishing()" style="flex: 1; padding: 8px; background: #4d1a4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">Phishing</button>
+                            <button onclick="genVishing()" style="flex: 1; padding: 8px; background: #1a4d4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">Vishing</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Exploit Framework -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff0000; margin: 0 0 10px 0; font-size: 14px;">💥 Exploit Framework</h3>
+                        <select id="exploit-type" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                            <option value="sqli">SQL Injection</option>
+                            <option value="xss">XSS</option>
+                            <option value="rce">RCE</option>
+                            <option value="buffer_overflow">Buffer Overflow</option>
+                        </select>
+                        <button onclick="generateExploit()" style="width: 100%; padding: 8px; background: #4d1a1a; border: none; color: #fff; cursor: pointer;">Generate Exploit</button>
+                    </div>
+                    
+                    <!-- Crypto Analysis -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ffff00; margin: 0 0 10px 0; font-size: 14px;">🔐 Crypto Analysis</h3>
+                        <input type="text" id="hash-input" placeholder="Hash to analyze" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="analyzeHash()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Analyze</button>
+                            <button onclick="generateKeys()" style="flex: 1; padding: 8px; background: #1a4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Gen Keys</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Evasion Techniques -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff6600; margin: 0 0 10px 0; font-size: 14px;">🛡️ Evasion</h3>
+                        <button onclick="getEvasionTechniques()" style="width: 100%; padding: 8px; background: #4d2a1a; border: none; color: #fff; cursor: pointer; margin-bottom: 5px;">AV/EDR Bypass</button>
+                        <button onclick="getPersistence()" style="width: 100%; padding: 8px; background: #2a4d1a; border: none; color: #fff; cursor: pointer;">Persistence</button>
+                    </div>
+                </div>
+                
+                <!-- Output Area -->
+                <div class="panel-title" style="margin-top: 20px; font-size: 14px;">📊 Results Output</div>
+                <div class="output-display" id="advanced-output" style="height: 200px;"></div>
+            </div>
         </div>
 
         <!-- RIGHT PANEL: Monitoring -->
