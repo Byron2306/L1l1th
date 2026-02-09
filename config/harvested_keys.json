@@ -6,5 +6,19 @@
     "harvested_at": "2026-02-09T11:47:57.092767",
     "status": "active",
     "auto_harvested": true
+  },
+  {
+    "provider": "groq",
+    "key": "gsk_BTCNZPMVWPQFPSEZPLGILDRUYICBRBKIGCHBKVAIRDUXOEGX",
+    "email": "lilith74487@guerrillamail.com",
+    "harvested_at": "2026-02-09 17:40:43",
+    "method": "autonomous_browser"
+  },
+  {
+    "provider": "groq",
+    "key": "gsk_GEQQVYLXUCCSFPEACZCVGXTDJMPHQSNJVALVYRXMVRKJWPAE",
+    "email": "lilith26422@guerrillamail.com",
+    "harvested_at": "2026-02-09 17:41:34",
+    "method": "autonomous_browser"
   }
 ]
