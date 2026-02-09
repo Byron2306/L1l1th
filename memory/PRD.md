@@ -46,7 +46,37 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - Replicate (r8_...), Perplexity (pplx-...), DeepSeek
 - Google (AIza...), AWS (AKIA...), Stripe (sk_live_...)
 
+### 🔄 Auto Key Rotation & Testing System (NEW - Feb 9, 2025)
+**Features:**
+- [x] Automatic key generation and testing against real provider APIs
+- [x] Multi-provider targeting (select which providers to test)
+- [x] Real-time status updates (keys generated, tested, valid)
+- [x] Live rotation logs
+- [x] Pause/Resume functionality
+- [x] Auto-stop when valid keys found
+- [x] Load valid keys directly to session
+- [x] Background thread processing
+
 **API Endpoints:**
+- `POST /_dash/rotation/start` - Start rotation with provider list
+- `POST /_dash/rotation/stop` - Stop rotation
+- `POST /_dash/rotation/pause` - Pause rotation
+- `POST /_dash/rotation/resume` - Resume rotation  
+- `GET /_dash/rotation/status` - Get real-time status
+- `GET /_dash/rotation/keys` - Get valid keys found
+- `POST /_dash/rotation/load` - Load keys to session
+- `POST /_dash/rotation/test-key` - Test single key
+
+**How it works:**
+1. Select target providers from multi-select list
+2. Click "START ROTATION"
+3. System generates batches of realistic keys
+4. Tests each key against real provider APIs
+5. Displays live stats and logs
+6. Continues until finding working keys or stopped
+7. Click "LOAD KEYS" to add valid keys to session
+
+**API Endpoints (Key Generator):**
 - `POST /_dash/keygen/generate` - Generate key(s) for provider
 - `POST /_dash/keygen/batch` - Generate for multiple providers
 - `POST /_dash/keygen/validate` - Validate key format
