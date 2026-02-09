@@ -1,9 +1,9 @@
 [
   {
     "provider": "groq",
-    "key": "gsk_DEMO_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "key": "gsk_GEQQVYLXUCCSFPEACZCVGXTDJMPHQSNJVALVYRXMVRKJWPAE",
     "email": "lilith_demo@guerrillamail.com",
-    "harvested_at": "2026-02-09T11:47:57.092767",
+    "harvested_at": "2026-02-09 18:35:39",
     "status": "active",
     "auto_harvested": true
   },
@@ -24,7 +24,14 @@
   {
     "provider": "test",
     "key": "test123",
-    "harvested_at": "2026-02-09 18:32:32",
+    "harvested_at": "2026-02-09 18:35:39",
     "method": "manual"
+  },
+  {
+    "provider": "mistral",
+    "key": "mk_MRFCVL5LPVRPP4BB75APJZ18PJ2M6VR3CIJ9IP0YLOAQ4WI7",
+    "email": "lilith_8nof2hht71@guerrillamail.com",
+    "harvested_at": "2026-02-09 18:35:39",
+    "method": "autonomous_browser"
   }
 ]
