@@ -803,7 +803,7 @@ MASTER_TEMPLATE = """
             input.value = '';
 
             try {
-                const response = await fetch('/api/ai/chat', {
+                const response = await fetch('/_dash/ai/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message })
@@ -847,7 +847,7 @@ MASTER_TEMPLATE = """
 
         async function checkSystemStatus() {
             try {
-                const response = await fetch('/api/status');
+                const response = await fetch('/_dash/status');
                 const data = await response.json();
                 
                 document.getElementById('status-backend').textContent = data.backend.ok ? '✓ Online' : '✗ Offline';
@@ -855,7 +855,7 @@ MASTER_TEMPLATE = """
                 document.getElementById('backend-status').className = data.backend.ok ? 'status-indicator status-online' : 'status-indicator status-offline';
                 
                 // Get AI status through proxy
-                const aiResponse = await fetch('/api/backend/status');
+                const aiResponse = await fetch('/_dash/backend/status');
                 const aiData = await aiResponse.json();
                 if (aiData.ai_providers) {
                     const aiProviders = aiData.ai_providers;
@@ -870,7 +870,7 @@ MASTER_TEMPLATE = """
 
         async function loadOpenClawSkills() {
             try {
-                const response = await fetch('/api/openclaw/skills');
+                const response = await fetch('/_dash/openclaw/skills');
                 const data = await response.json();
                 if (data.success && data.skills) {
                     const container = document.getElementById('openclaw-skills');
@@ -903,7 +903,7 @@ MASTER_TEMPLATE = """
             updateProgress('Reconnaissance', 30);
             
             try {
-                const response = await fetch('/api/recon/start', {
+                const response = await fetch('/_dash/recon/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ target })
@@ -960,7 +960,7 @@ MASTER_TEMPLATE = """
             addLog(`[PAYLOAD] Generating ${type} payload for ${target}`);
             
             try {
-                const response = await fetch('/api/payload/generate', {
+                const response = await fetch('/_dash/payload/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ type, target })
@@ -985,7 +985,7 @@ MASTER_TEMPLATE = """
         // Coding Agent Functions
         async function checkCodingAgent() {
             try {
-                const response = await fetch('/api/coding/status');
+                const response = await fetch('/_dash/coding/status');
                 const data = await response.json();
                 if (data.available) {
                     document.getElementById('coding-status').textContent = '✓ Available';
@@ -1010,7 +1010,7 @@ MASTER_TEMPLATE = """
             document.getElementById('coding-output').textContent = 'Generating code...';
 
             try {
-                const response = await fetch('/api/coding/generate', {
+                const response = await fetch('/_dash/coding/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt })
@@ -1034,7 +1034,7 @@ MASTER_TEMPLATE = """
         async function loadLearningData() {
             try {
                 // Get stats
-                const statsResponse = await fetch('/api/learning/stats');
+                const statsResponse = await fetch('/_dash/learning/stats');
                 const stats = await statsResponse.json();
                 
                 if (stats.success !== false) {
@@ -1044,7 +1044,7 @@ MASTER_TEMPLATE = """
                 }
 
                 // Get insights
-                const insightsResponse = await fetch('/api/learning/insights');
+                const insightsResponse = await fetch('/_dash/learning/insights');
                 const insights = await insightsResponse.json();
                 
                 if (insights.insights) {
@@ -1072,7 +1072,7 @@ MASTER_TEMPLATE = """
             }
 
             try {
-                const response = await fetch('/api/memory/save', {
+                const response = await fetch('/_dash/memory/save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1099,7 +1099,7 @@ MASTER_TEMPLATE = """
             addLog('[MEMORY] Recalling memories...');
             
             try {
-                const response = await fetch('/api/memory/recall');
+                const response = await fetch('/_dash/memory/recall');
                 const data = await response.json();
                 
                 if (data.success && data.memories) {
@@ -1141,7 +1141,7 @@ MASTER_TEMPLATE = """
             addLog(`[HARVESTER] Starting autonomous harvesting for ${provider}`);
             
             try {
-                const response = await fetch('/api/harvest/start', {
+                const response = await fetch('/_dash/harvest/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ provider })
@@ -1168,7 +1168,7 @@ MASTER_TEMPLATE = """
 
         async function updateHarvestStatus() {
             try {
-                const response = await fetch('/api/harvest/status');
+                const response = await fetch('/_dash/harvest/status');
                 const status = await response.json();
                 
                 // Update status display
@@ -1224,7 +1224,7 @@ def api_status():
     data["openclaw_canvas"] = OPENCLAW_CANVAS
     return jsonify(data)
 
-@app.route('/api/ai/chat', methods=['POST'])
+@app.route('/_dash/ai/chat', methods=['POST'])
 def ai_chat():
     data = request.json or {}
     message = data.get('message', '')
@@ -1251,7 +1251,7 @@ def ai_chat():
     
     return jsonify({'success': False, 'response': 'No AI providers available. Please add API keys using the harvester or manually.'})
 
-@app.route('/api/recon/start', methods=['POST'])
+@app.route('/_dash/recon/start', methods=['POST'])
 def recon_start():
     data = request.json or {}
     target = data.get('target', '')
@@ -1293,7 +1293,7 @@ def recon_start():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/payload/generate', methods=['POST'])
+@app.route('/_dash/payload/generate', methods=['POST'])
 def payload_generate():
     data = request.json or {}
     payload_type = data.get('type', 'xss')
@@ -1305,7 +1305,7 @@ def payload_generate():
         'type': payload_type
     })
 
-@app.route('/api/learning/stats', methods=['GET'])
+@app.route('/_dash/learning/stats', methods=['GET'])
 def learning_stats():
     """Get LILITH learning statistics"""
     try:
@@ -1314,7 +1314,7 @@ def learning_stats():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/learning/insights', methods=['GET'])
+@app.route('/_dash/learning/insights', methods=['GET'])
 def learning_insights():
     """Get LILITH learning insights"""
     try:
@@ -1323,7 +1323,7 @@ def learning_insights():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/coding/status', methods=['GET'])
+@app.route('/_dash/coding/status', methods=['GET'])
 def coding_status():
     """Get coding agent status"""
     try:
@@ -1332,7 +1332,7 @@ def coding_status():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/coding/generate', methods=['POST'])
+@app.route('/_dash/coding/generate', methods=['POST'])
 def coding_generate():
     """Generate code using coding agent"""
     data = request.json or {}
@@ -1348,7 +1348,7 @@ def coding_generate():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/memory/save', methods=['POST'])
+@app.route('/_dash/memory/save', methods=['POST'])
 def memory_save():
     """Save to attack memory"""
     data = request.json or {}
@@ -1359,7 +1359,7 @@ def memory_save():
         'data': data
     })
 
-@app.route('/api/memory/recall', methods=['GET'])
+@app.route('/_dash/memory/recall', methods=['GET'])
 def memory_recall():
     """Recall from attack memory"""
     return jsonify({
@@ -1367,7 +1367,7 @@ def memory_recall():
         'memories': []
     })
 
-@app.route('/api/backend/status', methods=['GET'])
+@app.route('/_dash/backend/status', methods=['GET'])
 def backend_status():
     """Proxy backend status to avoid CORS"""
     try:
@@ -1376,7 +1376,7 @@ def backend_status():
     except Exception as e:
         return jsonify({'error': str(e), 'ai_providers': {'active_count': 0, 'total_count': 0}})
 
-@app.route('/api/openclaw/skills', methods=['GET'])
+@app.route('/_dash/openclaw/skills', methods=['GET'])
 def openclaw_skills():
     """Proxy OpenClaw skills to avoid CORS"""
     try:
@@ -1385,7 +1385,7 @@ def openclaw_skills():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/harvest/start', methods=['POST'])
+@app.route('/_dash/harvest/start', methods=['POST'])
 def start_harvest():
     """Start autonomous API key harvesting"""
     try:
@@ -1404,7 +1404,7 @@ def start_harvest():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/harvest/status', methods=['GET'])
+@app.route('/_dash/harvest/status', methods=['GET'])
 def harvest_status():
     """Get harvesting status"""
     try:
