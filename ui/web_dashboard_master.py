@@ -1503,7 +1503,7 @@ MASTER_TEMPLATE = """
         // ==================== ADVANCED CAPABILITIES FUNCTIONS ====================
         
         function showAdvancedResult(data) {
-            const resultsEl = document.getElementById('advanced-results');
+            const resultsEl = document.getElementById('advanced-output');
             resultsEl.textContent = JSON.stringify(data, null, 2);
         }
 
