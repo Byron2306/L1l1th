@@ -783,6 +783,89 @@ MASTER_TEMPLATE = """
                     </div>
                 </div>
                 
+                <!-- KEY ROTATION SYSTEM -->
+                <div class="status-box" style="margin-top: 15px; background: #0d1a0d; border-color: #00ff00;">
+                    <h6 style="color: #00ff00;">🔄 AUTO KEY ROTATION & TESTING</h6>
+                    <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
+                        Automatically generates and tests keys against real provider APIs until finding working ones.
+                    </p>
+                    
+                    <!-- Provider Selection for Rotation -->
+                    <div style="margin-bottom: 10px;">
+                        <label style="color: #888; font-size: 11px;">Target Providers (select multiple):</label>
+                        <select id="rotation-providers" multiple style="width: 100%; height: 80px; padding: 5px; background: #0d0d1a; border: 1px solid #333; color: #fff; font-size: 11px;">
+                            <option value="openai" selected>OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="groq" selected>Groq</option>
+                            <option value="huggingface" selected>HuggingFace</option>
+                            <option value="together">Together</option>
+                            <option value="mistral">Mistral</option>
+                            <option value="openrouter">OpenRouter</option>
+                            <option value="cerebras">Cerebras</option>
+                            <option value="deepinfra">DeepInfra</option>
+                            <option value="fireworks">Fireworks</option>
+                            <option value="cohere">Cohere</option>
+                            <option value="perplexity">Perplexity</option>
+                            <option value="deepseek">DeepSeek</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Control Buttons -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button id="rotation-start-btn" onclick="startKeyRotation()" style="flex: 1; padding: 10px; background: #1a4d1a; border: none; color: #fff; cursor: pointer; font-weight: bold;">
+                            ▶️ START ROTATION
+                        </button>
+                        <button id="rotation-stop-btn" onclick="stopKeyRotation()" style="flex: 1; padding: 10px; background: #4d1a1a; border: none; color: #fff; cursor: pointer;" disabled>
+                            ⏹️ STOP
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button onclick="pauseKeyRotation()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">
+                            ⏸️ PAUSE
+                        </button>
+                        <button onclick="resumeKeyRotation()" style="flex: 1; padding: 8px; background: #1a4d4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">
+                            ▶️ RESUME
+                        </button>
+                        <button onclick="loadRotationKeys()" style="flex: 1; padding: 8px; background: #4d1a4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">
+                            📥 LOAD KEYS
+                        </button>
+                    </div>
+                    
+                    <!-- Status Display -->
+                    <div id="rotation-status" style="background: #0d0d1a; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888;">Status:</span>
+                            <span id="rotation-running" style="color: #ff6600;">Stopped</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888;">Keys Generated:</span>
+                            <span id="rotation-generated" style="color: #00ff00;">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888;">Keys Tested:</span>
+                            <span id="rotation-tested" style="color: #00ff00;">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #888;">Valid Keys Found:</span>
+                            <span id="rotation-valid" style="color: #00ff00; font-weight: bold;">0</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Found Keys Display -->
+                    <div id="rotation-found-keys" style="margin-top: 10px; background: #0d0d1a; padding: 10px; border-radius: 5px; display: none; max-height: 150px; overflow-y: auto;">
+                        <div style="color: #00ff00; font-weight: bold; margin-bottom: 5px;">🎉 Valid Keys Found:</div>
+                        <div id="rotation-keys-list" style="font-family: monospace; font-size: 10px;"></div>
+                    </div>
+                    
+                    <!-- Live Logs -->
+                    <div style="margin-top: 10px;">
+                        <div style="color: #888; font-size: 11px; margin-bottom: 5px;">Rotation Logs:</div>
+                        <div id="rotation-logs" style="background: #0a0a0a; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 10px; max-height: 100px; overflow-y: auto; color: #888;">
+                            Ready to start...
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Log -->
                 <div class="panel-title" style="font-size: 14px; margin-top: 15px;">Live Log</div>
                 <div class="output-display" id="harvest-log" style="height: 150px;"></div>
