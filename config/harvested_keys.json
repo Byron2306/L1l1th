@@ -14,9 +14,9 @@
   },
   {
     "provider": "groq",
-    "key": "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",
+    "key": "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",
     "email": "automated",
-    "harvested_at": "2026-02-09 19:55:21",
+    "harvested_at": "2026-02-09 19:57:09",
     "method": "playwright_stealth",
     "is_demo": false
   }
