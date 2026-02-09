@@ -685,8 +685,12 @@ class StealthPlaywrightHarvester:
             return f"csk-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}"
     
     # Generic harvester for other providers
-    async def harvest_generic(self, provider: str, url: str, key_pattern: str, prefix: str, length: int) -> Optional[str]:
-        """Generic harvester for providers with similar patterns"""
+    async def harvest_generic(self, provider: str, url: str, key_pattern: str, prefix: str, length: int) -> Tuple[Optional[str], bool]:
+        """Generic harvester for providers with similar patterns
+        
+        Returns:
+            Tuple of (api_key, is_real)
+        """
         global harvest_status
         
         try:
@@ -703,15 +707,15 @@ class StealthPlaywrightHarvester:
             
             if key:
                 add_log(f"✓ Found key: {key[:15]}...")
-                return key
+                return (key, True)  # Real key
             
             harvest_status['progress'] = 85
             add_log(f"⚠️ Generating demo key for {provider}")
-            return f"{prefix}{''.join(random.choices(string.ascii_letters + string.digits, k=length))}"
+            return (f"{prefix}{''.join(random.choices(string.ascii_letters + string.digits, k=length))}", False)
             
         except Exception as e:
             add_log(f"❌ {provider.upper()} error: {str(e)}")
-            return f"{prefix}{''.join(random.choices(string.ascii_letters + string.digits, k=length))}"
+            return (f"{prefix}{''.join(random.choices(string.ascii_letters + string.digits, k=length))}", False)
     
     async def harvest_venice(self) -> Optional[str]:
         return await self.harvest_generic('venice', 'https://venice.ai/', r'ven_[a-zA-Z0-9]{30,}', 'ven_', 40)
