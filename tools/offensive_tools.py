@@ -102,13 +102,14 @@ class NmapScanner:
         self.available = shutil.which('nmap') is not None
     
     def quick_scan(self, target: str) -> Dict:
-        """Quick TCP SYN scan of common ports"""
+        """Quick TCP connect scan of common ports"""
         if not self.available:
             return self._simulate_scan(target, 'quick')
         
         try:
+            # Use -sT (TCP connect) instead of -sS (SYN) which requires root
             result = subprocess.run(
-                ['nmap', '-sS', '-T4', '-F', '-oX', '-', target],
+                ['nmap', '-sT', '-T4', '-F', '--open', '-oX', '-', target],
                 capture_output=True,
                 text=True,
                 timeout=120
