@@ -173,62 +173,126 @@ class PlaywrightHarvester:
         return True  # No CAPTCHA detected
     
     async def harvest_groq(self) -> Optional[str]:
-        """Harvest API key from Groq"""
+        """Harvest API key from Groq - with manual CAPTCHA support"""
         global harvest_status
         
         try:
-            email, password = await create_temp_email()
-            harvest_status['email'] = email
-            
             add_log("🎯 Navigating to Groq console...")
             harvest_status['phase'] = 'navigating'
+            harvest_status['progress'] = 10
+            
+            await self.page.goto("https://console.groq.com/login", timeout=30000)
+            await self.page.wait_for_timeout(2000)
+            
+            # Screenshot current state
+            add_log("📸 Page loaded - checking for login options...")
             harvest_status['progress'] = 20
             
-            await self.page.goto("https://console.groq.com/signup", timeout=30000)
-            await self.page.wait_for_timeout(2000)
+            # Check for and handle CAPTCHA
+            await self.check_and_handle_captcha()
             
-            add_log("📝 Filling signup form...")
+            # Look for Google/GitHub OAuth or email signup
+            add_log("📝 Looking for signup/login options...")
             harvest_status['phase'] = 'signing_up'
-            harvest_status['progress'] = 35
+            harvest_status['progress'] = 30
             
-            # Fill email
-            email_input = self.page.locator('input[type="email"]').first
-            if await email_input.count() > 0:
-                await email_input.fill(email)
-                await self.page.wait_for_timeout(500)
+            # Check if there's a "Sign up" or "Create account" link
+            signup_link = await self.page.query_selector('a:has-text("Sign up"), a:has-text("Create"), button:has-text("Sign up")')
+            if signup_link:
+                add_log("Found signup option, clicking...")
+                await signup_link.click()
+                await self.page.wait_for_timeout(2000)
             
-            # Try to find and click signup button
-            signup_btn = self.page.locator('button:has-text("Sign up"), button:has-text("Continue")')
-            if await signup_btn.count() > 0:
-                await signup_btn.first.click()
-                await self.page.wait_for_timeout(3000)
+            # Handle CAPTCHA if present after navigation
+            await self.check_and_handle_captcha()
             
-            add_log("📬 Waiting for verification (simulated)...")
-            harvest_status['phase'] = 'verifying_email'
-            harvest_status['progress'] = 50
+            add_log("👤 Please complete the signup/login in the browser window...")
+            add_log("📧 Use your email or Google/GitHub OAuth")
+            harvest_status['phase'] = 'waiting_for_user'
+            harvest_status['progress'] = 40
             
-            # Since we can't actually verify email, we'll navigate to API keys page directly
-            # In a real scenario, you'd poll the temp email service
-            await self.page.wait_for_timeout(2000)
+            # Wait for user to complete signup/login (up to 3 minutes)
+            add_log("⏳ Waiting for you to complete authentication (3 min timeout)...")
             
-            add_log("🔑 Attempting to access API keys...")
+            # Wait until we reach the dashboard/keys page
+            for i in range(36):  # 36 * 5 = 180 seconds = 3 minutes
+                current_url = self.page.url
+                
+                # Check if we're on the keys page or dashboard
+                if '/keys' in current_url or '/playground' in current_url or '/dashboard' in current_url:
+                    add_log("✓ Logged in! Detected dashboard/keys page")
+                    break
+                    
+                # Check for CAPTCHA during wait
+                await self.check_and_handle_captcha()
+                
+                await self.page.wait_for_timeout(5000)
+                harvest_status['progress'] = 40 + (i * 1)  # Slowly increase progress
+            
+            add_log("🔑 Navigating to API keys page...")
             harvest_status['phase'] = 'generating_key'
             harvest_status['progress'] = 70
             
-            # Try to navigate to keys page
-            try:
-                await self.page.goto("https://console.groq.com/keys", timeout=15000)
+            # Navigate directly to keys page
+            await self.page.goto("https://console.groq.com/keys", timeout=30000)
+            await self.page.wait_for_timeout(3000)
+            
+            # Check for CAPTCHA
+            await self.check_and_handle_captcha()
+            
+            # Look for "Create API Key" button
+            create_btn = await self.page.query_selector('button:has-text("Create"), button:has-text("New"), button:has-text("Generate")')
+            if create_btn:
+                add_log("Found 'Create Key' button, clicking...")
+                await create_btn.click()
                 await self.page.wait_for_timeout(2000)
-            except:
-                pass
+                
+                # Handle any modal/dialog for key name
+                name_input = await self.page.query_selector('input[placeholder*="name"], input[name="name"]')
+                if name_input:
+                    await name_input.fill(f"lilith-key-{int(time.time())}")
+                    await self.page.wait_for_timeout(500)
+                
+                # Click confirm/create
+                confirm_btn = await self.page.query_selector('button:has-text("Create"), button:has-text("Submit"), button:has-text("Generate")')
+                if confirm_btn:
+                    await confirm_btn.click()
+                    await self.page.wait_for_timeout(3000)
             
-            # Generate simulated key (in production, would extract from page)
-            api_key = f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
+            add_log("🔍 Looking for API key on page...")
+            harvest_status['progress'] = 85
             
-            harvest_status['progress'] = 90
-            add_log(f"✓ API Key Generated: {api_key[:20]}...{api_key[-8:]}")
+            # Try to find the API key in the page
+            # Groq keys start with "gsk_"
+            page_content = await self.page.content()
+            key_match = re.search(r'gsk_[a-zA-Z0-9]{40,60}', page_content)
             
-            return api_key
+            if key_match:
+                api_key = key_match.group(0)
+                harvest_status['api_key'] = api_key
+                harvest_status['progress'] = 95
+                add_log(f"✓ API Key found: {api_key[:20]}...{api_key[-8:]}")
+                return api_key
+            
+            # If not found in content, check for copy button or key display
+            key_elements = await self.page.query_selector_all('[class*="key"], [class*="token"], code, pre')
+            for elem in key_elements:
+                text = await elem.text_content()
+                if text and text.startswith('gsk_'):
+                    api_key = text.strip()
+                    harvest_status['api_key'] = api_key
+                    harvest_status['progress'] = 95
+                    add_log(f"✓ API Key extracted: {api_key[:20]}...{api_key[-8:]}")
+                    return api_key
+            
+            add_log("⚠️ Could not find API key automatically")
+            add_log("📋 Please copy the key manually from the browser and note it down")
+            
+            # Wait a bit more for manual copy
+            await self.page.wait_for_timeout(10000)
+            
+            # Return None - key needs to be added manually
+            return None
             
         except Exception as e:
             add_log(f"❌ Error during Groq harvest: {str(e)}")
