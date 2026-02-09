@@ -126,8 +126,9 @@ class NmapScanner:
             return self._simulate_scan(target, 'full')
         
         try:
+            # Use -sT (TCP connect) instead of -sS (SYN) which requires root
             result = subprocess.run(
-                ['nmap', '-sS', '-sV', '-sC', '-p-', '-T4', '-oX', '-', target],
+                ['nmap', '-sT', '-sV', '-T4', '-p', '1-10000', '--open', '-oX', '-', target],
                 capture_output=True,
                 text=True,
                 timeout=600
