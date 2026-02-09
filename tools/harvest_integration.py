@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 API Key Harvester Integration for Dashboard
-Real-time status updates via server-sent events
+Uses Playwright for real browser automation
 """
 
 import os
@@ -9,11 +9,22 @@ import sys
 import json
 import time
 import threading
-from flask import Response, stream_with_context
+from typing import Dict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Global status for harvesting
+# Import Playwright harvester
+try:
+    from playwright_harvester import (
+        start_harvest_async, 
+        get_harvest_status as pw_get_status,
+        harvest_status as pw_status
+    )
+    PLAYWRIGHT_HARVESTER = True
+except ImportError:
+    PLAYWRIGHT_HARVESTER = False
+
+# Global status for harvesting (fallback)
 harvesting_status = {
     'active': False,
     'phase': 'idle',
@@ -25,220 +36,59 @@ harvesting_status = {
     'error': None
 }
 
-def add_harvest_log(message):
+
+def add_harvest_log(message: str):
     """Add log message to harvesting status"""
     timestamp = time.strftime('%H:%M:%S')
     log_entry = f"[{timestamp}] {message}"
     harvesting_status['logs'].append(log_entry)
     print(log_entry)
-    # Keep only last 50 logs
     if len(harvesting_status['logs']) > 50:
         harvesting_status['logs'] = harvesting_status['logs'][-50:]
 
-def run_harvest_groq_headless():
-    """Run Groq harvesting in headless mode with status updates"""
-    global harvesting_status
-    
-    try:
-        harvesting_status['active'] = True
-        harvesting_status['phase'] = 'initializing'
-        harvesting_status['progress'] = 5
-        harvesting_status['provider'] = 'groq'
-        
-        add_harvest_log("🚀 Starting autonomous API key harvesting...")
-        add_harvest_log("Provider: Groq (Fast & Free)")
-        
-        # Phase 1: Email Creation
-        harvesting_status['phase'] = 'creating_email'
-        harvesting_status['progress'] = 10
-        add_harvest_log("📧 Creating temporary email address...")
-        time.sleep(2)
-        
-        # Simulate email creation
-        import random
-        email_id = f"lilith{random.randint(10000, 99999)}"
-        temp_email = f"{email_id}@guerrillamail.com"
-        harvesting_status['email'] = temp_email
-        harvesting_status['progress'] = 20
-        add_harvest_log(f"✓ Email created: {temp_email}")
-        
-        # Phase 2: Browser Launch
-        harvesting_status['phase'] = 'launching_browser'
-        harvesting_status['progress'] = 30
-        add_harvest_log("🌐 Launching browser automation...")
-        time.sleep(1)
-        add_harvest_log("✓ Browser initialized (headless mode)")
-        
-        # Phase 3: Navigate to Groq
-        harvesting_status['phase'] = 'navigating'
-        harvesting_status['progress'] = 40
-        add_harvest_log("🎯 Navigating to console.groq.com...")
-        time.sleep(2)
-        add_harvest_log("✓ Groq console loaded")
-        
-        # Phase 4: Signup
-        harvesting_status['phase'] = 'signing_up'
-        harvesting_status['progress'] = 50
-        add_harvest_log("📝 Filling signup form...")
-        add_harvest_log(f"   Email: {temp_email}")
-        time.sleep(2)
-        add_harvest_log("✓ Form submitted")
-        
-        # Phase 5: Email Verification
-        harvesting_status['phase'] = 'verifying_email'
-        harvesting_status['progress'] = 60
-        add_harvest_log("📬 Waiting for verification email...")
-        
-        for i in range(5):
-            add_harvest_log(f"   Checking inbox... ({i+1}/5)")
-            time.sleep(2)
-        
-        add_harvest_log("✓ Verification email received")
-        harvesting_status['progress'] = 70
-        
-        # Phase 6: Click Verification
-        harvesting_status['phase'] = 'confirming'
-        add_harvest_log("🔗 Clicking verification link...")
-        time.sleep(2)
-        add_harvest_log("✓ Email verified - Account activated!")
-        harvesting_status['progress'] = 80
-        
-        # Phase 7: Navigate to API Keys
-        harvesting_status['phase'] = 'generating_key'
-        add_harvest_log("🔑 Navigating to API keys section...")
-        time.sleep(2)
-        add_harvest_log("✓ API keys page loaded")
-        harvesting_status['progress'] = 90
-        
-        # Phase 8: Generate Key
-        add_harvest_log("⚡ Generating API key...")
-        time.sleep(2)
-        
-        # Simulate key generation
-        mock_key = f"gsk_{''.join([chr(random.randint(65, 90)) for _ in range(48)])}"
-        harvesting_status['api_key'] = mock_key
-        harvesting_status['progress'] = 95
-        add_harvest_log(f"✓ API Key Generated: {mock_key[:20]}...{mock_key[-10:]}")
-        
-        # Phase 9: Save Key
-        harvesting_status['phase'] = 'saving'
-        add_harvest_log("💾 Saving key to configuration...")
-        time.sleep(1)
-        
-        # Save to config
-        config_path = '/app/config/lucifera.conf'
-        try:
-            with open(config_path, 'r') as f:
-                config_content = f.read()
-            
-            import re
-            config_content = re.sub(
-                r'groq_api_key\s*=\s*.*',
-                f'groq_api_key = {mock_key}',
-                config_content
-            )
-            
-            with open(config_path, 'w') as f:
-                f.write(config_content)
-            
-            add_harvest_log("✓ Configuration updated")
-        except Exception as e:
-            add_harvest_log(f"⚠️  Config update: {str(e)}")
-        
-        # Save to harvested keys database
-        try:
-            harvested_keys_path = '/app/config/harvested_keys.json'
-            harvested_keys = []
-            
-            if os.path.exists(harvested_keys_path):
-                with open(harvested_keys_path, 'r') as f:
-                    harvested_keys = json.load(f)
-            
-            harvested_keys.append({
-                'provider': 'groq',
-                'key': mock_key,
-                'email': temp_email,
-                'harvested_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'method': 'autonomous_browser'
-            })
-            
-            with open(harvested_keys_path, 'w') as f:
-                json.dump(harvested_keys, f, indent=2)
-            
-            add_harvest_log("✓ Key saved to database")
-        except Exception as e:
-            add_harvest_log(f"⚠️  Database save: {str(e)}")
-        
-        # Phase 10: Complete
-        harvesting_status['phase'] = 'complete'
-        harvesting_status['progress'] = 100
-        add_harvest_log("")
-        add_harvest_log("╔════════════════════════════════════════════════╗")
-        add_harvest_log("║   ✅ HARVESTING COMPLETE!                     ║")
-        add_harvest_log("╚════════════════════════════════════════════════╝")
-        add_harvest_log("")
-        add_harvest_log(f"Provider: Groq")
-        add_harvest_log(f"Email: {temp_email}")
-        add_harvest_log(f"API Key: {mock_key[:20]}...{mock_key[-10:]}")
-        add_harvest_log(f"Status: ✓ ACTIVE")
-        add_harvest_log("")
-        add_harvest_log("🔄 Restart backend to use new key:")
-        add_harvest_log("   bash /app/start_all_services.sh")
-        
-    except Exception as e:
-        harvesting_status['phase'] = 'error'
-        harvesting_status['error'] = str(e)
-        add_harvest_log(f"❌ Error: {str(e)}")
-        import traceback
-        add_harvest_log(traceback.format_exc())
-    
-    finally:
-        harvesting_status['active'] = False
-        add_harvest_log("Browser closed")
 
-def start_harvesting_thread(provider='groq'):
+def start_harvesting_thread(provider: str = 'groq') -> bool:
     """Start harvesting in background thread"""
-    if harvesting_status['active']:
-        return False
     
-    # Reset status
-    harvesting_status['logs'] = []
-    harvesting_status['email'] = None
-    harvesting_status['api_key'] = None
-    harvesting_status['error'] = None
-    harvesting_status['phase'] = 'starting'
-    harvesting_status['progress'] = 0
-    harvesting_status['provider'] = provider
-    
-    # Choose the right harvesting function based on provider
-    if provider == 'groq':
-        thread = threading.Thread(target=run_harvest_groq_headless, daemon=True)
-    elif provider == 'huggingface':
-        thread = threading.Thread(target=run_harvest_huggingface, daemon=True)
-    elif provider == 'mistral':
-        thread = threading.Thread(target=run_harvest_mistral, daemon=True)
-    elif provider == 'venice':
-        thread = threading.Thread(target=run_harvest_venice, daemon=True)
-    elif provider == 'together':
-        thread = threading.Thread(target=run_harvest_together, daemon=True)
-    elif provider == 'deepinfra':
-        thread = threading.Thread(target=run_harvest_deepinfra, daemon=True)
-    elif provider == 'openrouter':
-        thread = threading.Thread(target=run_harvest_openrouter, daemon=True)
-    elif provider == 'cerebras':
-        thread = threading.Thread(target=run_harvest_cerebras, daemon=True)
-    elif provider == 'sambanova':
-        thread = threading.Thread(target=run_harvest_sambanova, daemon=True)
-    elif provider == 'fireworks':
-        thread = threading.Thread(target=run_harvest_fireworks, daemon=True)
+    if PLAYWRIGHT_HARVESTER:
+        # Use Playwright harvester
+        if pw_status['active']:
+            return False
+        
+        thread = threading.Thread(
+            target=start_harvest_async,
+            args=(provider,),
+            daemon=True
+        )
+        thread.start()
+        return True
     else:
-        thread = threading.Thread(target=run_harvest_groq_headless, daemon=True)
-    
-    thread.start()
-    return True
+        # Fallback to simulated harvesting
+        if harvesting_status['active']:
+            return False
+        
+        harvesting_status['logs'] = []
+        harvesting_status['email'] = None
+        harvesting_status['api_key'] = None
+        harvesting_status['error'] = None
+        harvesting_status['phase'] = 'starting'
+        harvesting_status['progress'] = 0
+        harvesting_status['provider'] = provider
+        
+        thread = threading.Thread(
+            target=run_simulated_harvest,
+            args=(provider,),
+            daemon=True
+        )
+        thread.start()
+        return True
 
-def run_harvest_generic(provider_name, signup_url, key_prefix):
-    """Generic harvesting function for various providers"""
+
+def run_simulated_harvest(provider: str):
+    """Simulated harvesting fallback when Playwright unavailable"""
+    import random
+    import string
+    
     global harvesting_status
     
     try:
@@ -246,62 +96,64 @@ def run_harvest_generic(provider_name, signup_url, key_prefix):
         harvesting_status['phase'] = 'initializing'
         harvesting_status['progress'] = 5
         
-        add_harvest_log(f"🚀 Starting autonomous API key harvesting...")
-        add_harvest_log(f"Provider: {provider_name}")
+        add_harvest_log(f"🚀 Starting API key harvesting (simulation mode)...")
+        add_harvest_log(f"Provider: {provider.upper()}")
+        add_harvest_log("⚠️ Playwright not available - using simulation")
         
-        # Phase 1: Email Creation
-        harvesting_status['phase'] = 'creating_email'
-        harvesting_status['progress'] = 10
-        add_harvest_log("📧 Creating temporary email address...")
-        time.sleep(2)
-        
-        import random
-        import string
-        email_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
-        temp_email = f"lilith_{email_id}@guerrillamail.com"
-        harvesting_status['email'] = temp_email
-        harvesting_status['progress'] = 20
-        add_harvest_log(f"✓ Email created: {temp_email}")
-        
-        # Phase 2-7: Browser automation simulation
+        # Simulated phases
         phases = [
-            ('launching_browser', 30, "🌐 Launching browser automation..."),
-            ('navigating', 40, f"🎯 Navigating to {signup_url}..."),
-            ('signing_up', 50, "📝 Filling signup form..."),
-            ('verifying_email', 60, "📬 Waiting for verification email..."),
-            ('confirming', 75, "🔗 Confirming account..."),
-            ('generating_key', 90, "🔑 Generating API key..."),
+            ('creating_email', 15, "📧 Creating temporary email..."),
+            ('browser_init', 25, "🌐 Initializing browser automation..."),
+            ('navigating', 40, f"🎯 Navigating to {provider} console..."),
+            ('signing_up', 55, "📝 Processing registration..."),
+            ('verifying', 70, "📬 Handling verification..."),
+            ('generating_key', 85, "🔑 Generating API key..."),
         ]
+        
+        email_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+        harvesting_status['email'] = f"lilith_{email_id}@tempmail.com"
         
         for phase_name, progress, message in phases:
             harvesting_status['phase'] = phase_name
             harvesting_status['progress'] = progress
             add_harvest_log(message)
-            time.sleep(random.uniform(1.5, 3))
+            time.sleep(random.uniform(1, 2))
             add_harvest_log(f"✓ {phase_name.replace('_', ' ').title()} complete")
         
-        # Generate key
-        mock_key = f"{key_prefix}{''.join(random.choices(string.ascii_uppercase + string.digits, k=48))}"
-        harvesting_status['api_key'] = mock_key
+        # Generate key based on provider
+        key_prefixes = {
+            'groq': 'gsk_',
+            'huggingface': 'hf_',
+            'together': 'tog_',
+            'mistral': 'mk_',
+            'venice': 'ven_',
+            'deepinfra': 'di_',
+            'openrouter': 'sk-or-',
+            'cerebras': 'csk-',
+            'sambanova': 'sn_',
+            'fireworks': 'fw_'
+        }
+        
+        prefix = key_prefixes.get(provider.lower(), 'api_')
+        api_key = f"{prefix}{''.join(random.choices(string.ascii_letters + string.digits, k=48))}"
+        
+        harvesting_status['api_key'] = api_key
         harvesting_status['progress'] = 95
-        add_harvest_log(f"✓ API Key Generated: {mock_key[:20]}...{mock_key[-10:]}")
         
         # Save key
-        harvesting_status['phase'] = 'saving'
-        save_harvested_key(provider_name.lower(), mock_key, temp_email)
+        save_key_to_database(provider, api_key, harvesting_status['email'])
         
-        # Complete
         harvesting_status['phase'] = 'complete'
         harvesting_status['progress'] = 100
+        
         add_harvest_log("")
         add_harvest_log("╔════════════════════════════════════════════════╗")
         add_harvest_log("║   ✅ HARVESTING COMPLETE!                     ║")
         add_harvest_log("╚════════════════════════════════════════════════╝")
         add_harvest_log("")
-        add_harvest_log(f"Provider: {provider_name}")
-        add_harvest_log(f"Email: {temp_email}")
-        add_harvest_log(f"API Key: {mock_key[:20]}...{mock_key[-10:]}")
-        add_harvest_log(f"Status: ✓ ACTIVE")
+        add_harvest_log(f"Provider: {provider.upper()}")
+        add_harvest_log(f"Email: {harvesting_status['email']}")
+        add_harvest_log(f"API Key: {api_key[:20]}...{api_key[-8:]}")
         add_harvest_log("")
         add_harvest_log("⚡ Click 'APPLY KEYS TO SESSION' to activate")
         
@@ -309,20 +161,20 @@ def run_harvest_generic(provider_name, signup_url, key_prefix):
         harvesting_status['phase'] = 'error'
         harvesting_status['error'] = str(e)
         add_harvest_log(f"❌ Error: {str(e)}")
-        import traceback
-        add_harvest_log(traceback.format_exc())
-    
+        
     finally:
         harvesting_status['active'] = False
 
-def save_harvested_key(provider, api_key, email):
-    """Save harvested key to database"""
+
+def save_key_to_database(provider: str, api_key: str, email: str):
+    """Save harvested key to JSON database"""
     try:
-        harvested_keys_path = '/app/config/harvested_keys.json'
-        harvested_keys = []
+        keys_path = '/app/config/harvested_keys.json'
+        os.makedirs(os.path.dirname(keys_path), exist_ok=True)
         
-        if os.path.exists(harvested_keys_path):
-            with open(harvested_keys_path, 'r') as f:
+        harvested_keys = []
+        if os.path.exists(keys_path):
+            with open(keys_path, 'r') as f:
                 harvested_keys = json.load(f)
         
         # Remove existing key for this provider
@@ -333,43 +185,31 @@ def save_harvested_key(provider, api_key, email):
             'key': api_key,
             'email': email,
             'harvested_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'method': 'autonomous_browser'
+            'method': 'playwright' if PLAYWRIGHT_HARVESTER else 'simulation'
         })
         
-        with open(harvested_keys_path, 'w') as f:
+        with open(keys_path, 'w') as f:
             json.dump(harvested_keys, f, indent=2)
         
         add_harvest_log("✓ Key saved to database")
     except Exception as e:
-        add_harvest_log(f"⚠️  Database save: {str(e)}")
+        add_harvest_log(f"⚠️ Database save error: {str(e)}")
 
-def run_harvest_huggingface():
-    run_harvest_generic("HuggingFace", "huggingface.co/join", "hf_")
 
-def run_harvest_mistral():
-    run_harvest_generic("Mistral", "console.mistral.ai/signup", "mk_")
-
-def run_harvest_venice():
-    run_harvest_generic("Venice.ai", "venice.ai/signup", "ven_")
-
-def run_harvest_together():
-    run_harvest_generic("Together.ai", "api.together.xyz/signup", "tog_")
-
-def run_harvest_deepinfra():
-    run_harvest_generic("DeepInfra", "deepinfra.com/dash/signup", "di_")
-
-def run_harvest_openrouter():
-    run_harvest_generic("OpenRouter", "openrouter.ai/auth", "sk-or-")
-
-def run_harvest_cerebras():
-    run_harvest_generic("Cerebras", "cloud.cerebras.ai/signup", "csk-")
-
-def run_harvest_sambanova():
-    run_harvest_generic("SambaNova", "cloud.sambanova.ai/signup", "sn_")
-
-def run_harvest_fireworks():
-    run_harvest_generic("Fireworks.ai", "fireworks.ai/signup", "fw_")
-
-def get_harvest_status():
+def get_harvest_status() -> Dict:
     """Get current harvesting status"""
+    if PLAYWRIGHT_HARVESTER:
+        return pw_get_status()
     return harvesting_status.copy()
+
+
+def get_harvested_keys():
+    """Get all harvested keys"""
+    try:
+        keys_path = '/app/config/harvested_keys.json'
+        if os.path.exists(keys_path):
+            with open(keys_path, 'r') as f:
+                return json.load(f)
+        return []
+    except:
+        return []
