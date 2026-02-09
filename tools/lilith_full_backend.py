@@ -2248,4 +2248,7 @@ if __name__ == '__main__':
         print(f"[LILITH] Warning: Could not start attack server: {e}")
     
     print("👹 LILITH Backend (OpenClaw) starting on port 5000...")
-    app.run(host='127.0.0.1', port=5000, debug=False)
+    # Get host from environment or use 0.0.0.0 to be accessible externally
+    host = os.environ.get('BACKEND_HOST', '0.0.0.0')
+    port = int(os.environ.get('BACKEND_PORT', '5000'))
+    app.run(host=host, port=port, debug=False)
