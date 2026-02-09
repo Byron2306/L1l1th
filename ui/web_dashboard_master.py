@@ -1927,6 +1927,87 @@ MASTER_TEMPLATE = """
             }
         }
 
+        // ==================== NETWORK CAPTURE FUNCTIONS ====================
+        
+        async function startCapture() {
+            const filter = document.getElementById('capture-filter').value;
+            const count = parseInt(document.getElementById('capture-count').value) || 100;
+            
+            showAdvancedResult({status: 'Starting packet capture...', filter: filter, count: count});
+            addLog('[NETWORK] Starting packet capture...');
+            
+            try {
+                const response = await fetch('/_dash/network/capture/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({filter: filter, count: count, timeout: 60})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+                addLog('[NETWORK] ' + (data.success ? 'Capture started' : 'Error: ' + data.error));
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function getCaptureStatus() {
+            try {
+                const response = await fetch('/_dash/network/capture/status');
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function runARPScan() {
+            const range = document.getElementById('arp-range').value || '192.168.1.0/24';
+            
+            showAdvancedResult({status: 'Scanning network: ' + range + '...'});
+            addLog('[NETWORK] ARP scanning ' + range);
+            
+            try {
+                const response = await fetch('/_dash/network/arp/scan', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({range: range})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+        
+        async function generateReverseShell() {
+            const lhost = document.getElementById('payload-lhost').value;
+            const lport = parseInt(document.getElementById('payload-lport').value) || 4444;
+            
+            if (!lhost) {
+                alert('Enter your IP address (LHOST)');
+                return;
+            }
+            
+            showAdvancedResult({status: 'Generating reverse shell payloads...'});
+            addLog('[PAYLOAD] Generating shells for ' + lhost + ':' + lport);
+            
+            try {
+                const response = await fetch('/_dash/network/metasploit/payloads', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        payload: 'cmd/unix/reverse_bash',
+                        lhost: lhost,
+                        lport: lport
+                    })
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
         async function runMLAnalysis() {
             showAdvancedResult({status: 'Running ML anomaly detection...'});
             
