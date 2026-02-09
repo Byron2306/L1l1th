@@ -742,6 +742,47 @@ MASTER_TEMPLATE = """
                     </div>
                 </div>
                 
+                <!-- API Key Generator -->
+                <div class="status-box" style="margin-top: 15px; background: #1a1a3a; border-color: #ff6600;">
+                    <h6 style="color: #ff6600;">🔧 API KEY GENERATOR</h6>
+                    <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
+                        Generate realistic API keys for testing and development. Keys match real provider formats.
+                    </p>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <select id="keygen-provider" style="flex: 1; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff;">
+                            <option value="openai">OpenAI (sk-...)</option>
+                            <option value="anthropic">Anthropic (sk-ant-...)</option>
+                            <option value="groq">Groq (gsk_...)</option>
+                            <option value="huggingface">HuggingFace (hf_...)</option>
+                            <option value="together">Together (hex)</option>
+                            <option value="mistral">Mistral</option>
+                            <option value="openrouter">OpenRouter (sk-or-v1-...)</option>
+                            <option value="cerebras">Cerebras (csk-...)</option>
+                            <option value="deepinfra">DeepInfra</option>
+                            <option value="fireworks">Fireworks (fw_...)</option>
+                            <option value="cohere">Cohere</option>
+                            <option value="replicate">Replicate (r8_...)</option>
+                            <option value="perplexity">Perplexity (pplx-...)</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="google">Google (AIza...)</option>
+                            <option value="aws">AWS (AKIA...)</option>
+                            <option value="stripe">Stripe (sk_live_...)</option>
+                            <option value="generic">Generic (random)</option>
+                        </select>
+                        <input type="number" id="keygen-count" value="1" min="1" max="20" style="width: 60px; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; text-align: center;">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button onclick="generateAPIKey()" style="flex: 1; padding: 10px; background: #4d2a1a; border: none; color: #fff; cursor: pointer; font-weight: bold;">
+                            🔑 GENERATE KEY
+                        </button>
+                        <button onclick="generateBatchKeys()" style="flex: 1; padding: 10px; background: #2a2a4d; border: none; color: #fff; cursor: pointer;">
+                            📦 BATCH (ALL PROVIDERS)
+                        </button>
+                    </div>
+                    <div id="generated-keys-output" style="background: #0d0d1a; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; display: none;">
+                    </div>
+                </div>
+                
                 <!-- Log -->
                 <div class="panel-title" style="font-size: 14px; margin-top: 15px;">Live Log</div>
                 <div class="output-display" id="harvest-log" style="height: 150px;"></div>
