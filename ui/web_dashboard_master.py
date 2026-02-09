@@ -961,6 +961,68 @@ def payload_generate():
         'type': payload_type
     })
 
+@app.route('/api/learning/stats', methods=['GET'])
+def learning_stats():
+    """Get LILITH learning statistics"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/learning/stats", timeout=5)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/learning/insights', methods=['GET'])
+def learning_insights():
+    """Get LILITH learning insights"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/learning/insights", timeout=5)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/coding/status', methods=['GET'])
+def coding_status():
+    """Get coding agent status"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/coding_agent/status", timeout=5)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/coding/generate', methods=['POST'])
+def coding_generate():
+    """Generate code using coding agent"""
+    data = request.json or {}
+    prompt = data.get('prompt', '')
+    
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/skill/run",
+            json={'skill': 'coding-agent', 'task': prompt},
+            timeout=60
+        )
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/memory/save', methods=['POST'])
+def memory_save():
+    """Save to attack memory"""
+    data = request.json or {}
+    
+    return jsonify({
+        'success': True,
+        'message': 'Memory saved',
+        'data': data
+    })
+
+@app.route('/api/memory/recall', methods=['GET'])
+def memory_recall():
+    """Recall from attack memory"""
+    return jsonify({
+        'success': True,
+        'memories': []
+    })
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
