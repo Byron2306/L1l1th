@@ -3362,6 +3362,35 @@ def test_single_api_key():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/_dash/rotation/modes', methods=['GET'])
+def get_generation_modes():
+    """Get available key generation modes"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        return jsonify(manager.get_generation_modes())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/rate-limits', methods=['GET'])
+def get_rate_limits():
+    """Get rate limiting statistics"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        status = manager.get_status()
+        return jsonify({
+            'success': True,
+            'rate_limits': status.get('rate_limits', {}),
+            'rate_limited_count': status.get('stats', {}).get('rate_limited_count', 0)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/harvest/generate-credentials', methods=['POST'])
 def generate_credentials():
     """Generate temp email and password for signup"""
