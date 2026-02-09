@@ -233,6 +233,73 @@ class StealthPlaywrightHarvester:
         except:
             pass
     
+    async def wait_for_user_action(self, description: str, check_func, timeout_seconds: int = 180):
+        """Wait for user to complete an action (like solving CAPTCHA)
+        
+        Args:
+            description: What we're waiting for
+            check_func: Async function that returns True when action is complete
+            timeout_seconds: Max time to wait
+        """
+        add_log(f"⏳ Waiting for: {description}")
+        add_log(f"⏳ You have {timeout_seconds} seconds to complete this action")
+        add_log("👀 Watch the VNC window and interact as needed!")
+        
+        start_time = time.time()
+        check_interval = 3  # Check every 3 seconds
+        
+        while time.time() - start_time < timeout_seconds:
+            try:
+                if await check_func():
+                    add_log(f"✓ {description} - Complete!")
+                    return True
+            except Exception as e:
+                pass
+            
+            elapsed = int(time.time() - start_time)
+            remaining = timeout_seconds - elapsed
+            if elapsed % 15 == 0 and elapsed > 0:
+                add_log(f"⏳ Still waiting... {remaining}s remaining")
+            
+            await asyncio.sleep(check_interval)
+        
+        add_log(f"⚠️ Timeout waiting for: {description}")
+        return False
+    
+    async def check_for_captcha(self) -> bool:
+        """Check if there's a CAPTCHA on the page"""
+        captcha_selectors = [
+            'iframe[src*="recaptcha"]',
+            'iframe[src*="hcaptcha"]',
+            '.g-recaptcha',
+            '.h-captcha',
+            '#challenge-running',
+            '[data-sitekey]',
+            'iframe[src*="captcha"]'
+        ]
+        
+        for selector in captcha_selectors:
+            try:
+                element = await self.page.query_selector(selector)
+                if element:
+                    return True
+            except:
+                pass
+        return False
+    
+    async def wait_for_captcha_solved(self, timeout: int = 180):
+        """Wait for user to solve CAPTCHA"""
+        if not await self.check_for_captcha():
+            return True
+        
+        add_log("🔐 CAPTCHA DETECTED!")
+        add_log("👉 Please solve it in the VNC window")
+        
+        async def check_solved():
+            return not await self.check_for_captcha()
+        
+        return await self.wait_for_user_action("CAPTCHA to be solved", check_solved, timeout)
+    
     async def extract_api_key_from_page(self, patterns: list) -> Optional[str]:
         """Try to extract API key from current page"""
         try:
