@@ -2583,6 +2583,7 @@ def save_manual_key():
         data = request.json or {}
         provider = data.get('provider', 'unknown')
         api_key = data.get('key', '')
+        email = data.get('email', 'manual_entry')
         is_real = data.get('is_real', True)
         method = data.get('method', 'manual')
         
@@ -2605,7 +2606,7 @@ def save_manual_key():
         harvested_keys.append({
             'provider': provider,
             'key': api_key,
-            'email': 'manual_entry',
+            'email': email,
             'harvested_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'method': method,
             'is_real': is_real,
@@ -2617,6 +2618,100 @@ def save_manual_key():
             json.dump(harvested_keys, f, indent=2)
         
         return jsonify({'success': True, 'message': f'{provider} key saved'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/harvest/generate-credentials', methods=['POST'])
+def generate_credentials():
+    """Generate temp email and password for signup"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from temp_email_service import TempEmailService
+        import random
+        import string
+        
+        # Create temp email
+        email_service = TempEmailService()
+        email, _ = email_service.create_email()
+        
+        # Generate secure password
+        lower = ''.join(random.choices(string.ascii_lowercase, k=4))
+        upper = ''.join(random.choices(string.ascii_uppercase, k=4))
+        digits = ''.join(random.choices(string.digits, k=4))
+        special = ''.join(random.choices('!@#$', k=2))
+        password_chars = list(lower + upper + digits + special)
+        random.shuffle(password_chars)
+        password = ''.join(password_chars)
+        
+        if email:
+            return jsonify({
+                'success': True,
+                'email': email,
+                'password': password,
+                'token': email_service.email_token,
+                'email_provider': email_service.provider
+            })
+        else:
+            # Fallback email generation
+            username = 'lilith' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+            fallback_email = f"{username}@tempmail.example.com"
+            return jsonify({
+                'success': True,
+                'email': fallback_email,
+                'password': password,
+                'token': None,
+                'email_provider': 'fallback',
+                'note': 'Using fallback email - inbox checking not available'
+            })
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/harvest/check-email', methods=['POST'])
+def check_temp_email():
+    """Check temp email inbox"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from temp_email_service import TempEmailService
+        
+        data = request.json or {}
+        email = data.get('email')
+        token = data.get('token')
+        provider = data.get('provider')
+        
+        if not email or provider == 'fallback':
+            return jsonify({
+                'success': False,
+                'error': 'Email checking not available for fallback emails'
+            })
+        
+        # Recreate service with existing token
+        email_service = TempEmailService()
+        email_service.current_email = email
+        email_service.email_token = token
+        email_service.provider = provider
+        
+        # Check inbox
+        messages = email_service.check_inbox(wait_seconds=10, check_interval=2)
+        
+        # Process messages
+        processed_messages = []
+        for msg in messages:
+            content = email_service.get_message_content(msg.get('id', ''))
+            verification_link = email_service.extract_verification_link(content) if content else None
+            
+            processed_messages.append({
+                'subject': msg.get('subject', 'No Subject'),
+                'from': msg.get('from', 'Unknown'),
+                'verification_link': verification_link
+            })
+        
+        return jsonify({
+            'success': True,
+            'messages': processed_messages,
+            'count': len(processed_messages)
+        })
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
