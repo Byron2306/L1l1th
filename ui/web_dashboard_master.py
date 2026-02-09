@@ -1460,6 +1460,44 @@ MASTER_TEMPLATE = """
         // Load harvested keys on page load
         setTimeout(loadHarvestedKeys, 2000);
 
+        // ==================== VNC FUNCTIONS ====================
+        
+        function refreshVNC() {
+            const frame = document.getElementById('vnc-frame');
+            frame.src = frame.src;
+            addLog('[VNC] Refreshing viewer...');
+        }
+        
+        function openVNCFullscreen() {
+            const frame = document.getElementById('vnc-frame');
+            if (frame.requestFullscreen) {
+                frame.requestFullscreen();
+            } else if (frame.webkitRequestFullscreen) {
+                frame.webkitRequestFullscreen();
+            }
+        }
+        
+        async function checkVNCStatus() {
+            try {
+                const response = await fetch('/_dash/vnc/status');
+                const data = await response.json();
+                const statusEl = document.getElementById('vnc-status');
+                if (data.running) {
+                    statusEl.textContent = '✓ Running';
+                    statusEl.style.color = '#00ff00';
+                } else {
+                    statusEl.textContent = '✗ Not running';
+                    statusEl.style.color = '#ff0000';
+                }
+            } catch (e) {
+                document.getElementById('vnc-status').textContent = '? Unknown';
+            }
+        }
+        
+        // Check VNC status periodically
+        setInterval(checkVNCStatus, 10000);
+        setTimeout(checkVNCStatus, 1000);
+
         // ==================== ADVANCED CAPABILITIES FUNCTIONS ====================
         
         function showAdvancedResult(data) {
