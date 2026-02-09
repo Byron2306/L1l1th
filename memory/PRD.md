@@ -88,9 +88,10 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 
 ### P0 (High Priority)
 - [ ] Real offensive tool integration (actually call nmap, sqlmap via subprocess)
-- [ ] Real CAPTCHA solving (requires 2Captcha API key)
+- [ ] WebSocket support for interactive VNC access
 
 ### P1 (Medium Priority)  
+- [ ] Real CAPTCHA solving (requires 2Captcha API key)
 - [ ] Network capture with scapy/pyshark
 - [ ] Add more AI providers (Dolphin, DeepSeek)
 
