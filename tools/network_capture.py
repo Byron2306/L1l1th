@@ -269,9 +269,9 @@ class ARPScanner:
         self.interface = interface or 'eth0'
     
     def scan_network(self, ip_range: str) -> Dict:
-        """Scan network using ARP"""
+        """Scan network using ARP or fallback to nmap"""
         if not SCAPY_AVAILABLE:
-            return self._simulate_scan(ip_range)
+            return self._nmap_scan(ip_range)
         
         try:
             # Create ARP request
@@ -291,9 +291,70 @@ class ARPScanner:
             
             return {
                 'success': True,
+                'tool': 'scapy_arp',
                 'range': ip_range,
                 'hosts_found': len(hosts),
                 'hosts': hosts
+            }
+        except PermissionError:
+            # Fall back to nmap if no root privileges
+            return self._nmap_scan(ip_range)
+        except Exception as e:
+            if 'Operation not permitted' in str(e):
+                return self._nmap_scan(ip_range)
+            return {'success': False, 'error': str(e)}
+    
+    def _nmap_scan(self, ip_range: str) -> Dict:
+        """Fall back to nmap for host discovery"""
+        nmap_path = shutil.which('nmap')
+        if not nmap_path:
+            return self._simulate_scan(ip_range)
+        
+        try:
+            # Use nmap ping scan for host discovery
+            result = subprocess.run(
+                [nmap_path, '-sn', '-T4', ip_range],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            
+            hosts = []
+            current_ip = None
+            current_mac = None
+            
+            for line in result.stdout.split('\n'):
+                if 'Nmap scan report for' in line:
+                    # Extract IP
+                    parts = line.split()
+                    for part in parts:
+                        if part.count('.') == 3 or '(' in part:
+                            ip = part.strip('()')
+                            if ip.count('.') == 3:
+                                current_ip = ip
+                                break
+                elif 'MAC Address:' in line:
+                    # Extract MAC
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        current_mac = parts[2]
+                        vendor = ' '.join(parts[3:]).strip('()')
+                        if current_ip:
+                            hosts.append({
+                                'ip': current_ip,
+                                'mac': current_mac,
+                                'vendor': vendor
+                            })
+                            current_ip = None
+                            current_mac = None
+            
+            return {
+                'success': True,
+                'tool': 'nmap',
+                'range': ip_range,
+                'hosts_found': len(hosts),
+                'hosts': hosts,
+                'note': 'Using nmap for host discovery (ARP requires root)'
             }
         except Exception as e:
             return {'success': False, 'error': str(e)}
