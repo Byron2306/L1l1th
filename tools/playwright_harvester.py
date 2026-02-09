@@ -424,7 +424,7 @@ class StealthPlaywrightHarvester:
             
             if key:
                 add_log(f"✓ Found REAL API key: {key[:20]}...")
-                return key
+                return (key, True)  # Real key
             
             # If we couldn't find a key, ask user to copy it manually
             add_log("")
@@ -436,14 +436,14 @@ class StealthPlaywrightHarvester:
             # Try one more time
             key = await self.extract_api_key_from_page([r'gsk_[a-zA-Z0-9]{40,60}'])
             if key:
-                return key
+                return (key, True)  # Real key
             
             add_log("⚠️ Returning demo key - get real key from console.groq.com")
-            return f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
+            return (f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}", False)  # Demo key
             
         except Exception as e:
             add_log(f"❌ GROQ error: {str(e)}")
-            return f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
+            return (f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}", False)
     
     async def harvest_huggingface(self) -> Optional[str]:
         """Harvest API key from HuggingFace - email signup"""
