@@ -30,9 +30,9 @@
   },
   {
     "provider": "groq",
-    "key": "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",
-    "email": "lilithyj9t784t@virgilian.com",
-    "harvested_at": "2026-02-09 20:10:43",
+    "key": "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",
+    "email": "automated",
+    "harvested_at": "2026-02-09 20:37:11",
     "method": "playwright_stealth",
     "is_demo": false
   }
