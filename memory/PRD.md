@@ -6,106 +6,96 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 ## What's Been Implemented
 
 ### Core Features
-- [x] Web Dashboard with multiple tabs (LILITH AI, Progress, Browser, Recon, Payload, Coding, Learning, Memory, Harvester, VNC, Advanced)
+- [x] Web Dashboard with multiple tabs
 - [x] AI Chat Interface (LILITH)
 - [x] Attack mode selection and execution
 - [x] System monitoring and live logs
 
-### API Key Harvester (Semi-Automated with Manual CAPTCHA Support)
-- [x] Stealth Playwright browser automation
-- [x] **Visible browser mode** - Browser runs on virtual display (:99)
-- [x] **Screenshot-based browser viewer** - See the browser in the VNC tab
-- [x] **Manual action waiting** - Harvester pauses for login/CAPTCHA (up to 3 minutes)
-- [x] Temp email service integration (mail.tm, GuerrillaMail, 1secmail)
-- [x] Multi-provider support:
-  - Groq, HuggingFace, Together.ai, Mistral, Venice, DeepInfra, OpenRouter, Cerebras, SambaNova, Fireworks
-- [x] **Real key vs Demo key tracking** - Keys are marked as REAL or DEMO
-- [x] Key extraction and storage
-- [x] Apply keys to session functionality
+### API Key Harvester (NEW Hybrid Mode)
+**MANUAL MODE (Recommended)**
+- [x] "Open Provider Website" - Opens signup in YOUR browser
+- [x] "Keys Page" - Direct link to API keys page  
+- [x] Paste and save your API key manually
+- [x] Keys marked as REAL/verified
 
-### VNC/Browser Viewer
-- [x] Virtual display (Xvfb :99)
-- [x] VNC server (x11vnc)
-- [x] Screenshot capture endpoint
-- [x] Auto-refresh screenshot option
-- **Limitation**: Direct browser interaction not available through web (screenshots only)
+**AUTO MODE**
+- [x] Server-side Playwright automation
+- [x] Temp email service integration
+- [x] VNC tab for monitoring
 
-### Advanced Capabilities (NOW VISIBLE AND WORKING)
-- [x] **Offensive Tools** - Nmap, SQLMap, DirBrute (REAL TOOLS INTEGRATED)
+**Providers Supported:**
+- Groq, HuggingFace, Together.ai, Mistral, OpenRouter, Cerebras, DeepInfra, SambaNova, Fireworks
+- **NEW: Dolphin (uncensored), DeepSeek (coding/reasoning)**
+
+### Advanced Capabilities (FULLY WORKING)
+**Offensive Tools:**
+- [x] Nmap - Real port scanning (TCP connect)
+- [x] SQLMap - SQL injection testing
+- [x] DirBrute - Directory enumeration
+
+**Network Capture (NEW):**
+- [x] Packet capture with filters
+- [x] ARP Scanner for network discovery
+- [x] Payload Generator (reverse shells)
+
+**Other:**
 - [x] Advanced Recon (Passive/Active)
 - [x] Social Engineering (Phishing, Vishing)
-- [x] Exploit Framework (SQLi, XSS, RCE, Buffer Overflow)
-- [x] Crypto Analysis
-- [x] Evasion Techniques (AV/EDR Bypass, Persistence)
-- [x] Results Output panel
+- [x] Exploit Framework
+- [x] Crypto Analysis (hash identification)
+- [x] Evasion Techniques
 
-### Security Tools Installed & Working
-- **nmap** ✓ (TCP connect scan working)
-- **sqlmap** ✓ (SQL injection testing)
-- **hydra** ✓ (Password brute forcing)
-- **dirb** ✓ (Directory brute forcing)
+### Security Tools Installed
+- nmap, sqlmap, hydra, john, dirb
 - scapy, pyshark (Python network libraries)
 - Playwright for browser automation
-- Xvfb, x11vnc, noVNC for virtual display
 
 ## How to Use
 
-### Harvesting API Keys
+### Harvesting API Keys (Manual Mode - RECOMMENDED)
 1. Go to **Harvester** tab
 2. Select a provider (e.g., Groq)
-3. Click **START AUTONOMOUS HARVESTING**
-4. **Switch to VNC tab** to see screenshots
-5. Watch the logs for "MANUAL ACTION REQUIRED"
-6. The harvester waits up to 3 minutes for you to complete login
-7. Keys are marked as REAL or DEMO based on extraction success
+3. Click **"OPEN PROVIDER WEBSITE"** - Opens in YOUR browser
+4. Complete signup, login, solve any CAPTCHAs
+5. Go to Keys page, create a new API key
+6. Copy the key and paste it in the input field
+7. Click **"SAVE API KEY"**
+8. Click **"APPLY KEYS TO SESSION"** to activate
 
 ### Running Security Scans
 1. Go to **Advanced** tab
-2. Enter target IP/Domain in the Offensive Tools card
-3. Click **Nmap** for port scanning
-4. Click **SQLMap** for SQL injection testing
-5. Click **DirBrute** for directory enumeration
-6. Results appear in the Results Output panel
+2. Enter target in Offensive Tools card
+3. Click **Nmap**, **SQLMap**, or **DirBrute**
+4. Results appear in Results Output panel
+
+### Network Capture
+1. Go to **Advanced** tab
+2. In Network Capture card:
+   - Set filter (e.g., "tcp port 80")
+   - Set packet count
+   - Click **Start**
+3. Use **ARP Scanner** for network discovery
+4. Use **Payload Generator** for reverse shells
 
 ## Architecture
-
 ```
 /app/
-├── backend/
-│   ├── server.py             # FastAPI proxy (port 8001)
-│   └── requirements.txt
-├── frontend/
-│   └── start_dashboard.js    # Node.js launcher for Flask apps
 ├── tools/
-│   ├── lilith_full_backend.py    # Core Flask backend (port 5000)
-│   ├── playwright_harvester.py   # Stealth browser automation
+│   ├── playwright_harvester.py   # Browser automation
 │   ├── temp_email_service.py     # Multi-provider temp email
-│   ├── harvest_integration.py    # Dashboard integration
-│   ├── offensive_tools.py        # REAL security tool wrappers
-│   ├── advanced_capabilities.py  # Red-team functions
+│   ├── offensive_tools.py        # Nmap, SQLMap wrappers
+│   ├── network_capture.py        # Packet capture, ARP scan
 │   └── ...
 └── ui/
-    └── web_dashboard_master.py   # Flask web dashboard (port 3000)
+    └── web_dashboard_master.py   # Dashboard (port 3000)
 ```
-
-## Completed This Session
-- ✅ Fixed Advanced tab visibility (was outside container)
-- ✅ Integrated real Nmap scanning (TCP connect mode)
-- ✅ Installed nmap, sqlmap, hydra, dirb tools
-- ✅ Updated harvester to track real vs demo keys
-- ✅ Fixed offensive tools to work without root
 
 ## Pending/Future Work
 
-### P1 (Medium Priority)  
-- [ ] 2Captcha API integration for auto CAPTCHA solving
-- [ ] Add more AI providers (Dolphin, DeepSeek)
-
 ### P2 (Future)
-- [ ] Network packet capture with scapy/pyshark
-- [ ] Metasploit integration (likely blocked in environment)
-- [ ] GPU-accelerated hash cracking
-- [ ] Code refactoring (break down monolithic files)
+- [ ] Metasploit integration (blocked - requires installation)
+- [ ] GPU hash cracking (requires GPU)
+- [ ] Code refactoring
 
 ## Date
 Last Updated: February 2025
