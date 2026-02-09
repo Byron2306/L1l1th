@@ -739,6 +739,102 @@ MASTER_TEMPLATE = """
         </div>
     </div>
 
+    <!-- Advanced Capabilities Tab -->
+    <div class="tab-content" id="tab-advanced">
+        <div class="panel-title">⚔️ ADVANCED RED TEAM CAPABILITIES</div>
+        <div class="advanced-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 15px;">
+            
+            <!-- Recon Module -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #00ff00; margin: 0 0 10px 0; font-size: 14px;">🔍 Advanced Recon</h3>
+                <input type="text" id="recon-target" placeholder="Target domain" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="runPassiveRecon()" style="flex: 1; padding: 8px; background: #1a4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Passive</button>
+                    <button onclick="runActiveRecon()" style="flex: 1; padding: 8px; background: #4d1a1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Active</button>
+                    <button onclick="runFullRecon()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Full</button>
+                </div>
+            </div>
+            
+            <!-- NLP Social Engineering -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ff00ff; margin: 0 0 10px 0; font-size: 14px;">🎭 Social Engineering</h3>
+                <input type="text" id="phish-name" placeholder="Target name" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                <input type="text" id="phish-company" placeholder="Company" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="genPhishing()" style="flex: 1; padding: 8px; background: #4d1a4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">Phishing</button>
+                    <button onclick="genVishing()" style="flex: 1; padding: 8px; background: #1a4d4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">Vishing</button>
+                </div>
+            </div>
+            
+            <!-- ML Anomaly Detection -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #00ffff; margin: 0 0 10px 0; font-size: 14px;">🤖 ML Detection</h3>
+                <textarea id="ml-data" placeholder='[{"hour": 3, "geo_anomaly": true}]' style="width: 100%; height: 60px; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; font-size: 10px;"></textarea>
+                <button onclick="runAnomalyDetection()" style="width: 100%; padding: 8px; background: #1a4d4d; border: none; color: #fff; cursor: pointer; margin-top: 10px;">Detect Anomalies</button>
+            </div>
+            
+            <!-- Crypto Analysis -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ffff00; margin: 0 0 10px 0; font-size: 14px;">🔐 Crypto Analysis</h3>
+                <input type="text" id="hash-input" placeholder="Hash to analyze" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="analyzeHash()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Analyze</button>
+                    <button onclick="generateKeys()" style="flex: 1; padding: 8px; background: #1a4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Gen Keys</button>
+                </div>
+            </div>
+            
+            <!-- Exploit Framework -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ff0000; margin: 0 0 10px 0; font-size: 14px;">💥 Exploit Framework</h3>
+                <select id="exploit-type" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                    <option value="sqli">SQL Injection</option>
+                    <option value="xss">XSS</option>
+                    <option value="rce">RCE</option>
+                    <option value="buffer_overflow">Buffer Overflow</option>
+                </select>
+                <button onclick="generateExploit()" style="width: 100%; padding: 8px; background: #4d1a1a; border: none; color: #fff; cursor: pointer;">Generate Exploit</button>
+            </div>
+            
+            <!-- Evasion Techniques -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ff6600; margin: 0 0 10px 0; font-size: 14px;">🛡️ Evasion</h3>
+                <button onclick="getEvasionTechniques()" style="width: 100%; padding: 8px; background: #4d2a1a; border: none; color: #fff; cursor: pointer; margin-bottom: 5px;">AV/EDR Bypass</button>
+                <button onclick="getPersistence()" style="width: 100%; padding: 8px; background: #2a4d1a; border: none; color: #fff; cursor: pointer;">Persistence Methods</button>
+            </div>
+            
+            <!-- Wireless Attacks -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #0099ff; margin: 0 0 10px 0; font-size: 14px;">📡 Wireless</h3>
+                <button onclick="getWirelessAttacks()" style="width: 100%; padding: 8px; background: #1a2a4d; border: none; color: #fff; cursor: pointer;">WiFi Attack Methods</button>
+            </div>
+            
+            <!-- Physical Security -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #9900ff; margin: 0 0 10px 0; font-size: 14px;">🚪 Physical</h3>
+                <button onclick="getPhysicalBypass()" style="width: 100%; padding: 8px; background: #2a1a4d; border: none; color: #fff; cursor: pointer;">Bypass Techniques</button>
+            </div>
+            
+            <!-- Supply Chain -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ff0099; margin: 0 0 10px 0; font-size: 14px;">🔗 Supply Chain</h3>
+                <input type="text" id="supply-target" placeholder="Target" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                <button onclick="analyzeSupplyChain()" style="width: 100%; padding: 8px; background: #4d1a2a; border: none; color: #fff; cursor: pointer;">Analyze Vectors</button>
+            </div>
+            
+            <!-- Zero-Day Research -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #00ff99; margin: 0 0 10px 0; font-size: 14px;">🔬 0-Day Research</h3>
+                <button onclick="getZeroDayMethodology()" style="width: 100%; padding: 8px; background: #1a4d2a; border: none; color: #fff; cursor: pointer;">Research Framework</button>
+            </div>
+        </div>
+        
+        <!-- Results Panel -->
+        <div class="status-box" style="margin: 15px; max-height: 300px; overflow-y: auto;">
+            <h6 style="color: var(--text-green);">Results Output</h6>
+            <pre id="advanced-results" style="font-size: 11px; color: #0f0; white-space: pre-wrap; word-wrap: break-word;">Ready for operations...</pre>
+        </div>
+    </div>
+
     <!-- Emergency Stop Button -->
     <button class="emergency-stop-btn" onclick="emergencyStop()" title="Emergency Stop">
         <i class="fas fa-stop"></i>
