@@ -2713,6 +2713,327 @@ def zeroday_methodology():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# ==================== ENHANCED MODULES ENDPOINTS ====================
+
+@app.route('/captcha/solve', methods=['POST'])
+def solve_captcha():
+    """Solve CAPTCHA using multi-method approach"""
+    try:
+        from captcha_bypass import get_captcha_bypass
+        import asyncio
+        
+        data = request.json or {}
+        solver = get_captcha_bypass(data.get('api_key'))
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(solver.solve_captcha(data))
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/captcha/stats', methods=['GET'])
+def captcha_stats():
+    """Get CAPTCHA solving statistics"""
+    try:
+        from captcha_bypass import get_captcha_bypass
+        solver = get_captcha_bypass()
+        return jsonify(solver.get_stats())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/status', methods=['GET'])
+def offensive_status():
+    """Get offensive tools status"""
+    try:
+        from offensive_tools import get_offensive_toolkit
+        toolkit = get_offensive_toolkit()
+        return jsonify({
+            'success': True,
+            'tools': toolkit.get_status()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/nmap/quick', methods=['POST'])
+def nmap_quick_scan():
+    """Run quick nmap scan"""
+    try:
+        from offensive_tools import get_nmap_scanner
+        nmap = get_nmap_scanner()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = nmap.quick_scan(target)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/nmap/full', methods=['POST'])
+def nmap_full_scan():
+    """Run full nmap scan"""
+    try:
+        from offensive_tools import get_nmap_scanner
+        nmap = get_nmap_scanner()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = nmap.full_scan(target)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/nmap/vuln', methods=['POST'])
+def nmap_vuln_scan():
+    """Run nmap vulnerability scan"""
+    try:
+        from offensive_tools import get_nmap_scanner
+        nmap = get_nmap_scanner()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = nmap.vuln_scan(target)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/sqlmap/test', methods=['POST'])
+def sqlmap_test():
+    """Test for SQL injection"""
+    try:
+        from offensive_tools import get_sqlmap_scanner
+        sqlmap = get_sqlmap_scanner()
+        
+        data = request.json or {}
+        url = data.get('url', '')
+        
+        if not url:
+            return jsonify({'success': False, 'error': 'URL required'})
+        
+        result = sqlmap.test_injection(url, data.get('params'))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/web/scan', methods=['POST'])
+def web_vuln_scan():
+    """Run web vulnerability scan"""
+    try:
+        from offensive_tools import get_web_scanner
+        scanner = get_web_scanner()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = scanner.nikto_scan(target)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/dirs/brute', methods=['POST'])
+def dir_brute():
+    """Brute force directories"""
+    try:
+        from offensive_tools import get_dir_bruter
+        bruter = get_dir_bruter()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = bruter.brute_directories(target, data.get('wordlist'))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/password/brute', methods=['POST'])
+def password_brute():
+    """Brute force passwords"""
+    try:
+        from offensive_tools import get_password_cracker
+        cracker = get_password_cracker()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        service = data.get('service', 'ssh')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = cracker.brute_login(target, service, data.get('userlist'), data.get('passlist'))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/password/crack', methods=['POST'])
+def crack_hash():
+    """Crack password hash"""
+    try:
+        from offensive_tools import get_password_cracker
+        cracker = get_password_cracker()
+        
+        data = request.json or {}
+        hash_value = data.get('hash', '')
+        
+        if not hash_value:
+            return jsonify({'success': False, 'error': 'Hash required'})
+        
+        result = cracker.crack_hash(hash_value, data.get('type', 'auto'))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/offensive/full-scan', methods=['POST'])
+def full_offensive_scan():
+    """Run comprehensive offensive scan"""
+    try:
+        from offensive_tools import get_offensive_toolkit
+        toolkit = get_offensive_toolkit()
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'Target required'})
+        
+        result = toolkit.full_scan(target)
+        return jsonify({
+            'success': True,
+            'results': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# Enhanced ML endpoints
+@app.route('/ml/train', methods=['POST'])
+def ml_train():
+    """Train ML anomaly detection models"""
+    try:
+        from ml_anomaly_detection import get_enhanced_detector
+        import numpy as np
+        
+        data = request.json or {}
+        training_data = data.get('data', [])
+        
+        if not training_data:
+            return jsonify({'success': False, 'error': 'Training data required'})
+        
+        detector = get_enhanced_detector()
+        features = np.array(training_data)
+        
+        result = detector.train_all_models(features)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/ml/detect', methods=['POST'])
+def ml_detect():
+    """Detect anomalies using all ML methods"""
+    try:
+        from ml_anomaly_detection import get_enhanced_detector
+        import numpy as np
+        
+        data = request.json or {}
+        test_data = data.get('data', [])
+        
+        if not test_data:
+            return jsonify({'success': False, 'error': 'Test data required'})
+        
+        detector = get_enhanced_detector()
+        features = np.array(test_data)
+        
+        # Train on the data first (for demo)
+        detector.train_all_models(features)
+        
+        result = detector.detect_all(features)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/ml/analyze-events', methods=['POST'])
+def ml_analyze_events():
+    """Analyze security events for anomalies"""
+    try:
+        from ml_anomaly_detection import get_enhanced_detector
+        
+        data = request.json or {}
+        events = data.get('events', [])
+        
+        if not events:
+            return jsonify({'success': False, 'error': 'Events required'})
+        
+        detector = get_enhanced_detector()
+        result = detector.analyze_security_events(events)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/ml/time-series', methods=['POST'])
+def ml_time_series():
+    """Detect anomalies in time series data"""
+    try:
+        from ml_anomaly_detection import get_time_series_detector
+        import numpy as np
+        
+        data = request.json or {}
+        time_series = data.get('data', [])
+        timestamps = data.get('timestamps', None)
+        
+        if not time_series:
+            return jsonify({'success': False, 'error': 'Time series data required'})
+        
+        detector = get_time_series_detector(data.get('window_size', 10))
+        result = detector.detect_anomalies(np.array(time_series), timestamps)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/ml/predict-threat', methods=['POST'])
+def ml_predict_threat():
+    """Predict threats using ML"""
+    try:
+        from ml_anomaly_detection import get_threat_predictor
+        import numpy as np
+        
+        data = request.json or {}
+        features = data.get('features', [])
+        labels = data.get('labels', [])
+        predict_data = data.get('predict', [])
+        
+        predictor = get_threat_predictor()
+        
+        if features and labels:
+            train_result = predictor.train(np.array(features), np.array(labels))
+            if not train_result.get('success'):
+                return jsonify(train_result)
+        
+        if predict_data:
+            result = predictor.predict(np.array(predict_data))
+            return jsonify(result)
+        
+        return jsonify({'success': True, 'message': 'Model trained', 'train_result': train_result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
