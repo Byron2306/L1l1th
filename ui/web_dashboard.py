@@ -834,16 +834,36 @@ def ai_chat():
     data = request.json or {}
     message = data.get('message', '')
     if not message:
-        return jsonify({'response': 'No message provided'})
+        return jsonify({'success': False, 'response': 'No message provided'})
 
+    # Try backend first
+    try:
+        backend_response = requests.post(
+            f"{BACKEND_URL}/chat",
+            json={'message': message},
+            timeout=30
+        )
+        if backend_response.status_code == 200:
+            backend_data = backend_response.json()
+            return jsonify({
+                'success': backend_data.get('success', False),
+                'response': backend_data.get('response', ''),
+                'provider': backend_data.get('provider'),
+                'model': backend_data.get('model')
+            })
+    except Exception as e:
+        print(f"Backend chat error: {e}")
+
+    # Fallback to local AI manager
     _ensure_managers()
     if ai_manager:
         try:
             response = ai_manager.chat(message)
-            return jsonify({'response': response})
+            return jsonify({'success': True, 'response': response})
         except Exception as e:
-            return jsonify({'response': f'Error: {str(e)}'})
-    return jsonify({'response': 'AI manager not available'})
+            return jsonify({'success': False, 'response': f'Error: {str(e)}'})
+    
+    return jsonify({'success': False, 'response': 'No AI providers available. Please add API keys or use the harvester.'})
 
 @app.route('/api/recon/start', methods=['POST'])
 def recon_start():
