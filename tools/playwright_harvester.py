@@ -785,6 +785,7 @@ async def run_harvest(provider: str, headless: bool = False, manual_captcha: boo
     harvest_status['logs'] = []
     harvest_status['api_key'] = None
     harvest_status['error'] = None
+    harvest_status['is_real_key'] = False  # Track if we got a real key
     
     mode = "Headless" if headless else "VISIBLE BROWSER (VNC)"
     add_log(f"🚀 Starting API key harvesting...")
@@ -802,6 +803,7 @@ async def run_harvest(provider: str, headless: bool = False, manual_captcha: boo
     
     harvester = StealthPlaywrightHarvester(headless=headless)
     api_key = None
+    is_real = False
     
     try:
         harvest_status['phase'] = 'browser_init'
@@ -824,19 +826,28 @@ async def run_harvest(provider: str, headless: bool = False, manual_captcha: boo
         
         harvest_func = harvest_methods.get(provider.lower())
         if harvest_func:
-            api_key = await harvest_func()
+            result = await harvest_func()
+            # Handle tuple return (key, is_real) or just key
+            if isinstance(result, tuple):
+                api_key, is_real = result
+            else:
+                api_key = result
+                is_real = False  # Default to not real unless specified
         else:
             raise Exception(f"Unknown provider: {provider}")
         
         if api_key:
             harvest_status['api_key'] = api_key
+            harvest_status['is_real_key'] = is_real
             harvest_status['phase'] = 'saving'
             harvest_status['progress'] = 95
             
-            save_harvested_key(provider, api_key, harvest_status.get('email', 'automated'))
+            save_harvested_key(provider, api_key, harvest_status.get('email', 'automated'), is_real=is_real)
             
             harvest_status['phase'] = 'complete'
             harvest_status['progress'] = 100
+            
+            key_type = "✓ REAL KEY" if is_real else "⚠️ DEMO KEY"
             
             add_log("")
             add_log("╔════════════════════════════════════════════════╗")
@@ -845,8 +856,10 @@ async def run_harvest(provider: str, headless: bool = False, manual_captcha: boo
             add_log("")
             add_log(f"Provider: {provider.upper()}")
             add_log(f"API Key: {api_key[:20]}...{api_key[-8:]}")
-            add_log(f"Status: ✓ SAVED")
+            add_log(f"Status: {key_type}")
             add_log("")
+            if not is_real:
+                add_log("ℹ️ This is a demo key - for real keys, complete login in VNC")
             add_log("⚡ Click 'APPLY KEYS TO SESSION' to activate")
             add_log("")
             add_log("⚠️ Note: Most keys are DEMO keys unless you had an active session.")
