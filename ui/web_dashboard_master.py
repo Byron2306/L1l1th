@@ -1542,6 +1542,192 @@ MASTER_TEMPLATE = """
             addLog('[KEYGEN] 📋 Copied key to clipboard!');
         }
 
+        // ==================== KEY ROTATION FUNCTIONS ====================
+        
+        let rotationStatusInterval = null;
+        
+        async function startKeyRotation() {
+            const select = document.getElementById('rotation-providers');
+            const providers = Array.from(select.selectedOptions).map(opt => opt.value);
+            
+            if (providers.length === 0) {
+                alert('Select at least one provider');
+                return;
+            }
+            
+            addLog('[ROTATION] 🚀 Starting key rotation...');
+            
+            try {
+                const response = await fetch('/_dash/rotation/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        providers: providers,
+                        keys_per_batch: 5,
+                        max_per_provider: 1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('rotation-start-btn').disabled = true;
+                    document.getElementById('rotation-stop-btn').disabled = false;
+                    document.getElementById('rotation-running').textContent = 'Running';
+                    document.getElementById('rotation-running').style.color = '#00ff00';
+                    
+                    addLog(`[ROTATION] ✅ Started for ${providers.length} providers`);
+                    
+                    // Start polling for status
+                    rotationStatusInterval = setInterval(updateRotationStatus, 2000);
+                } else {
+                    addLog(`[ROTATION] ❌ Error: ${data.error}`);
+                }
+            } catch (e) {
+                addLog(`[ROTATION] ❌ Error: ${e.message}`);
+            }
+        }
+        
+        async function stopKeyRotation() {
+            addLog('[ROTATION] ⏹️ Stopping rotation...');
+            
+            try {
+                const response = await fetch('/_dash/rotation/stop', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('rotation-start-btn').disabled = false;
+                document.getElementById('rotation-stop-btn').disabled = true;
+                document.getElementById('rotation-running').textContent = 'Stopped';
+                document.getElementById('rotation-running').style.color = '#ff6600';
+                
+                if (rotationStatusInterval) {
+                    clearInterval(rotationStatusInterval);
+                    rotationStatusInterval = null;
+                }
+                
+                addLog('[ROTATION] ⏹️ Stopped');
+            } catch (e) {
+                addLog(`[ROTATION] ❌ Error: ${e.message}`);
+            }
+        }
+        
+        async function pauseKeyRotation() {
+            try {
+                await fetch('/_dash/rotation/pause', { method: 'POST' });
+                document.getElementById('rotation-running').textContent = 'Paused';
+                document.getElementById('rotation-running').style.color = '#ffff00';
+                addLog('[ROTATION] ⏸️ Paused');
+            } catch (e) {
+                addLog(`[ROTATION] ❌ Error: ${e.message}`);
+            }
+        }
+        
+        async function resumeKeyRotation() {
+            try {
+                await fetch('/_dash/rotation/resume', { method: 'POST' });
+                document.getElementById('rotation-running').textContent = 'Running';
+                document.getElementById('rotation-running').style.color = '#00ff00';
+                addLog('[ROTATION] ▶️ Resumed');
+            } catch (e) {
+                addLog(`[ROTATION] ❌ Error: ${e.message}`);
+            }
+        }
+        
+        async function loadRotationKeys() {
+            addLog('[ROTATION] 📥 Loading valid keys to session...');
+            
+            try {
+                const response = await fetch('/_dash/rotation/load', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`[ROTATION] ✅ Loaded ${data.count} keys to session`);
+                    loadHarvestedKeys();
+                } else {
+                    addLog(`[ROTATION] ❌ Error: ${data.error}`);
+                }
+            } catch (e) {
+                addLog(`[ROTATION] ❌ Error: ${e.message}`);
+            }
+        }
+        
+        async function updateRotationStatus() {
+            try {
+                const response = await fetch('/_dash/rotation/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update stats
+                    document.getElementById('rotation-generated').textContent = data.stats.total_generated || 0;
+                    document.getElementById('rotation-tested').textContent = data.stats.total_tested || 0;
+                    document.getElementById('rotation-valid').textContent = data.stats.valid_keys_found || 0;
+                    
+                    // Update status
+                    if (data.running) {
+                        document.getElementById('rotation-running').textContent = data.paused ? 'Paused' : 'Running';
+                        document.getElementById('rotation-running').style.color = data.paused ? '#ffff00' : '#00ff00';
+                    } else {
+                        document.getElementById('rotation-running').textContent = 'Stopped';
+                        document.getElementById('rotation-running').style.color = '#ff6600';
+                        
+                        // Stop polling if not running
+                        if (rotationStatusInterval) {
+                            clearInterval(rotationStatusInterval);
+                            rotationStatusInterval = null;
+                        }
+                        document.getElementById('rotation-start-btn').disabled = false;
+                        document.getElementById('rotation-stop-btn').disabled = true;
+                    }
+                    
+                    // Update logs
+                    if (data.logs && data.logs.length > 0) {
+                        const logsDiv = document.getElementById('rotation-logs');
+                        logsDiv.innerHTML = data.logs.map(log => {
+                            const color = log.level === 'success' ? '#00ff00' : (log.level === 'error' ? '#ff3333' : '#888');
+                            return `<div style="color: ${color};">${log.message}</div>`;
+                        }).join('');
+                        logsDiv.scrollTop = logsDiv.scrollHeight;
+                    }
+                    
+                    // Update found keys display
+                    if (data.valid_keys && Object.keys(data.valid_keys).length > 0) {
+                        const foundKeysDiv = document.getElementById('rotation-found-keys');
+                        const keysListDiv = document.getElementById('rotation-keys-list');
+                        foundKeysDiv.style.display = 'block';
+                        
+                        // Fetch full keys
+                        const keysResponse = await fetch('/_dash/rotation/keys');
+                        const keysData = await keysResponse.json();
+                        
+                        if (keysData.success && keysData.keys) {
+                            let html = '';
+                            for (const [provider, keys] of Object.entries(keysData.keys)) {
+                                keys.forEach(keyObj => {
+                                    const key = keyObj.key;
+                                    html += `
+                                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 3px; padding: 4px; background: #1a2a1a; border-radius: 3px;">
+                                            <span style="color: #00ff00; font-weight: bold; width: 80px;">${provider.toUpperCase()}</span>
+                                            <span style="flex: 1; color: #00ff00; word-break: break-all;">${key.substring(0, 30)}...</span>
+                                            <button onclick="copyText('${key}')" style="padding: 2px 6px; background: #333; border: none; color: #fff; cursor: pointer; font-size: 9px;">📋</button>
+                                        </div>
+                                    `;
+                                });
+                            }
+                            keysListDiv.innerHTML = html;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Status update error:', e);
+            }
+        }
+
         // ==================== API KEY GENERATOR FUNCTIONS ====================
         
         async function generateAPIKey() {
