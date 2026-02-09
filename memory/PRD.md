@@ -48,6 +48,25 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - Playwright for browser automation
 - Xvfb, x11vnc, noVNC for virtual display
 
+## How to Use
+
+### Harvesting API Keys
+1. Go to **Harvester** tab
+2. Select a provider (e.g., Groq)
+3. Click **START AUTONOMOUS HARVESTING**
+4. **Switch to VNC tab** to see screenshots
+5. Watch the logs for "MANUAL ACTION REQUIRED"
+6. The harvester waits up to 3 minutes for you to complete login
+7. Keys are marked as REAL or DEMO based on extraction success
+
+### Running Security Scans
+1. Go to **Advanced** tab
+2. Enter target IP/Domain in the Offensive Tools card
+3. Click **Nmap** for port scanning
+4. Click **SQLMap** for SQL injection testing
+5. Click **DirBrute** for directory enumeration
+6. Results appear in the Results Output panel
+
 ## Architecture
 
 ```
@@ -62,39 +81,28 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 │   ├── playwright_harvester.py   # Stealth browser automation
 │   ├── temp_email_service.py     # Multi-provider temp email
 │   ├── harvest_integration.py    # Dashboard integration
-│   ├── offensive_tools.py        # Security tool wrappers
+│   ├── offensive_tools.py        # REAL security tool wrappers
 │   ├── advanced_capabilities.py  # Red-team functions
-│   ├── ml_anomaly_detection.py   # ML-based detection
-│   ├── captcha_bypass.py         # CAPTCHA handling info
-│   └── network_capture.py        # Network analysis
+│   └── ...
 └── ui/
     └── web_dashboard_master.py   # Flask web dashboard (port 3000)
 ```
 
-## How to Use the Harvester
-
-1. Go to **Harvester** tab
-2. Select a provider (e.g., Groq)
-3. Click **START AUTONOMOUS HARVESTING**
-4. **Switch to VNC tab** to see the browser
-5. Click **Take Screenshot** or enable **Auto-Refresh**
-6. Watch the logs for "MANUAL ACTION REQUIRED"
-7. The harvester waits up to 3 minutes for you to complete login
-8. **For real keys**: You need local access to interact with the browser
-9. Once login completes, harvester automatically extracts the key
+## Completed This Session
+- ✅ Fixed Advanced tab visibility (was outside container)
+- ✅ Integrated real Nmap scanning (TCP connect mode)
+- ✅ Installed nmap, sqlmap, hydra, dirb tools
+- ✅ Updated harvester to track real vs demo keys
+- ✅ Fixed offensive tools to work without root
 
 ## Pending/Future Work
 
-### P0 (High Priority)
-- [ ] Real offensive tool integration (actually call nmap, sqlmap via subprocess)
-- [ ] WebSocket support for interactive VNC access
-
 ### P1 (Medium Priority)  
-- [ ] Real CAPTCHA solving (requires 2Captcha API key)
-- [ ] Network capture with scapy/pyshark
+- [ ] 2Captcha API integration for auto CAPTCHA solving
 - [ ] Add more AI providers (Dolphin, DeepSeek)
 
 ### P2 (Future)
+- [ ] Network packet capture with scapy/pyshark
 - [ ] Metasploit integration (likely blocked in environment)
 - [ ] GPU-accelerated hash cracking
 - [ ] Code refactoring (break down monolithic files)
