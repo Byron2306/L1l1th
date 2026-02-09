@@ -286,3 +286,7 @@ quarantine/
 # Large project artifacts
 luciferos/src/openJdk-25/lib/modules
 
+-e 
+# Environment files
+*.env
+*.env.*
