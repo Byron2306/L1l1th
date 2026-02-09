@@ -627,7 +627,7 @@ class StealthPlaywrightHarvester:
             add_log(f"❌ OPENROUTER error: {str(e)}")
             return (f"sk-or-v1-{''.join(random.choices('0123456789abcdef', k=64))}", False)
     
-    async def harvest_mistral(self) -> Optional[str]:
+    async def harvest_mistral(self) -> Tuple[Optional[str], bool]:
         """Harvest API key from Mistral AI"""
         global harvest_status
         
@@ -647,17 +647,17 @@ class StealthPlaywrightHarvester:
             
             if key and len(key) == 32:
                 add_log(f"✓ Found key: {key[:15]}...")
-                return key
+                return (key, True)
             
             harvest_status['progress'] = 85
             add_log("⚠️ Generating demo key")
-            return f"{''.join(random.choices(string.ascii_letters + string.digits, k=32))}"
+            return (f"{''.join(random.choices(string.ascii_letters + string.digits, k=32))}", False)
             
         except Exception as e:
             add_log(f"❌ MISTRAL error: {str(e)}")
-            return f"{''.join(random.choices(string.ascii_letters + string.digits, k=32))}"
+            return (f"{''.join(random.choices(string.ascii_letters + string.digits, k=32))}", False)
     
-    async def harvest_cerebras(self) -> Optional[str]:
+    async def harvest_cerebras(self) -> Tuple[Optional[str], bool]:
         """Harvest API key from Cerebras"""
         global harvest_status
         
@@ -675,14 +675,14 @@ class StealthPlaywrightHarvester:
             
             if key:
                 add_log(f"✓ Found key: {key[:18]}...")
-                return key
+                return (key, True)
             
             add_log("⚠️ Generating demo key")
-            return f"csk-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}"
+            return (f"csk-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
             
         except Exception as e:
             add_log(f"❌ CEREBRAS error: {str(e)}")
-            return f"csk-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}"
+            return (f"csk-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
     
     # Generic harvester for other providers
     async def harvest_generic(self, provider: str, url: str, key_pattern: str, prefix: str, length: int) -> Tuple[Optional[str], bool]:
