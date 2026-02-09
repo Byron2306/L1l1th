@@ -1666,6 +1666,130 @@ MASTER_TEMPLATE = """
                 showAdvancedResult({error: e.message});
             }
         }
+
+        // New Offensive Tools Functions
+        async function runNmapScan() {
+            const target = document.getElementById('offensive-target').value;
+            if (!target) { alert('Enter target IP/domain'); return; }
+            
+            showAdvancedResult({status: 'Running Nmap scan on ' + target + '...'});
+            
+            try {
+                const response = await fetch('/_dash/offensive/nmap/quick', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runSQLMapTest() {
+            const target = document.getElementById('offensive-target').value;
+            if (!target) { alert('Enter target URL'); return; }
+            
+            const url = target.includes('://') ? target : 'http://' + target;
+            showAdvancedResult({status: 'Testing SQL injection on ' + url + '...'});
+            
+            try {
+                const response = await fetch('/_dash/offensive/sqlmap/test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runDirBrute() {
+            const target = document.getElementById('offensive-target').value;
+            if (!target) { alert('Enter target URL'); return; }
+            
+            const url = target.includes('://') ? target : 'http://' + target;
+            showAdvancedResult({status: 'Brute forcing directories on ' + url + '...'});
+            
+            try {
+                const response = await fetch('/_dash/offensive/dirs/brute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: url})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runMLAnalysis() {
+            showAdvancedResult({status: 'Running ML anomaly detection...'});
+            
+            // Generate sample security events
+            const events = [
+                {hour: 10, day_of_week: 1, login_count: 5, failed_logins: 0, data_downloaded: 100, data_uploaded: 50, unique_ips: 1, session_duration: 3600, new_device: false, new_location: false, privilege_escalations: 0, sensitive_file_access: 0},
+                {hour: 14, day_of_week: 2, login_count: 8, failed_logins: 1, data_downloaded: 200, data_uploaded: 100, unique_ips: 1, session_duration: 7200, new_device: false, new_location: false, privilege_escalations: 0, sensitive_file_access: 1},
+                {hour: 3, day_of_week: 6, login_count: 50, failed_logins: 20, data_downloaded: 50000, data_uploaded: 100, unique_ips: 5, session_duration: 100, new_device: true, new_location: true, privilege_escalations: 3, sensitive_file_access: 10}
+            ];
+            
+            try {
+                const response = await fetch('/_dash/ml/analyze-events', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({events: events})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runTimeSeriesAnalysis() {
+            showAdvancedResult({status: 'Running time series anomaly detection...'});
+            
+            // Generate sample time series with anomaly
+            const data = [10, 12, 11, 13, 12, 10, 11, 12, 100, 11, 10, 12, 13, 11, 10, 12, 11, 13, 10, 12];
+            
+            try {
+                const response = await fetch('/_dash/ml/time-series', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data: data, window_size: 5})
+                });
+                const data_result = await response.json();
+                showAdvancedResult(data_result);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getCaptchaBypass() {
+            const captchaType = document.getElementById('captcha-type').value;
+            
+            showAdvancedResult({status: 'Getting ' + captchaType + ' bypass information...'});
+            
+            try {
+                const response = await fetch('/_dash/captcha/solve', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        type: captchaType,
+                        site_key: 'demo_site_key',
+                        page_url: 'https://example.com'
+                    })
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
     </script>
 </body>
 </html>
