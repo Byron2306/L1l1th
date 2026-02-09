@@ -1224,6 +1224,24 @@ def memory_recall():
         'memories': []
     })
 
+@app.route('/api/backend/status', methods=['GET'])
+def backend_status():
+    """Proxy backend status to avoid CORS"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/status", timeout=5)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'error': str(e), 'ai_providers': {'active_count': 0, 'total_count': 0}})
+
+@app.route('/api/openclaw/skills', methods=['GET'])
+def openclaw_skills():
+    """Proxy OpenClaw skills to avoid CORS"""
+    try:
+        response = requests.get(f"{BACKEND_URL}/openclaw/redteam-skills", timeout=5)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
