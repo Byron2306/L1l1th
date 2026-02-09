@@ -909,6 +909,26 @@ MASTER_TEMPLATE = """
                             <button onclick="runBenchmark()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Bench</button>
                         </div>
                     </div>
+                    
+                    <!-- Hydra Password Cracker -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #ff6600; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff6600; margin: 0 0 10px 0; font-size: 14px;">🔐 Hydra Brute Force</h3>
+                        <input type="text" id="hydra-target" placeholder="Target IP/Domain" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                        <select id="hydra-service" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                            <option value="ssh">SSH</option>
+                            <option value="ftp">FTP</option>
+                            <option value="telnet">Telnet</option>
+                            <option value="mysql">MySQL</option>
+                            <option value="postgres">PostgreSQL</option>
+                            <option value="smb">SMB</option>
+                            <option value="rdp">RDP</option>
+                            <option value="vnc">VNC</option>
+                            <option value="http-get">HTTP GET</option>
+                            <option value="http-post">HTTP POST</option>
+                        </select>
+                        <input type="text" id="hydra-username" placeholder="Username (or leave blank for list)" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <button onclick="runHydraBrute()" style="width: 100%; padding: 8px; background: #4d2a1a; border: none; color: #fff; cursor: pointer;">🔓 Start Brute Force</button>
+                    </div>
                 </div>
                 
                 <!-- Output Area -->
