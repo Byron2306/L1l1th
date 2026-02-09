@@ -72,19 +72,17 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
     └── web_dashboard_master.py   # Flask web dashboard (port 3000)
 ```
 
-## Usage
+## How to Use the Harvester
 
-### Harvesting API Keys
-1. Go to the **Harvester** tab
-2. Select a provider from the dropdown
+1. Go to **Harvester** tab
+2. Select a provider (e.g., Groq)
 3. Click **START AUTONOMOUS HARVESTING**
-4. Watch the progress and logs
-5. Click **APPLY KEYS TO SESSION** to activate
-
-### Important Notes
-- Most harvested keys are **DEMO keys** unless you have an existing authenticated session
-- For real API keys, sign up manually at each provider's website
-- The harvester uses stealth techniques but many providers require OAuth (Google/GitHub)
+4. **Switch to VNC tab** to see the browser
+5. Click **Take Screenshot** or enable **Auto-Refresh**
+6. Watch the logs for "MANUAL ACTION REQUIRED"
+7. The harvester waits up to 3 minutes for you to complete login
+8. **For real keys**: You need local access to interact with the browser
+9. Once login completes, harvester automatically extracts the key
 
 ## Pending/Future Work
 
