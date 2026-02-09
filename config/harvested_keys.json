@@ -2,29 +2,21 @@
   {
     "provider": "test",
     "key": "test123",
-    "harvested_at": "2026-02-09 18:46:36",
+    "harvested_at": "2026-02-09 20:10:43",
     "method": "manual"
   },
   {
     "provider": "mistral",
     "key": "mk_MRFCVL5LPVRPP4BB75APJZ18PJ2M6VR3CIJ9IP0YLOAQ4WI7",
     "email": "lilith_8nof2hht71@guerrillamail.com",
-    "harvested_at": "2026-02-09 18:46:36",
+    "harvested_at": "2026-02-09 20:10:43",
     "method": "autonomous_browser"
-  },
-  {
-    "provider": "groq",
-    "key": "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",
-    "email": "automated",
-    "harvested_at": "2026-02-09 19:57:09",
-    "method": "playwright_stealth",
-    "is_demo": false
   },
   {
     "provider": "huggingface",
     "key": "hf_1T8n7RySXiHSpr8RWV0gDaS5s9O2jtka7H",
     "email": "lilithyj9t784t@virgilian.com",
-    "harvested_at": "2026-02-09 19:58:55",
+    "harvested_at": "2026-02-09 20:10:43",
     "method": "playwright_stealth",
     "is_demo": false
   },
@@ -32,7 +24,15 @@
     "provider": "openrouter",
     "key": "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",
     "email": "lilithyj9t784t@virgilian.com",
-    "harvested_at": "2026-02-09 20:00:23",
+    "harvested_at": "2026-02-09 20:10:43",
+    "method": "playwright_stealth",
+    "is_demo": false
+  },
+  {
+    "provider": "groq",
+    "key": "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",
+    "email": "lilithyj9t784t@virgilian.com",
+    "harvested_at": "2026-02-09 20:10:43",
     "method": "playwright_stealth",
     "is_demo": false
   }
