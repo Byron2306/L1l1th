@@ -676,8 +676,14 @@ def save_harvested_key(provider: str, api_key: str, email: str):
         return False
 
 
-async def run_harvest(provider: str):
-    """Run harvesting for specified provider"""
+async def run_harvest(provider: str, headless: bool = False, manual_captcha: bool = True):
+    """Run harvesting for specified provider
+    
+    Args:
+        provider: The AI provider to harvest from
+        headless: If False, opens visible browser for manual CAPTCHA solving
+        manual_captcha: If True, waits for user to solve CAPTCHAs
+    """
     global harvest_status
     
     harvest_status['active'] = True
@@ -688,10 +694,18 @@ async def run_harvest(provider: str):
     harvest_status['api_key'] = None
     harvest_status['error'] = None
     
-    add_log(f"🚀 Starting autonomous API key harvesting...")
+    add_log(f"🚀 Starting API key harvesting...")
     add_log(f"Provider: {provider.upper()}")
+    add_log(f"Mode: {'Headless' if headless else 'HEADED (manual CAPTCHA)'}")
     
-    harvester = PlaywrightHarvester()
+    if not headless:
+        add_log("═" * 50)
+        add_log("📢 A browser window will open shortly!")
+        add_log("📢 Please watch for CAPTCHAs and solve them manually")
+        add_log("📢 Complete the signup/login process in the browser")
+        add_log("═" * 50)
+    
+    harvester = PlaywrightHarvester(headless=headless, manual_captcha=manual_captcha)
     api_key = None
     
     try:
@@ -726,7 +740,7 @@ async def run_harvest(provider: str):
             harvest_status['progress'] = 95
             
             # Save the key
-            save_harvested_key(provider, api_key, harvest_status.get('email', ''))
+            save_harvested_key(provider, api_key, harvest_status.get('email', 'manual_auth'))
             
             harvest_status['phase'] = 'complete'
             harvest_status['progress'] = 100
@@ -737,13 +751,16 @@ async def run_harvest(provider: str):
             add_log("╚════════════════════════════════════════════════╝")
             add_log("")
             add_log(f"Provider: {provider.upper()}")
-            add_log(f"Email: {harvest_status.get('email', 'N/A')}")
             add_log(f"API Key: {api_key[:20]}...{api_key[-8:]}")
-            add_log(f"Status: ✓ ACTIVE")
+            add_log(f"Status: ✓ SAVED")
             add_log("")
             add_log("⚡ Click 'APPLY KEYS TO SESSION' to activate")
         else:
-            raise Exception("Failed to generate API key")
+            harvest_status['phase'] = 'manual_required'
+            harvest_status['progress'] = 90
+            add_log("")
+            add_log("⚠️ Could not automatically extract API key")
+            add_log("📋 If you obtained a key, add it manually via the backend")
             
     except Exception as e:
         harvest_status['phase'] = 'error'
