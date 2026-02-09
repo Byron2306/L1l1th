@@ -689,6 +689,8 @@ MASTER_TEMPLATE = """
         document.addEventListener('DOMContentLoaded', function() {
             checkSystemStatus();
             loadOpenClawSkills();
+            checkCodingAgent();
+            loadLearningData();
             setInterval(checkSystemStatus, 5000);
             addLog('[SYSTEM] LUCIFEROS Master Dashboard initialized');
         });
