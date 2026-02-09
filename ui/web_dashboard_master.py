@@ -1453,6 +1453,104 @@ MASTER_TEMPLATE = """
             document.execCommand('copy');
             addLog('[HARVESTER] 📋 Copied to clipboard!');
         }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            addLog('[KEYGEN] 📋 Copied key to clipboard!');
+        }
+
+        // ==================== API KEY GENERATOR FUNCTIONS ====================
+        
+        async function generateAPIKey() {
+            const provider = document.getElementById('keygen-provider').value;
+            const count = parseInt(document.getElementById('keygen-count').value) || 1;
+            
+            addLog(`[KEYGEN] 🔧 Generating ${count} ${provider.toUpperCase()} key(s)...`);
+            
+            try {
+                const response = await fetch('/_dash/keygen/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider, count })
+                });
+                
+                const data = await response.json();
+                const outputDiv = document.getElementById('generated-keys-output');
+                outputDiv.style.display = 'block';
+                
+                if (data.success) {
+                    if (data.key) {
+                        // Single key
+                        outputDiv.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #1a1a2e; border-radius: 4px; margin-bottom: 5px;">
+                                <span style="color: #ff6600; font-weight: bold;">${provider.toUpperCase()}</span>
+                                <span style="flex: 1; color: #00ff00; word-break: break-all;">${data.key}</span>
+                                <button onclick="copyText('${data.key}')" style="padding: 4px 8px; background: #333; border: none; color: #fff; cursor: pointer; font-size: 10px;">📋</button>
+                            </div>
+                        `;
+                        addLog(`[KEYGEN] ✅ Generated: ${data.key.substring(0, 20)}...`);
+                    } else if (data.keys) {
+                        // Multiple keys
+                        let html = '';
+                        data.keys.forEach((key, i) => {
+                            html += `
+                                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #1a1a2e; border-radius: 4px; margin-bottom: 5px;">
+                                    <span style="color: #ff6600; font-weight: bold; width: 30px;">#${i+1}</span>
+                                    <span style="flex: 1; color: #00ff00; word-break: break-all; font-size: 10px;">${key}</span>
+                                    <button onclick="copyText('${key}')" style="padding: 4px 8px; background: #333; border: none; color: #fff; cursor: pointer; font-size: 10px;">📋</button>
+                                </div>
+                            `;
+                        });
+                        outputDiv.innerHTML = html;
+                        addLog(`[KEYGEN] ✅ Generated ${data.keys.length} keys`);
+                    }
+                } else {
+                    outputDiv.innerHTML = `<span style="color: #ff3333;">Error: ${data.error}</span>`;
+                }
+            } catch (e) {
+                addLog(`[KEYGEN] ❌ Error: ${e.message}`);
+            }
+        }
+        
+        async function generateBatchKeys() {
+            addLog('[KEYGEN] 📦 Generating keys for all providers...');
+            
+            try {
+                const response = await fetch('/_dash/keygen/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        providers: ['openai', 'anthropic', 'groq', 'huggingface', 'together', 'mistral', 'openrouter', 'cerebras', 'deepinfra', 'fireworks', 'cohere', 'replicate', 'perplexity', 'deepseek', 'google'],
+                        count_per_provider: 1
+                    })
+                });
+                
+                const data = await response.json();
+                const outputDiv = document.getElementById('generated-keys-output');
+                outputDiv.style.display = 'block';
+                
+                if (data.success) {
+                    let html = '<div style="margin-bottom: 10px; color: #ff6600; font-weight: bold;">🔑 Keys for All Providers:</div>';
+                    
+                    for (const [provider, keys] of Object.entries(data.keys)) {
+                        const key = keys[0];
+                        html += `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 6px; background: #1a1a2e; border-radius: 4px; margin-bottom: 3px;">
+                                <span style="color: #ff6600; font-weight: bold; width: 90px; font-size: 10px;">${provider.toUpperCase()}</span>
+                                <span style="flex: 1; color: #00ff00; word-break: break-all; font-size: 9px;">${key}</span>
+                                <button onclick="copyText('${key}')" style="padding: 2px 6px; background: #333; border: none; color: #fff; cursor: pointer; font-size: 9px;">📋</button>
+                            </div>
+                        `;
+                    }
+                    outputDiv.innerHTML = html;
+                    addLog(`[KEYGEN] ✅ Generated keys for ${Object.keys(data.keys).length} providers`);
+                } else {
+                    outputDiv.innerHTML = `<span style="color: #ff3333;">Error: ${data.error}</span>`;
+                }
+            } catch (e) {
+                addLog(`[KEYGEN] ❌ Error: ${e.message}`);
+            }
+        }
 
         async function generateCredentials() {
             addLog('[HARVESTER] 🎲 Generating temp email and password...');
