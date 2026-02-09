@@ -941,9 +941,150 @@ MASTER_TEMPLATE = """
             }
         }
 
+        // Coding Agent Functions
+        async function checkCodingAgent() {
+            try {
+                const response = await fetch('/api/coding/status');
+                const data = await response.json();
+                if (data.available) {
+                    document.getElementById('coding-status').textContent = '✓ Available';
+                    document.getElementById('coding-status').style.color = '#00ff00';
+                } else {
+                    document.getElementById('coding-status').textContent = '✗ Unavailable';
+                    document.getElementById('coding-status').style.color = '#ff0000';
+                }
+            } catch (error) {
+                document.getElementById('coding-status').textContent = '✗ Error';
+            }
+        }
+
+        async function generateCode() {
+            const prompt = document.getElementById('coding-prompt').value;
+            if (!prompt) {
+                addLog('[CODING] Please enter a code generation request');
+                return;
+            }
+
+            addLog('[CODING] Generating code...');
+            document.getElementById('coding-output').textContent = 'Generating code...';
+
+            try {
+                const response = await fetch('/api/coding/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('coding-output').textContent = data.output || JSON.stringify(data, null, 2);
+                    addLog('[CODING] Code generated successfully');
+                } else {
+                    document.getElementById('coding-output').textContent = `Error: ${data.error || 'Failed to generate code'}`;
+                    addLog('[CODING] Code generation failed');
+                }
+            } catch (error) {
+                document.getElementById('coding-output').textContent = `Error: ${error.message}`;
+                addLog(`[CODING] Error: ${error.message}`);
+            }
+        }
+
+        // Learning Functions
+        async function loadLearningData() {
+            try {
+                // Get stats
+                const statsResponse = await fetch('/api/learning/stats');
+                const stats = await statsResponse.json();
+                
+                if (stats.success !== false) {
+                    document.getElementById('learning-attacks').textContent = stats.total_attacks || 0;
+                    document.getElementById('learning-success').textContent = (stats.success_rate || 0) + '%';
+                    document.getElementById('learning-insights-count').textContent = stats.total_insights || 0;
+                }
+
+                // Get insights
+                const insightsResponse = await fetch('/api/learning/insights');
+                const insights = await insightsResponse.json();
+                
+                if (insights.insights) {
+                    const output = document.getElementById('learning-insights');
+                    output.innerHTML = '';
+                    insights.insights.forEach(insight => {
+                        output.innerHTML += `[${insight.timestamp}] ${insight.category}: ${insight.insight}\\n`;
+                    });
+                } else {
+                    document.getElementById('learning-insights').textContent = 'No insights available yet';
+                }
+
+                addLog('[LEARNING] Learning data loaded');
+            } catch (error) {
+                addLog(`[LEARNING] Error loading data: ${error.message}`);
+            }
+        }
+
+        // Memory Functions
+        async function saveMemory() {
+            const content = document.getElementById('memory-input').value;
+            if (!content) {
+                addLog('[MEMORY] Please enter content to save');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/memory/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: content,
+                        timestamp: new Date().toISOString(),
+                        target: currentTarget
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[MEMORY] Saved to attack memory');
+                    document.getElementById('memory-input').value = '';
+                    addMessage('system', 'Memory saved successfully');
+                } else {
+                    addLog('[MEMORY] Failed to save');
+                }
+            } catch (error) {
+                addLog(`[MEMORY] Error: ${error.message}`);
+            }
+        }
+
+        async function recallMemory() {
+            addLog('[MEMORY] Recalling memories...');
+            
+            try {
+                const response = await fetch('/api/memory/recall');
+                const data = await response.json();
+                
+                if (data.success && data.memories) {
+                    const output = document.getElementById('memory-output');
+                    if (data.memories.length === 0) {
+                        output.textContent = 'No memories stored yet';
+                    } else {
+                        output.innerHTML = '';
+                        data.memories.forEach(mem => {
+                            output.innerHTML += `[${mem.timestamp}] ${mem.content}\\n\\n`;
+                        });
+                    }
+                    addLog('[MEMORY] Memories recalled');
+                } else {
+                    document.getElementById('memory-output').textContent = 'No memories available';
+                }
+            } catch (error) {
+                document.getElementById('memory-output').textContent = `Error: ${error.message}`;
+                addLog(`[MEMORY] Error: ${error.message}`);
+            }
+        }
+
         // Add welcome message
         setTimeout(() => {
             addMessage('lilith', 'LILITH AI Attack Assistant online. All systems operational. Ready for tasking.');
+            addMessage('lilith', '🧠 Learning system active | 💾 Memory system ready | 👨‍💻 Coding agent available');
         }, 1000);
     </script>
 </body>
