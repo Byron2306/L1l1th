@@ -257,7 +257,7 @@ class HuggingFaceProvider(AIProvider):
             name="HuggingFace",
             api_key=api_key,
             model=model,
-            base_url="https://api-inference.huggingface.co/models"
+            base_url="https://router.huggingface.co/hf-inference/models"
         )
     
     def chat(self, message: str, system_prompt: str = None, max_tokens: int = 1024) -> str:
