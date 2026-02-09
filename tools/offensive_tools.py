@@ -146,7 +146,7 @@ class NmapScanner:
         
         try:
             result = subprocess.run(
-                ['nmap', '-sV', '--script=vuln', '-T4', '-oX', '-', target],
+                ['nmap', '-sT', '-sV', '--script=vuln', '-T4', '--open', '-oX', '-', target],
                 capture_output=True,
                 text=True,
                 timeout=300
