@@ -717,17 +717,121 @@ class StealthPlaywrightHarvester:
             add_log(f"❌ {provider.upper()} error: {str(e)}")
             return (f"{prefix}{''.join(random.choices(string.ascii_letters + string.digits, k=length))}", False)
     
-    async def harvest_venice(self) -> Optional[str]:
+    async def harvest_venice(self) -> Tuple[Optional[str], bool]:
         return await self.harvest_generic('venice', 'https://venice.ai/', r'ven_[a-zA-Z0-9]{30,}', 'ven_', 40)
     
-    async def harvest_deepinfra(self) -> Optional[str]:
+    async def harvest_deepinfra(self) -> Tuple[Optional[str], bool]:
         return await self.harvest_generic('deepinfra', 'https://deepinfra.com/dash', r'[a-zA-Z0-9]{30,}', 'di_', 36)
     
-    async def harvest_sambanova(self) -> Optional[str]:
+    async def harvest_sambanova(self) -> Tuple[Optional[str], bool]:
         return await self.harvest_generic('sambanova', 'https://cloud.sambanova.ai/', r'sn_[a-zA-Z0-9]{30,}', 'sn_', 40)
     
-    async def harvest_fireworks(self) -> Optional[str]:
+    async def harvest_fireworks(self) -> Tuple[Optional[str], bool]:
         return await self.harvest_generic('fireworks', 'https://fireworks.ai/', r'fw_[a-zA-Z0-9]{30,}', 'fw_', 44)
+    
+    async def harvest_dolphin(self) -> Tuple[Optional[str], bool]:
+        """Harvest API key from Dolphin AI (Uncensored models)"""
+        global harvest_status
+        
+        try:
+            add_log("🎯 DOLPHIN: Starting harvest...")
+            harvest_status['phase'] = 'navigating'
+            harvest_status['progress'] = 15
+            
+            # Dolphin uses OpenRouter or similar API
+            await self.page.goto("https://openrouter.ai/models?q=dolphin", timeout=30000)
+            await self.human_delay(2000, 3000)
+            
+            harvest_status['progress'] = 50
+            add_log("📝 Dolphin models available via OpenRouter")
+            add_log("👉 Use your OpenRouter key to access Dolphin models")
+            
+            # Try to extract any key
+            key = await self.extract_api_key_from_page([r'sk-or-[a-zA-Z0-9]{40,}'])
+            
+            if key:
+                add_log(f"✓ Found OpenRouter key: {key[:20]}...")
+                return (key, True)
+            
+            harvest_status['progress'] = 85
+            add_log("⚠️ Generating demo key - use OpenRouter for real Dolphin access")
+            return (f"sk-dolphin-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
+            
+        except Exception as e:
+            add_log(f"❌ DOLPHIN error: {str(e)}")
+            return (f"sk-dolphin-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
+    
+    async def harvest_deepseek(self) -> Tuple[Optional[str], bool]:
+        """Harvest API key from DeepSeek (Coding & Reasoning)"""
+        global harvest_status
+        
+        try:
+            add_log("🎯 DEEPSEEK: Starting harvest...")
+            harvest_status['phase'] = 'navigating'
+            harvest_status['progress'] = 15
+            
+            await self.page.goto("https://platform.deepseek.com/api_keys", timeout=30000)
+            await self.human_delay(2000, 3000)
+            
+            # Check if login required
+            current_url = self.page.url
+            if 'login' in current_url or 'sign' in current_url.lower():
+                add_log("⚠️ DeepSeek requires authentication")
+                add_log("")
+                add_log("═" * 50)
+                add_log("👉 MANUAL ACTION REQUIRED!")
+                add_log("📺 Login to DeepSeek in the VNC tab")
+                add_log("═" * 50)
+                
+                # Wait for login
+                async def check_logged_in():
+                    url = self.page.url
+                    return 'api_keys' in url and 'login' not in url
+                
+                logged_in = await self.wait_for_user_action(
+                    "Login to DeepSeek",
+                    check_logged_in,
+                    timeout_seconds=180
+                )
+                
+                if not logged_in:
+                    add_log("⚠️ Login timeout - generating demo key")
+                    return (f"sk-deepseek-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
+            
+            harvest_status['phase'] = 'extracting_key'
+            harvest_status['progress'] = 70
+            
+            # Look for create key button
+            create_btn = await self.page.query_selector('button:has-text("Create"), button:has-text("New"), button:has-text("Generate")')
+            if create_btn:
+                add_log("📝 Found Create Key button, clicking...")
+                await create_btn.click()
+                await self.human_delay(2000, 3000)
+                
+                # Confirm any dialog
+                confirm_btn = await self.page.query_selector('button:has-text("Create"), button:has-text("OK"), button:has-text("Confirm")')
+                if confirm_btn:
+                    await confirm_btn.click()
+                    await self.human_delay(2000, 3000)
+            
+            harvest_status['progress'] = 85
+            
+            # Try to extract key - DeepSeek uses sk- prefix
+            key = await self.extract_api_key_from_page([
+                r'sk-[a-zA-Z0-9]{40,}',
+                r'deepseek-[a-zA-Z0-9]{30,}'
+            ])
+            
+            if key:
+                add_log(f"✓ Found DeepSeek key: {key[:20]}...")
+                return (key, True)
+            
+            add_log("⚠️ Could not extract key - generating demo")
+            return (f"sk-deepseek-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
+            
+        except Exception as e:
+            add_log(f"❌ DEEPSEEK error: {str(e)}")
+            return (f"sk-deepseek-{''.join(random.choices(string.ascii_letters + string.digits, k=48))}", False)
 
 
 def save_harvested_key(provider: str, api_key: str, email: str, is_real: bool = False):
