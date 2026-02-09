@@ -740,6 +740,33 @@ MASTER_TEMPLATE = """
         </div>
     </div>
 
+    <!-- VNC Browser Viewer Tab -->
+    <div class="tab-content" id="tab-vnc">
+        <div class="panel-title">📺 VNC BROWSER VIEWER - Manual CAPTCHA Solving</div>
+        <div class="status-box" style="margin-bottom: 15px;">
+            <h6 style="color: var(--primary-red);">Instructions</h6>
+            <p style="font-size: 12px; color: #999; margin: 5px 0;">
+                1. Start harvesting from the <strong>Harvester</strong> tab<br>
+                2. When prompted for manual action (login, CAPTCHA), come here<br>
+                3. Interact with the browser below to complete the action<br>
+                4. The harvester will automatically continue once complete
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="attack-mode-btn" onclick="refreshVNC()" style="flex: 1;">🔄 Refresh VNC</button>
+            <button class="attack-mode-btn" onclick="openVNCFullscreen()" style="flex: 1;">🔲 Fullscreen</button>
+        </div>
+        <div style="background: #0a0a0a; border: 2px solid var(--primary-red); border-radius: 8px; overflow: hidden;">
+            <iframe id="vnc-frame" src="/_vnc/" style="width: 100%; height: 600px; border: none;"></iframe>
+        </div>
+        <div class="status-box" style="margin-top: 15px;">
+            <div class="status-item">
+                <span class="status-label">VNC Status:</span>
+                <span class="status-value" id="vnc-status">Checking...</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Advanced Capabilities Tab -->
     <div class="tab-content" id="tab-advanced">
         <div class="panel-title">⚔️ ADVANCED RED TEAM CAPABILITIES</div>
