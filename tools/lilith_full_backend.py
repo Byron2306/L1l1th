@@ -1740,6 +1740,96 @@ def reset_api_keys():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/keys/add', methods=['POST'])
+def add_api_key():
+    """Dynamically add an API key to the running session"""
+    global _ai_manager
+    
+    try:
+        data = request.json or {}
+        provider = data.get('provider', '').lower()
+        api_key = data.get('api_key', '')
+        
+        if not provider or not api_key:
+            return jsonify({'success': False, 'error': 'Missing provider or api_key'})
+        
+        # Save to harvested keys
+        import json
+        keys_path = '/app/config/harvested_keys.json'
+        
+        try:
+            if os.path.exists(keys_path):
+                with open(keys_path, 'r') as f:
+                    keys = json.load(f)
+            else:
+                keys = []
+            
+            # Add or update key
+            key_found = False
+            for k in keys:
+                if k['provider'] == provider:
+                    k['key'] = api_key
+                    k['harvested_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    key_found = True
+                    break
+            
+            if not key_found:
+                keys.append({
+                    'provider': provider,
+                    'key': api_key,
+                    'harvested_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'method': 'manual'
+                })
+            
+            with open(keys_path, 'w') as f:
+                json.dump(keys, f, indent=2)
+        except Exception as e:
+            print(f"Error saving key: {e}")
+        
+        # Update config file
+        config_path = Path(__file__).parent.parent / 'config' / 'lucifera.conf'
+        try:
+            import configparser
+            config = configparser.ConfigParser()
+            if config_path.exists():
+                config.read(config_path)
+            
+            if 'lilith' not in config:
+                config.add_section('lilith')
+            
+            key_mapping = {
+                'groq': 'groq_api_key',
+                'huggingface': 'hf_token',
+                'together': 'together_api_key',
+                'mistral': 'mistral_api_key',
+                'venice': 'venice_api_key',
+                'deepinfra': 'deepinfra_api_key',
+                'openrouter': 'openrouter_api_key',
+                'cerebras': 'cerebras_api_key',
+                'sambanova': 'sambanova_api_key',
+                'fireworks': 'fireworks_api_key'
+            }
+            
+            if provider in key_mapping:
+                config.set('lilith', key_mapping[provider], api_key)
+                
+                with open(config_path, 'w') as f:
+                    config.write(f)
+        except Exception as e:
+            print(f"Error updating config: {e}")
+        
+        # Reinitialize AI manager to pick up new key
+        if AI_PROVIDER_AVAILABLE:
+            _ai_manager = None  # Force recreation on next call
+        
+        return jsonify({
+            'success': True,
+            'message': f'API key added for {provider}',
+            'provider': provider
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 # ==================== ATTACK MEMORY ENDPOINTS ====================
 
 @app.route('/agent/memory/stats', methods=['GET'])
