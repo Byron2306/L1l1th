@@ -497,6 +497,7 @@ class DirectoryBruter:
     def __init__(self):
         self.gobuster_available = shutil.which('gobuster') is not None
         self.ffuf_available = shutil.which('ffuf') is not None
+        self.dirb_available = shutil.which('dirb') is not None
     
     def brute_directories(self, target: str, wordlist: str = None) -> Dict:
         """Brute force directories"""
@@ -506,12 +507,51 @@ class DirectoryBruter:
             if not os.path.exists(wordlist):
                 wordlist = None
         
-        if self.gobuster_available and wordlist:
+        if self.dirb_available and wordlist:
+            return self._dirb_scan(target, wordlist)
+        elif self.gobuster_available and wordlist:
             return self._gobuster_scan(target, wordlist)
         elif self.ffuf_available and wordlist:
             return self._ffuf_scan(target, wordlist)
         else:
             return self._get_common_paths()
+    
+    def _dirb_scan(self, target: str, wordlist: str) -> Dict:
+        """Run dirb directory scan"""
+        try:
+            result = subprocess.run(
+                ['dirb', target, wordlist, '-r', '-S'],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            
+            paths = []
+            for line in result.stdout.split('\n'):
+                if '==> DIRECTORY:' in line or '+ ' in line:
+                    # Extract the URL from dirb output
+                    if '+ ' in line:
+                        url = line.split('+ ')[1].split(' ')[0] if '+ ' in line else ''
+                        if url:
+                            paths.append({'url': url, 'type': 'file'})
+                    elif '==> DIRECTORY:' in line:
+                        url = line.replace('==> DIRECTORY:', '').strip()
+                        if url:
+                            paths.append({'url': url, 'type': 'directory'})
+            
+            return {
+                'success': True,
+                'tool': 'dirb',
+                'target': target,
+                'wordlist': wordlist,
+                'found_count': len(paths),
+                'found_paths': paths,
+                'raw_output': result.stdout[-2000:] if len(result.stdout) > 2000 else result.stdout
+            }
+        except subprocess.TimeoutExpired:
+            return {'success': False, 'error': 'Scan timeout - target may have rate limiting'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
     
     def _gobuster_scan(self, target: str, wordlist: str) -> Dict:
         """Run gobuster directory scan"""
