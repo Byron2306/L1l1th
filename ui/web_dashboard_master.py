@@ -1401,6 +1401,241 @@ MASTER_TEMPLATE = """
 
         // Load harvested keys on page load
         setTimeout(loadHarvestedKeys, 2000);
+
+        // ==================== ADVANCED CAPABILITIES FUNCTIONS ====================
+        
+        function showAdvancedResult(data) {
+            const resultsEl = document.getElementById('advanced-results');
+            resultsEl.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function runPassiveRecon() {
+            const target = document.getElementById('recon-target').value;
+            if (!target) { alert('Enter target domain'); return; }
+            
+            showAdvancedResult({status: 'Running passive recon on ' + target + '...'});
+            
+            try {
+                const response = await fetch('/_dash/capabilities/recon/passive', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runActiveRecon() {
+            const target = document.getElementById('recon-target').value;
+            if (!target) { alert('Enter target domain'); return; }
+            
+            showAdvancedResult({status: 'Running active recon on ' + target + '...'});
+            
+            try {
+                const response = await fetch('/_dash/capabilities/recon/active', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runFullRecon() {
+            const target = document.getElementById('recon-target').value;
+            if (!target) { alert('Enter target domain'); return; }
+            
+            showAdvancedResult({status: 'Running FULL recon suite on ' + target + '...'});
+            
+            try {
+                const response = await fetch('/_dash/capabilities/recon/full', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function genPhishing() {
+            const name = document.getElementById('phish-name').value || 'Target User';
+            const company = document.getElementById('phish-company').value || 'Target Company';
+            
+            showAdvancedResult({status: 'Generating phishing campaign...'});
+            
+            try {
+                const response = await fetch('/_dash/capabilities/nlp/phishing', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target_info: {name, company}})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function genVishing() {
+            const name = document.getElementById('phish-name').value || 'Target User';
+            const company = document.getElementById('phish-company').value || 'Target Company';
+            
+            try {
+                const response = await fetch('/_dash/capabilities/nlp/vishing', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target_info: {name, company}})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function runAnomalyDetection() {
+            let data;
+            try {
+                data = JSON.parse(document.getElementById('ml-data').value || '[]');
+            } catch (e) {
+                showAdvancedResult({error: 'Invalid JSON data'});
+                return;
+            }
+            
+            try {
+                const response = await fetch('/_dash/capabilities/ml/anomaly', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data: data})
+                });
+                const result = await response.json();
+                showAdvancedResult(result);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function analyzeHash() {
+            const hash = document.getElementById('hash-input').value;
+            if (!hash) { alert('Enter a hash to analyze'); return; }
+            
+            try {
+                const response = await fetch('/_dash/capabilities/crypto/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({hash: hash})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function generateKeys() {
+            try {
+                const response = await fetch('/_dash/capabilities/crypto/keygen', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({algorithm: 'AES', bits: 256})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function generateExploit() {
+            const vulnType = document.getElementById('exploit-type').value;
+            
+            try {
+                const response = await fetch('/_dash/capabilities/exploit/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({vuln_type: vulnType, target_info: {}})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getEvasionTechniques() {
+            try {
+                const response = await fetch('/_dash/capabilities/evasion/techniques');
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getPersistence() {
+            try {
+                const response = await fetch('/_dash/capabilities/persistence/methods?os=linux');
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getWirelessAttacks() {
+            try {
+                const response = await fetch('/_dash/capabilities/wireless/attacks');
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getPhysicalBypass() {
+            try {
+                const response = await fetch('/_dash/capabilities/physical/bypass');
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function analyzeSupplyChain() {
+            const target = document.getElementById('supply-target').value || 'target';
+            
+            try {
+                const response = await fetch('/_dash/capabilities/supply-chain/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target})
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getZeroDayMethodology() {
+            try {
+                const response = await fetch('/_dash/capabilities/zeroday/methodology');
+                const data = await response.json();
+                showAdvancedResult(data);
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
     </script>
 </body>
 </html>
