@@ -833,6 +833,32 @@ MASTER_TEMPLATE = """
                         <button onclick="getEvasionTechniques()" style="width: 100%; padding: 8px; background: #4d2a1a; border: none; color: #fff; cursor: pointer; margin-bottom: 5px;">AV/EDR Bypass</button>
                         <button onclick="getPersistence()" style="width: 100%; padding: 8px; background: #2a4d1a; border: none; color: #fff; cursor: pointer;">Persistence</button>
                     </div>
+                    
+                    <!-- Network Capture -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #00ffff; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #00ffff; margin: 0 0 10px 0; font-size: 14px;">📡 Network Capture</h3>
+                        <input type="text" id="capture-filter" placeholder="Filter (e.g. tcp port 80)" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                        <input type="number" id="capture-count" placeholder="Packet count (100)" value="100" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="startCapture()" style="flex: 1; padding: 8px; background: #1a4d4d; border: none; color: #fff; cursor: pointer; font-size: 11px;">Start</button>
+                            <button onclick="getCaptureStatus()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">Status</button>
+                        </div>
+                    </div>
+                    
+                    <!-- ARP Scanner -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #00ff88; margin: 0 0 10px 0; font-size: 14px;">🔍 ARP Scanner</h3>
+                        <input type="text" id="arp-range" placeholder="IP range (192.168.1.0/24)" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <button onclick="runARPScan()" style="width: 100%; padding: 8px; background: #1a4d2a; border: none; color: #fff; cursor: pointer;">Scan Network</button>
+                    </div>
+                    
+                    <!-- Payload Generator -->
+                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #ff00ff; border-radius: 8px; padding: 15px;">
+                        <h3 style="color: #ff00ff; margin: 0 0 10px 0; font-size: 14px;">💉 Payload Generator</h3>
+                        <input type="text" id="payload-lhost" placeholder="LHOST (your IP)" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                        <input type="number" id="payload-lport" placeholder="LPORT (4444)" value="4444" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <button onclick="generateReverseShell()" style="width: 100%; padding: 8px; background: #4d1a4d; border: none; color: #fff; cursor: pointer;">Generate Reverse Shells</button>
+                    </div>
                 </div>
                 
                 <!-- Output Area -->
