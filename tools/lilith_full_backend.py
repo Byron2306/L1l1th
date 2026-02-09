@@ -274,6 +274,8 @@ def get_best_techniques(category):
         return jsonify({'success': True, 'techniques': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/coding_agent/status', methods=['GET'])
 def coding_agent_status():
     """Return availability of coding-agent (pi/npx/npm) and Groq key status"""
     env = os.environ.copy()
