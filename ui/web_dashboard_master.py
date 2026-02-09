@@ -815,11 +815,13 @@ MASTER_TEMPLATE = """
                 document.getElementById('status-backend').style.color = data.backend.ok ? '#00ff00' : '#ff0000';
                 document.getElementById('backend-status').className = data.backend.ok ? 'status-indicator status-online' : 'status-indicator status-offline';
                 
-                // Get AI status
-                const aiResponse = await fetch('http://127.0.0.1:5000/status');
+                // Get AI status through proxy
+                const aiResponse = await fetch('/api/backend/status');
                 const aiData = await aiResponse.json();
-                const aiProviders = aiData.ai_providers;
-                document.getElementById('status-ai').textContent = `${aiProviders.active_count}/${aiProviders.total_count}`;
+                if (aiData.ai_providers) {
+                    const aiProviders = aiData.ai_providers;
+                    document.getElementById('status-ai').textContent = `${aiProviders.active_count}/${aiProviders.total_count}`;
+                }
                 
             } catch (error) {
                 document.getElementById('status-backend').textContent = '✗ Error';
@@ -829,7 +831,7 @@ MASTER_TEMPLATE = """
 
         async function loadOpenClawSkills() {
             try {
-                const response = await fetch('http://127.0.0.1:5000/openclaw/redteam-skills');
+                const response = await fetch('/api/openclaw/skills');
                 const data = await response.json();
                 if (data.success && data.skills) {
                     const container = document.getElementById('openclaw-skills');
