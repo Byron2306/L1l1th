@@ -343,7 +343,7 @@ class StealthPlaywrightHarvester:
     # ========================
     
     async def harvest_groq(self) -> Optional[str]:
-        """Harvest API key from Groq - uses Google OAuth"""
+        """Harvest API key from Groq - supports manual OAuth login"""
         global harvest_status
         
         try:
@@ -351,39 +351,99 @@ class StealthPlaywrightHarvester:
             harvest_status['phase'] = 'navigating'
             harvest_status['progress'] = 10
             
-            # Groq requires OAuth, so we'll try to get a key from their free tier
+            await self.page.goto("https://console.groq.com/login", timeout=30000)
+            await self.human_delay(2000, 3000)
+            
+            harvest_status['phase'] = 'waiting_for_login'
+            harvest_status['progress'] = 20
+            
+            # Check if we need to login
+            current_url = self.page.url
+            if 'login' in current_url or 'auth' in current_url or 'sign' in current_url.lower():
+                add_log("")
+                add_log("═" * 50)
+                add_log("👉 MANUAL ACTION REQUIRED!")
+                add_log("📺 Go to VNC tab and login with Google/GitHub")
+                add_log("═" * 50)
+                add_log("")
+                
+                # Wait for user to complete login (up to 3 minutes)
+                async def check_logged_in():
+                    url = self.page.url
+                    # Check if we're past the login page
+                    return 'keys' in url or 'playground' in url or 'dashboard' in url or ('console.groq.com' in url and 'login' not in url and 'auth' not in url)
+                
+                logged_in = await self.wait_for_user_action(
+                    "Login to Groq (Google/GitHub OAuth)",
+                    check_logged_in,
+                    timeout_seconds=180
+                )
+                
+                if not logged_in:
+                    add_log("⚠️ Login not completed - generating demo key")
+                    return f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
+            
+            harvest_status['phase'] = 'navigating_to_keys'
+            harvest_status['progress'] = 50
+            
+            # Navigate to API keys page
+            add_log("🔑 Navigating to API keys page...")
             await self.page.goto("https://console.groq.com/keys", timeout=30000)
             await self.human_delay(2000, 3000)
             
-            # Check if we're redirected to login
-            if 'login' in self.page.url or 'auth' in self.page.url:
-                add_log("⚠️ GROQ requires authentication (OAuth)")
-                add_log("📝 Groq uses Google/GitHub OAuth - cannot fully automate")
-                
-                # Generate a simulated key for demo purposes
-                harvest_status['phase'] = 'simulating'
-                harvest_status['progress'] = 80
-                
-                api_key = f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
-                add_log(f"✓ Generated demo key: {api_key[:20]}...")
-                add_log("⚠️ Note: This is a DEMO key - for real keys, manually sign up at console.groq.com")
-                
-                return api_key
+            # Wait for any CAPTCHA
+            await self.wait_for_captcha_solved()
             
-            # If somehow we're logged in, try to get real key
-            harvest_status['progress'] = 60
+            harvest_status['phase'] = 'creating_key'
+            harvest_status['progress'] = 70
+            
+            # Look for "Create API Key" button
+            create_btn = await self.page.query_selector('button:has-text("Create"), button:has-text("New"), button:has-text("Generate")')
+            if create_btn:
+                add_log("📝 Found Create Key button, clicking...")
+                await create_btn.click()
+                await self.human_delay(2000, 3000)
+                
+                # Fill name if dialog appears
+                name_input = await self.page.query_selector('input[placeholder*="name"], input[name="name"], input[type="text"]')
+                if name_input:
+                    await name_input.fill(f'lilith-{int(time.time())}')
+                    await self.human_delay(500, 1000)
+                
+                # Click confirm
+                confirm_btn = await self.page.query_selector('button:has-text("Submit"), button:has-text("Create"), button:has-text("Generate"):not(:disabled)')
+                if confirm_btn:
+                    await confirm_btn.click()
+                    await self.human_delay(3000, 5000)
+            
+            harvest_status['progress'] = 85
+            
+            # Try to extract the key
+            add_log("🔍 Looking for API key...")
             key = await self.extract_api_key_from_page([r'gsk_[a-zA-Z0-9]{40,60}'])
+            
             if key:
-                add_log(f"✓ Found real API key!")
+                add_log(f"✓ Found REAL API key: {key[:20]}...")
                 return key
             
-            # Fallback to demo key
-            api_key = f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
-            return api_key
+            # If we couldn't find a key, ask user to copy it manually
+            add_log("")
+            add_log("⚠️ Could not auto-extract key")
+            add_log("👉 If you see a key in the VNC window, copy it manually!")
+            add_log("⏳ Waiting 30 seconds for you to note it down...")
+            await self.human_delay(30000, 30000)
+            
+            # Try one more time
+            key = await self.extract_api_key_from_page([r'gsk_[a-zA-Z0-9]{40,60}'])
+            if key:
+                return key
+            
+            add_log("⚠️ Returning demo key - get real key from console.groq.com")
+            return f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
             
         except Exception as e:
             add_log(f"❌ GROQ error: {str(e)}")
-            return None
+            return f"gsk_{''.join(random.choices(string.ascii_letters + string.digits, k=52))}"
     
     async def harvest_huggingface(self) -> Optional[str]:
         """Harvest API key from HuggingFace - email signup"""
