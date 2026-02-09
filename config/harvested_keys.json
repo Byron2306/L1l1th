@@ -31,9 +31,9 @@
   },
   {
     "provider": "groq",
-    "key": "gsk_real_test_key_12345678901234567890",
+    "key": "gsk_M81xporf8niNH26x8ep3ewl58Hc1YMoVS02qewqLRltmI2fJ",
     "email": "manual_entry",
-    "harvested_at": "2026-02-09 21:04:44",
+    "harvested_at": "2026-02-09 22:03:33",
     "method": "manual",
     "is_real": true,
     "status": "verified"
