@@ -1215,7 +1215,8 @@ MASTER_TEMPLATE = """
                     addLog('[HARVESTER] ✓ Harvesting complete!');
                     if (status.api_key) {
                         addMessage('system', `API Key harvested successfully: ${status.api_key.substring(0, 20)}...`);
-                        addMessage('system', 'Restart backend to activate new key');
+                        addMessage('system', 'Click "APPLY KEYS TO SESSION" to activate');
+                        loadHarvestedKeys();
                     }
                 } else if (status.error) {
                     clearInterval(harvestInterval);
@@ -1227,6 +1228,82 @@ MASTER_TEMPLATE = """
                 console.error('Status update error:', error);
             }
         }
+
+        async function loadHarvestedKeys() {
+            try {
+                const response = await fetch('/_dash/harvest/keys');
+                const data = await response.json();
+                
+                const listDiv = document.getElementById('harvested-keys-list');
+                if (data.keys && data.keys.length > 0) {
+                    listDiv.innerHTML = data.keys.map(k => 
+                        `<div style="padding: 3px; border-bottom: 1px solid #333;">
+                            <span style="color: #00ff00;">✓</span> 
+                            <strong>${k.provider}</strong>: ${k.key.substring(0, 15)}... 
+                            <span style="color: #666; font-size: 10px;">(${k.harvested_at})</span>
+                        </div>`
+                    ).join('');
+                } else {
+                    listDiv.innerHTML = '<div style="color: #666;">No keys harvested yet</div>';
+                }
+            } catch (error) {
+                document.getElementById('harvested-keys-list').innerHTML = '<div style="color: #ff0000;">Error loading keys</div>';
+            }
+        }
+
+        async function applyHarvestedKeys() {
+            addLog('[SYSTEM] Applying harvested keys to active session...');
+            
+            try {
+                const response = await fetch('/_dash/harvest/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[SYSTEM] ✓ Keys applied successfully!');
+                    addLog(`[SYSTEM] Active providers: ${data.active_count}/${data.total_count}`);
+                    addMessage('system', 'API keys loaded into session. AI providers are now active!');
+                    checkSystemStatus();
+                } else {
+                    addLog(`[SYSTEM] ✗ Error: ${data.error}`);
+                }
+            } catch (error) {
+                addLog(`[SYSTEM] ✗ Error: ${error.message}`);
+            }
+        }
+
+        async function restartBackend() {
+            addLog('[SYSTEM] Restarting backend services...');
+            
+            try {
+                const response = await fetch('/_dash/system/restart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[SYSTEM] ✓ Backend restart initiated');
+                    addMessage('system', 'Backend restarting... Please wait 5 seconds.');
+                    
+                    setTimeout(() => {
+                        checkSystemStatus();
+                        addLog('[SYSTEM] ✓ Backend restart complete');
+                    }, 5000);
+                } else {
+                    addLog(`[SYSTEM] ✗ Error: ${data.error}`);
+                }
+            } catch (error) {
+                addLog(`[SYSTEM] ✗ Error: ${error.message}`);
+            }
+        }
+
+        // Load harvested keys on page load
+        setTimeout(loadHarvestedKeys, 2000);
     </script>
 </body>
 </html>
