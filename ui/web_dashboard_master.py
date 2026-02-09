@@ -2967,6 +2967,132 @@ def save_manual_key():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== KEY ROTATION MANAGEMENT ROUTES ====================
+
+@app.route('/_dash/rotation/start', methods=['POST'])
+def start_key_rotation():
+    """Start automatic key rotation and testing"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        data = request.json or {}
+        providers = data.get('providers')
+        keys_per_batch = data.get('keys_per_batch', 5)
+        max_per_provider = data.get('max_per_provider', 1)
+        
+        manager = get_rotation_manager()
+        result = manager.start(providers, keys_per_batch, max_per_provider)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/stop', methods=['POST'])
+def stop_key_rotation():
+    """Stop key rotation"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        result = manager.stop()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/pause', methods=['POST'])
+def pause_key_rotation():
+    """Pause key rotation"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        result = manager.pause()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/resume', methods=['POST'])
+def resume_key_rotation():
+    """Resume key rotation"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        result = manager.resume()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/status', methods=['GET'])
+def get_rotation_status():
+    """Get rotation status"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        status = manager.get_status()
+        
+        return jsonify({'success': True, **status})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/keys', methods=['GET'])
+def get_rotation_keys():
+    """Get valid keys found by rotation"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        result = manager.get_valid_keys()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/load', methods=['POST'])
+def load_rotation_keys():
+    """Load valid keys into session"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        manager = get_rotation_manager()
+        result = manager.load_keys_to_session()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/rotation/test-key', methods=['POST'])
+def test_single_api_key():
+    """Test a single API key"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from key_rotation_manager import get_rotation_manager
+        
+        data = request.json or {}
+        key = data.get('key', '')
+        provider = data.get('provider', 'openai')
+        
+        if not key:
+            return jsonify({'success': False, 'error': 'Key required'})
+        
+        manager = get_rotation_manager()
+        result = manager.test_single_key(key, provider)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/harvest/generate-credentials', methods=['POST'])
 def generate_credentials():
     """Generate temp email and password for signup"""
