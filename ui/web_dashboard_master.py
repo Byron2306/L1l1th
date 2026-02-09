@@ -2217,34 +2217,56 @@ def start_vnc():
 
 @app.route('/_dash/harvest/start', methods=['POST'])
 def start_harvest():
-    """Start autonomous API key harvesting with VNC browser"""
+    """Start autonomous API key harvesting with visible browser"""
     try:
         import subprocess
-        
-        # Ensure VNC is running for visible browser
-        subprocess.Popen(['bash', '-c', '''
-            pkill -f "Xvfb :99" 2>/dev/null || true
-            pkill -f x11vnc 2>/dev/null || true
-            pkill -f "websockify.*6080" 2>/dev/null || true
-            sleep 1
-            export DISPLAY=:99
-            Xvfb :99 -screen 0 1920x1080x24 &
-            sleep 2
-            x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -bg 2>/dev/null
-            sleep 1
-            nohup websockify --web=/usr/share/novnc 6080 localhost:5900 > /tmp/novnc.log 2>&1 &
-        '''], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # Wait for VNC to start
-        import time
-        time.sleep(3)
-        
-        sys.path.insert(0, '/app/tools')
-        from harvest_integration import start_harvesting_thread
+        import time as time_module
         
         data = request.json or {}
         provider = data.get('provider', 'groq')
         headless = data.get('headless', False)  # Default to visible browser
+        
+        if not headless:
+            # Ensure Xvfb is running for visible browser
+            # Kill any existing first
+            subprocess.run(['pkill', '-9', 'Xvfb'], capture_output=True)
+            subprocess.run(['pkill', '-9', 'x11vnc'], capture_output=True)
+            subprocess.run(['pkill', '-f', 'websockify.*6080'], capture_output=True)
+            time_module.sleep(1)
+            
+            # Start Xvfb
+            subprocess.Popen(
+                ['Xvfb', ':99', '-screen', '0', '1920x1080x24'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+            time_module.sleep(2)
+            
+            # Start x11vnc
+            subprocess.Popen(
+                ['x11vnc', '-display', ':99', '-forever', '-shared', '-rfbport', '5900', '-nopw'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+            time_module.sleep(1)
+            
+            # Start websockify for noVNC
+            subprocess.Popen(
+                ['websockify', '--web=/usr/share/novnc', '6080', 'localhost:5900'],
+                stdout=open('/tmp/novnc.log', 'w'),
+                stderr=subprocess.STDOUT,
+                start_new_session=True
+            )
+            time_module.sleep(1)
+        
+        # Set environment for the harvester thread
+        os.environ['DISPLAY'] = ':99'
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
+        
+        sys.path.insert(0, '/app/tools')
+        from harvest_integration import start_harvesting_thread
         
         success = start_harvesting_thread(provider, headless=headless)
         
@@ -2253,12 +2275,13 @@ def start_harvest():
                 'success': True, 
                 'message': f'Harvesting started for {provider}',
                 'vnc_enabled': not headless,
-                'vnc_url': '/_vnc/vnc.html'
+                'vnc_url': '/_vnc/vnc.html' if not headless else None
             })
         else:
             return jsonify({'success': False, 'error': 'Harvesting already in progress'})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
 
 @app.route('/_dash/harvest/status', methods=['GET'])
 def harvest_status():
