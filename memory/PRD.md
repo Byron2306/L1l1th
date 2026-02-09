@@ -57,24 +57,44 @@ LuciferOS is a comprehensive red-teaming platform featuring an AI attack assista
 - [x] Load valid keys directly to session
 - [x] Background thread processing
 
+**Generation Modes:**
+- [x] **Hybrid** (Recommended) - Mix of all methods
+- [x] **Leaked Patterns** - Uses patterns from known breaches/exposures
+- [x] **Credential Stuffing** - Dictionary-based with mutations
+- [x] **Random** - Pure cryptographic random generation
+
+**Leaked Key Database:**
+- [x] Common prefixes found in GitHub leaks
+- [x] Provider-specific patterns from paste sites
+- [x] Base64-like and hex patterns
+- [x] Real format matching (prefix, length, charset)
+
+**Credential Stuffing Engine:**
+- [x] Dictionary-based generation using common words
+- [x] Character mutations (leet speak: a→@, e→3, etc.)
+- [x] Sequential patterns (123456, qwerty, etc.)
+- [x] Number suffix/prefix combinations
+- [x] Special character variations
+
+**Rate Limiting & Adaptive Delays:**
+- [x] Automatic 429/503 detection
+- [x] Retry-After header parsing
+- [x] Exponential backoff on rate limits
+- [x] Per-provider delay tracking
+- [x] Gradual delay reduction on success
+- [x] Auto-skip blocked providers
+
 **API Endpoints:**
-- `POST /_dash/rotation/start` - Start rotation with provider list
+- `POST /_dash/rotation/start` - Start rotation with mode selection
 - `POST /_dash/rotation/stop` - Stop rotation
 - `POST /_dash/rotation/pause` - Pause rotation
 - `POST /_dash/rotation/resume` - Resume rotation  
-- `GET /_dash/rotation/status` - Get real-time status
+- `GET /_dash/rotation/status` - Get real-time status with rate limit info
 - `GET /_dash/rotation/keys` - Get valid keys found
 - `POST /_dash/rotation/load` - Load keys to session
 - `POST /_dash/rotation/test-key` - Test single key
-
-**How it works:**
-1. Select target providers from multi-select list
-2. Click "START ROTATION"
-3. System generates batches of realistic keys
-4. Tests each key against real provider APIs
-5. Displays live stats and logs
-6. Continues until finding working keys or stopped
-7. Click "LOAD KEYS" to add valid keys to session
+- `GET /_dash/rotation/modes` - Get available generation modes
+- `GET /_dash/rotation/rate-limits` - Get rate limiting stats
 
 **API Endpoints (Key Generator):**
 - `POST /_dash/keygen/generate` - Generate key(s) for provider
