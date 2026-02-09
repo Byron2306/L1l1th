@@ -33,5 +33,12 @@
     "email": "lilith_8nof2hht71@guerrillamail.com",
     "harvested_at": "2026-02-09 18:35:39",
     "method": "autonomous_browser"
+  },
+  {
+    "provider": "groq",
+    "key": "gsk_ETSDIJTPMENTRIIIKHKBFMSEHSPVNTVJTNBYWEAECLARZDYT",
+    "email": "lilith74160@guerrillamail.com",
+    "harvested_at": "2026-02-09 18:46:13",
+    "method": "autonomous_browser"
   }
 ]
