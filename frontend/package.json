@@ -1,0 +1,8 @@
+{
+  "name": "luciferos-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node start_dashboard.js"
+  },
+  "dependencies": {}
+}
