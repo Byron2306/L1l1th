@@ -1314,24 +1314,38 @@ MASTER_TEMPLATE = """
             const btn = document.getElementById('harvest-btn');
             
             btn.disabled = true;
-            btn.textContent = '⏳ HARVESTING IN PROGRESS...';
+            btn.textContent = '⏳ STARTING VNC & BROWSER...';
             
-            addLog(`[HARVESTER] Starting autonomous harvesting for ${provider}`);
+            addLog(`[HARVESTER] Starting harvesting for ${provider}`);
+            addLog('[HARVESTER] Initializing VNC for manual CAPTCHA solving...');
             
             try {
                 const response = await fetch('/_dash/harvest/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ provider })
+                    body: JSON.stringify({ provider, headless: false })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    addLog('[HARVESTER] Harvesting initiated successfully');
+                    addLog('[HARVESTER] ✓ Harvesting initiated');
+                    addLog('[HARVESTER] 📺 Browser visible in VNC tab!');
+                    addLog('[HARVESTER] 👉 Switch to VNC tab when prompted for manual action');
+                    
+                    btn.textContent = '⏳ HARVESTING IN PROGRESS...';
+                    
+                    // Show notification about VNC
+                    addMessage('system', '📺 Browser is now visible! Go to VNC tab to see it and solve any CAPTCHAs.');
                     
                     // Start polling for status updates
                     harvestInterval = setInterval(updateHarvestStatus, 1000);
+                    
+                    // Refresh VNC iframe
+                    setTimeout(() => {
+                        const vncFrame = document.getElementById('vnc-frame');
+                        if (vncFrame) vncFrame.src = '/_vnc/vnc.html';
+                    }, 2000);
                 } else {
                     addLog(`[HARVESTER] Error: ${data.error}`);
                     btn.disabled = false;
