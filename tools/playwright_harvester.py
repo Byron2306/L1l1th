@@ -547,15 +547,15 @@ class StealthPlaywrightHarvester:
             key = await self.extract_api_key_from_page([r'hf_[a-zA-Z0-9]{30,50}'])
             if key:
                 add_log(f"✓ API Key found: {key[:15]}...")
-                return key
+                return (key, True)  # Real key
             
-            # Fallback
+            # Fallback - demo key
             add_log("⚠️ Could not extract real key, generating demo")
-            return f"hf_{''.join(random.choices(string.ascii_letters + string.digits, k=34))}"
+            return (f"hf_{''.join(random.choices(string.ascii_letters + string.digits, k=34))}", False)
             
         except Exception as e:
             add_log(f"❌ HUGGINGFACE error: {str(e)}")
-            return f"hf_{''.join(random.choices(string.ascii_letters + string.digits, k=34))}"
+            return (f"hf_{''.join(random.choices(string.ascii_letters + string.digits, k=34))}", False)
     
     async def harvest_together(self) -> Optional[str]:
         """Harvest API key from Together.ai"""
