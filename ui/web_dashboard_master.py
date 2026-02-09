@@ -584,6 +584,59 @@ MASTER_TEMPLATE = """
                 </div>
                 <div class="output-display" id="payload-output"></div>
             </div>
+
+            <!-- Coding Agent Tab -->
+            <div class="tab-content" id="tab-coding">
+                <div class="panel-title">👨‍💻 CODING AGENT</div>
+                <div class="status-box">
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span class="status-value" id="coding-status">Checking...</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Code Generation Request</label>
+                    <textarea id="coding-prompt" rows="4" placeholder="Describe what code you want to generate..."></textarea>
+                    <button class="attack-mode-btn" onclick="generateCode()">Generate Code</button>
+                </div>
+                <div class="output-display" id="coding-output"></div>
+            </div>
+
+            <!-- Learning Tab -->
+            <div class="tab-content" id="tab-learning">
+                <div class="panel-title">🧠 LILITH LEARNING SYSTEM</div>
+                <div class="status-box">
+                    <h6 style="color: var(--primary-red);">Learning Statistics</h6>
+                    <div class="status-item">
+                        <span class="status-label">Total Attacks:</span>
+                        <span class="status-value" id="learning-attacks">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Success Rate:</span>
+                        <span class="status-value" id="learning-success">0%</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Insights Generated:</span>
+                        <span class="status-value" id="learning-insights-count">0</span>
+                    </div>
+                </div>
+                <button class="attack-mode-btn" onclick="loadLearningData()">Refresh Learning Data</button>
+                <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Recent Insights</div>
+                <div class="output-display" id="learning-insights"></div>
+            </div>
+
+            <!-- Memory Tab -->
+            <div class="tab-content" id="tab-memory">
+                <div class="panel-title">💾 ATTACK MEMORY</div>
+                <div class="input-group">
+                    <label>Save Memory</label>
+                    <textarea id="memory-input" rows="3" placeholder="Save attack data, techniques, or notes..."></textarea>
+                    <button class="attack-mode-btn" onclick="saveMemory()">Save to Memory</button>
+                </div>
+                <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Memory Recall</div>
+                <button class="attack-mode-btn" onclick="recallMemory()">Recall Memories</button>
+                <div class="output-display" id="memory-output"></div>
+            </div>
         </div>
 
         <!-- RIGHT PANEL: Monitoring -->
