@@ -763,15 +763,32 @@ class HashCracker:
             return {'success': False, 'error': str(e)}
 
 
-# Export functions
+# Export functions - use singletons for stateful classes
+_packet_capture_instance = None
+_arp_scanner_instance = None
+_metasploit_instance = None
+_hash_cracker_instance = None
+
 def get_packet_capture(interface: str = None) -> PacketCapture:
-    return PacketCapture(interface)
+    global _packet_capture_instance
+    if _packet_capture_instance is None or (interface and _packet_capture_instance.interface != interface):
+        _packet_capture_instance = PacketCapture(interface)
+    return _packet_capture_instance
 
 def get_arp_scanner(interface: str = None) -> ARPScanner:
-    return ARPScanner(interface)
+    global _arp_scanner_instance
+    if _arp_scanner_instance is None or (interface and _arp_scanner_instance.interface != interface):
+        _arp_scanner_instance = ARPScanner(interface)
+    return _arp_scanner_instance
 
 def get_metasploit() -> MetasploitIntegration:
-    return MetasploitIntegration()
+    global _metasploit_instance
+    if _metasploit_instance is None:
+        _metasploit_instance = MetasploitIntegration()
+    return _metasploit_instance
 
 def get_hash_cracker() -> HashCracker:
-    return HashCracker()
+    global _hash_cracker_instance
+    if _hash_cracker_instance is None:
+        _hash_cracker_instance = HashCracker()
+    return _hash_cracker_instance
