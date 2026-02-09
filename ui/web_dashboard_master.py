@@ -665,44 +665,63 @@ MASTER_TEMPLATE = """
                     </select>
                 </div>
                 
-                <!-- MANUAL HARVEST - Opens in YOUR browser -->
-                <div class="status-box" style="margin: 15px 0; background: #1a2a1a; border-color: #00ff00;">
-                    <h6 style="color: #00ff00;">🖱️ MANUAL MODE (Recommended)</h6>
+                <!-- STEP 1: Generate Credentials -->
+                <div class="status-box" style="margin: 15px 0; background: #1a1a3a; border-color: #6666ff;">
+                    <h6 style="color: #6666ff;">📧 STEP 1: Generate Account Credentials</h6>
                     <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
-                        Opens the provider's website in YOUR browser. You login, solve CAPTCHA, get the key, and paste it below.
+                        Click to generate a temporary email and password. Use these to sign up.
                     </p>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="launch-attack-btn" onclick="openProviderSignup()" style="flex: 2; background: #1a4d1a;">
-                            🌐 OPEN PROVIDER WEBSITE
-                        </button>
-                        <button class="attack-mode-btn" onclick="openProviderKeys()" style="flex: 1;">
-                            🔑 Keys Page
-                        </button>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <input type="text" id="manual-api-key" placeholder="Paste your API key here after signup..." 
-                               style="width: 100%; padding: 10px; background: #0d0d1a; border: 1px solid #333; color: #00ff00; font-family: monospace;">
-                        <button class="launch-attack-btn" onclick="saveManualKey()" style="margin-top: 10px; background: #1a4d1a;">
-                            💾 SAVE API KEY
-                        </button>
+                    <button class="launch-attack-btn" onclick="generateCredentials()" style="background: #2a2a5a; margin-bottom: 10px;">
+                        🎲 GENERATE EMAIL & PASSWORD
+                    </button>
+                    <div style="background: #0d0d1a; padding: 10px; border-radius: 5px; font-family: monospace;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <span style="color: #888; width: 80px;">Email:</span>
+                            <input type="text" id="generated-email" readonly style="flex: 1; padding: 8px; background: #1a1a2e; border: 1px solid #444; color: #00ff00; font-family: monospace;">
+                            <button onclick="copyToClipboard('generated-email')" style="margin-left: 5px; padding: 8px 12px; background: #333; border: none; color: #fff; cursor: pointer;">📋</button>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span style="color: #888; width: 80px;">Password:</span>
+                            <input type="text" id="generated-password" readonly style="flex: 1; padding: 8px; background: #1a1a2e; border: 1px solid #444; color: #00ff00; font-family: monospace;">
+                            <button onclick="copyToClipboard('generated-password')" style="margin-left: 5px; padding: 8px 12px; background: #333; border: none; color: #fff; cursor: pointer;">📋</button>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- AUTO HARVEST - Server-side automation -->
-                <div class="status-box" style="margin: 15px 0; background: #2a1a1a; border-color: #ff3333;">
-                    <h6 style="color: #ff3333;">🤖 AUTO MODE (Experimental)</h6>
+                <!-- STEP 2: Open Provider & Sign Up -->
+                <div class="status-box" style="margin: 15px 0; background: #1a2a1a; border-color: #00ff00;">
+                    <h6 style="color: #00ff00;">🌐 STEP 2: Sign Up at Provider</h6>
                     <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
-                        Server-side automation with temp email. May get blocked by CAPTCHAs. Use VNC tab to monitor.
+                        Open the provider website, use the credentials above to sign up, then get your API key.
                     </p>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="attack-mode-btn" onclick="startHarvesting()" id="harvest-btn" style="flex: 2; background: #4d1a1a;">
-                            🚀 START AUTO HARVEST
+                    <div style="display: flex; gap: 10px;">
+                        <button class="launch-attack-btn" onclick="openProviderSignup()" style="flex: 2; background: #1a4d1a;">
+                            🌐 OPEN SIGNUP PAGE
                         </button>
-                        <span id="harvest-status" style="color: #666; font-size: 11px;">Idle</span>
+                        <button class="attack-mode-btn" onclick="openProviderKeys()" style="flex: 1;">
+                            🔑 KEYS PAGE
+                        </button>
                     </div>
-                    <div class="progress-bar-custom" style="margin-top: 10px; height: 8px;">
-                        <div class="progress-fill" id="harvest-progress-bar" style="width: 0%;">0%</div>
+                    <div style="margin-top: 10px; padding: 8px; background: #0d1a0d; border-radius: 5px; font-size: 11px; color: #888;">
+                        💡 <strong>Tip:</strong> After signing up, check your temp email for verification link using "Check Email" button below
                     </div>
+                    <button class="attack-mode-btn" onclick="checkTempEmail()" style="margin-top: 10px; width: 100%;">
+                        📬 CHECK EMAIL INBOX
+                    </button>
+                    <div id="email-inbox" style="margin-top: 10px; display: none; background: #0d0d1a; padding: 10px; border-radius: 5px; max-height: 150px; overflow-y: auto; font-size: 11px;"></div>
+                </div>
+                
+                <!-- STEP 3: Save Your Key -->
+                <div class="status-box" style="margin: 15px 0; background: #2a1a1a; border-color: #ff3333;">
+                    <h6 style="color: #ff3333;">💾 STEP 3: Save Your API Key</h6>
+                    <p style="font-size: 11px; color: #999; margin: 5px 0 10px 0;">
+                        Paste the API key you got from the provider.
+                    </p>
+                    <input type="text" id="manual-api-key" placeholder="Paste your API key here..." 
+                           style="width: 100%; padding: 10px; background: #0d0d1a; border: 1px solid #333; color: #00ff00; font-family: monospace; margin-bottom: 10px;">
+                    <button class="launch-attack-btn" onclick="saveManualKey()" style="background: #4d1a1a;">
+                        💾 SAVE API KEY
+                    </button>
                 </div>
                 
                 <!-- Action Buttons -->
@@ -725,7 +744,7 @@ MASTER_TEMPLATE = """
                 
                 <!-- Log -->
                 <div class="panel-title" style="font-size: 14px; margin-top: 15px;">Live Log</div>
-                <div class="output-display" id="harvest-log" style="height: 200px;"></div>
+                <div class="output-display" id="harvest-log" style="height: 150px;"></div>
             </div>
 
             <!-- VNC Browser Viewer Tab -->
