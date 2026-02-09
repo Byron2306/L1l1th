@@ -120,7 +120,57 @@ class PlaywrightHarvester:
         """Close browser"""
         if self.browser:
             await self.browser.close()
-            add_log("Browser closed")
+        if self.playwright:
+            await self.playwright.stop()
+        add_log("Browser closed")
+    
+    async def wait_for_manual_captcha(self, timeout: int = 120):
+        """Wait for user to solve CAPTCHA manually"""
+        add_log("⏳ CAPTCHA detected! Please solve it in the browser window...")
+        add_log(f"⏳ Waiting up to {timeout} seconds for manual solve...")
+        
+        # Check for common CAPTCHA indicators disappearing
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                # Check if we're past the CAPTCHA (page changed or CAPTCHA element gone)
+                captcha_frames = await self.page.query_selector_all('iframe[src*="captcha"], iframe[src*="recaptcha"], iframe[src*="hcaptcha"]')
+                if len(captcha_frames) == 0:
+                    # Also check for challenge containers
+                    challenge = await self.page.query_selector('.g-recaptcha, .h-captcha, #challenge-running')
+                    if not challenge:
+                        add_log("✓ CAPTCHA appears to be solved!")
+                        return True
+            except:
+                pass
+            await asyncio.sleep(2)
+        
+        add_log("⚠️ CAPTCHA timeout - continuing anyway...")
+        return False
+    
+    async def check_and_handle_captcha(self):
+        """Check for CAPTCHA and handle it"""
+        captcha_selectors = [
+            'iframe[src*="recaptcha"]',
+            'iframe[src*="hcaptcha"]', 
+            '.g-recaptcha',
+            '.h-captcha',
+            '#challenge-running',
+            '[data-callback*="captcha"]'
+        ]
+        
+        for selector in captcha_selectors:
+            try:
+                element = await self.page.query_selector(selector)
+                if element:
+                    if self.manual_captcha and not self.headless:
+                        return await self.wait_for_manual_captcha()
+                    else:
+                        add_log("⚠️ CAPTCHA detected but running in headless mode - cannot solve automatically")
+                        return False
+            except:
+                pass
+        return True  # No CAPTCHA detected
     
     async def harvest_groq(self) -> Optional[str]:
         """Harvest API key from Groq"""
