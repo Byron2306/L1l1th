@@ -916,6 +916,19 @@ MASTER_TEMPLATE = """
                 <div class="output-display" id="advanced-output" style="height: 200px;"></div>
             </div>
         </div>
+
+        <!-- RIGHT PANEL: Monitoring -->
+        <div class="right-panel">
+            <div class="panel-title">📊 SYSTEM MONITOR</div>
+
+            <!-- System Status -->
+            <div class="status-box">
+                <h6 style="color: var(--primary-red); margin-bottom: 10px;">System Status</h6>
+                <div class="status-item">
+                    <span class="status-label">Backend:</span>
+                    <span class="status-value" id="status-backend">●</span>
+                </div>
+                <div class="status-item">
                     <span class="status-label">OpenClaw:</span>
                     <span class="status-value" id="status-openclaw">●</span>
                 </div>
