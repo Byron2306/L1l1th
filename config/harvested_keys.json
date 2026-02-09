@@ -1,0 +1,10 @@
+[
+  {
+    "provider": "groq",
+    "key": "gsk_DEMO_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "email": "lilith_demo@guerrillamail.com",
+    "harvested_at": "2026-02-09T11:47:57.092767",
+    "status": "active",
+    "auto_harvested": true
+  }
+]
