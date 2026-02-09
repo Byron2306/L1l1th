@@ -665,14 +665,37 @@ MASTER_TEMPLATE = """
                 <div class="input-group">
                     <label>Select Provider</label>
                     <select id="harvest-provider">
-                        <option value="groq">Groq (Fast, Free, 70B models)</option>
+                        <option value="groq">Groq (Fast, Free, 70B Llama models)</option>
                         <option value="huggingface">HuggingFace (Free, Unlimited)</option>
                         <option value="together">Together.ai ($25 free credits)</option>
+                        <option value="mistral">Mistral AI (Free tier available)</option>
+                        <option value="venice">Venice.ai (Uncensored models)</option>
+                        <option value="deepinfra">DeepInfra (Free credits)</option>
+                        <option value="openrouter">OpenRouter (Multi-model access)</option>
+                        <option value="cerebras">Cerebras (Ultra-fast inference)</option>
+                        <option value="sambanova">SambaNova (Enterprise-grade)</option>
+                        <option value="fireworks">Fireworks.ai (Fast inference)</option>
                     </select>
                 </div>
                 <button class="launch-attack-btn" onclick="startHarvesting()" id="harvest-btn">
                     🚀 START AUTONOMOUS HARVESTING
                 </button>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="attack-mode-btn" onclick="applyHarvestedKeys()" id="apply-keys-btn">
+                        ⚡ APPLY KEYS TO SESSION
+                    </button>
+                    <button class="attack-mode-btn" onclick="restartBackend()" id="restart-btn">
+                        🔄 RESTART BACKEND
+                    </button>
+                </div>
+                
+                <div class="status-box" style="margin-top: 15px;">
+                    <h6 style="color: var(--text-green);">Harvested Keys Database</h6>
+                    <div id="harvested-keys-list" style="font-size: 11px; max-height: 100px; overflow-y: auto;">
+                        Loading...
+                    </div>
+                </div>
                 <div class="panel-title" style="font-size: 14px; margin-top: 20px;">Live Harvesting Log</div>
                 <div class="output-display" id="harvest-log" style="height: 300px;"></div>
             </div>
