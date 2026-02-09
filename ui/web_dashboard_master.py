@@ -826,6 +826,36 @@ MASTER_TEMPLATE = """
                 <h3 style="color: #00ff99; margin: 0 0 10px 0; font-size: 14px;">🔬 0-Day Research</h3>
                 <button onclick="getZeroDayMethodology()" style="width: 100%; padding: 8px; background: #1a4d2a; border: none; color: #fff; cursor: pointer;">Research Framework</button>
             </div>
+            
+            <!-- Offensive Tools -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ff3333; margin: 0 0 10px 0; font-size: 14px;">🔧 Offensive Tools</h3>
+                <input type="text" id="offensive-target" placeholder="Target IP/Domain" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px;">
+                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button onclick="runNmapScan()" style="flex: 1; padding: 6px; background: #3d1a1a; border: none; color: #fff; cursor: pointer; font-size: 10px;">Nmap</button>
+                    <button onclick="runSQLMapTest()" style="flex: 1; padding: 6px; background: #1a3d1a; border: none; color: #fff; cursor: pointer; font-size: 10px;">SQLMap</button>
+                    <button onclick="runDirBrute()" style="flex: 1; padding: 6px; background: #1a1a3d; border: none; color: #fff; cursor: pointer; font-size: 10px;">DirBrute</button>
+                </div>
+            </div>
+            
+            <!-- ML Analysis -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #33ffff; margin: 0 0 10px 0; font-size: 14px;">🧠 ML Analysis</h3>
+                <button onclick="runMLAnalysis()" style="width: 100%; padding: 8px; background: #1a3d3d; border: none; color: #fff; cursor: pointer; margin-bottom: 5px;">Analyze Events</button>
+                <button onclick="runTimeSeriesAnalysis()" style="width: 100%; padding: 8px; background: #3d1a3d; border: none; color: #fff; cursor: pointer;">Time Series</button>
+            </div>
+            
+            <!-- CAPTCHA Bypass -->
+            <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
+                <h3 style="color: #ffcc00; margin: 0 0 10px 0; font-size: 14px;">🔓 CAPTCHA Bypass</h3>
+                <select id="captcha-type" style="width: 100%; padding: 6px; background: #0d0d1a; border: 1px solid #333; color: #fff; margin-bottom: 5px; font-size: 11px;">
+                    <option value="recaptcha_v2">reCAPTCHA v2</option>
+                    <option value="recaptcha_v3">reCAPTCHA v3</option>
+                    <option value="hcaptcha">hCaptcha</option>
+                    <option value="cloudflare">Cloudflare</option>
+                </select>
+                <button onclick="getCaptchaBypass()" style="width: 100%; padding: 8px; background: #3d3d1a; border: none; color: #fff; cursor: pointer;">Get Bypass Info</button>
+            </div>
         </div>
         
         <!-- Results Panel -->
