@@ -2095,18 +2095,44 @@ def start_vnc():
 
 @app.route('/_dash/harvest/start', methods=['POST'])
 def start_harvest():
-    """Start autonomous API key harvesting"""
+    """Start autonomous API key harvesting with VNC browser"""
     try:
+        import subprocess
+        
+        # Ensure VNC is running for visible browser
+        subprocess.Popen(['bash', '-c', '''
+            pkill -f "Xvfb :99" 2>/dev/null || true
+            pkill -f x11vnc 2>/dev/null || true
+            pkill -f "websockify.*6080" 2>/dev/null || true
+            sleep 1
+            export DISPLAY=:99
+            Xvfb :99 -screen 0 1920x1080x24 &
+            sleep 2
+            x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -bg 2>/dev/null
+            sleep 1
+            nohup websockify --web=/usr/share/novnc 6080 localhost:5900 > /tmp/novnc.log 2>&1 &
+        '''], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # Wait for VNC to start
+        import time
+        time.sleep(3)
+        
         sys.path.insert(0, '/app/tools')
         from harvest_integration import start_harvesting_thread
         
         data = request.json or {}
         provider = data.get('provider', 'groq')
+        headless = data.get('headless', False)  # Default to visible browser
         
-        success = start_harvesting_thread(provider)
+        success = start_harvesting_thread(provider, headless=headless)
         
         if success:
-            return jsonify({'success': True, 'message': f'Harvesting started for {provider}'})
+            return jsonify({
+                'success': True, 
+                'message': f'Harvesting started for {provider}',
+                'vnc_enabled': not headless,
+                'vnc_url': '/_vnc/vnc.html'
+            })
         else:
             return jsonify({'success': False, 'error': 'Harvesting already in progress'})
     except Exception as e:
