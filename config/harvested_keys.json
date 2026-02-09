@@ -19,5 +19,13 @@
     "harvested_at": "2026-02-09 19:57:09",
     "method": "playwright_stealth",
     "is_demo": false
+  },
+  {
+    "provider": "huggingface",
+    "key": "hf_1T8n7RySXiHSpr8RWV0gDaS5s9O2jtka7H",
+    "email": "lilithyj9t784t@virgilian.com",
+    "harvested_at": "2026-02-09 19:58:55",
+    "method": "playwright_stealth",
+    "is_demo": false
   }
 ]
