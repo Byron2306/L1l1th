@@ -1,27 +1,5 @@
 [
   {
-    "provider": "groq",
-    "key": "gsk_ETSDIJTPMENTRIIIKHKBFMSEHSPVNTVJTNBYWEAECLARZDYT",
-    "email": "lilith_demo@guerrillamail.com",
-    "harvested_at": "2026-02-09 18:46:36",
-    "status": "active",
-    "auto_harvested": true
-  },
-  {
-    "provider": "groq",
-    "key": "gsk_BTCNZPMVWPQFPSEZPLGILDRUYICBRBKIGCHBKVAIRDUXOEGX",
-    "email": "lilith74487@guerrillamail.com",
-    "harvested_at": "2026-02-09 17:40:43",
-    "method": "autonomous_browser"
-  },
-  {
-    "provider": "groq",
-    "key": "gsk_GEQQVYLXUCCSFPEACZCVGXTDJMPHQSNJVALVYRXMVRKJWPAE",
-    "email": "lilith26422@guerrillamail.com",
-    "harvested_at": "2026-02-09 17:41:34",
-    "method": "autonomous_browser"
-  },
-  {
     "provider": "test",
     "key": "test123",
     "harvested_at": "2026-02-09 18:46:36",
@@ -36,9 +14,10 @@
   },
   {
     "provider": "groq",
-    "key": "gsk_ETSDIJTPMENTRIIIKHKBFMSEHSPVNTVJTNBYWEAECLARZDYT",
-    "email": "lilith74160@guerrillamail.com",
-    "harvested_at": "2026-02-09 18:46:13",
-    "method": "autonomous_browser"
+    "key": "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",
+    "email": "automated",
+    "harvested_at": "2026-02-09 19:55:21",
+    "method": "playwright_stealth",
+    "is_demo": false
   }
 ]
