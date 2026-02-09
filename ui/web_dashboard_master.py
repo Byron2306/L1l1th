@@ -2231,6 +2231,62 @@ def cap_zeroday():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== NEW ENHANCED MODULE PROXIES ====================
+
+@app.route('/_dash/offensive/nmap/quick', methods=['POST'])
+def proxy_nmap_quick():
+    """Proxy nmap quick scan"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/offensive/nmap/quick", json=request.json, timeout=120)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/offensive/sqlmap/test', methods=['POST'])
+def proxy_sqlmap():
+    """Proxy SQLMap test"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/offensive/sqlmap/test", json=request.json, timeout=120)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/offensive/dirs/brute', methods=['POST'])
+def proxy_dir_brute():
+    """Proxy directory brute force"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/offensive/dirs/brute", json=request.json, timeout=120)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ml/analyze-events', methods=['POST'])
+def proxy_ml_events():
+    """Proxy ML events analysis"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/ml/analyze-events", json=request.json, timeout=60)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ml/time-series', methods=['POST'])
+def proxy_ml_timeseries():
+    """Proxy ML time series analysis"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/ml/time-series", json=request.json, timeout=60)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/captcha/solve', methods=['POST'])
+def proxy_captcha():
+    """Proxy CAPTCHA solve request"""
+    try:
+        response = requests.post(f"{BACKEND_URL}/captcha/solve", json=request.json, timeout=60)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
