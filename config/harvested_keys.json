@@ -21,19 +21,19 @@
     "is_demo": false
   },
   {
-    "provider": "openrouter",
-    "key": "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",
-    "email": "automated",
-    "harvested_at": "2026-02-09 20:56:27",
-    "method": "playwright_stealth",
-    "is_real": false,
-    "status": "demo/unverified"
-  },
-  {
     "provider": "groq",
     "key": "gsk_M81xporf8niNH26x8ep3ewl58Hc1YMoVS02qewqLRltmI2fJ",
     "email": "manual_entry",
     "harvested_at": "2026-02-09 22:03:33",
+    "method": "manual",
+    "is_real": true,
+    "status": "verified"
+  },
+  {
+    "provider": "openrouter",
+    "key": "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",
+    "email": "manual_entry",
+    "harvested_at": "2026-02-09 22:14:08",
     "method": "manual",
     "is_real": true,
     "status": "verified"
