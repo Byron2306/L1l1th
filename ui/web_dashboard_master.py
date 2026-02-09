@@ -2359,6 +2359,54 @@ def get_harvested_keys():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e), 'keys': []})
 
+@app.route('/_dash/harvest/save-key', methods=['POST'])
+def save_manual_key():
+    """Save a manually entered API key"""
+    try:
+        import json
+        from datetime import datetime
+        
+        data = request.json or {}
+        provider = data.get('provider', 'unknown')
+        api_key = data.get('key', '')
+        is_real = data.get('is_real', True)
+        method = data.get('method', 'manual')
+        
+        if not api_key:
+            return jsonify({'success': False, 'error': 'No API key provided'})
+        
+        keys_path = '/app/config/harvested_keys.json'
+        os.makedirs('/app/config', exist_ok=True)
+        
+        # Load existing keys
+        harvested_keys = []
+        if os.path.exists(keys_path):
+            with open(keys_path, 'r') as f:
+                harvested_keys = json.load(f)
+        
+        # Remove existing key for this provider
+        harvested_keys = [k for k in harvested_keys if k.get('provider') != provider]
+        
+        # Add new key
+        harvested_keys.append({
+            'provider': provider,
+            'key': api_key,
+            'email': 'manual_entry',
+            'harvested_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'method': method,
+            'is_real': is_real,
+            'status': 'verified' if is_real else 'demo/unverified'
+        })
+        
+        # Save
+        with open(keys_path, 'w') as f:
+            json.dump(harvested_keys, f, indent=2)
+        
+        return jsonify({'success': True, 'message': f'{provider} key saved'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/harvest/apply', methods=['POST'])
 def apply_harvested_keys():
     """Apply harvested keys to the running backend session"""
