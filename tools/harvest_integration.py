@@ -47,8 +47,13 @@ def add_harvest_log(message: str):
         harvesting_status['logs'] = harvesting_status['logs'][-50:]
 
 
-def start_harvesting_thread(provider: str = 'groq') -> bool:
-    """Start harvesting in background thread"""
+def start_harvesting_thread(provider: str = 'groq', headless: bool = False) -> bool:
+    """Start harvesting in background thread
+    
+    Args:
+        provider: The AI provider to harvest from
+        headless: If False (default), opens visible browser for manual CAPTCHA solving
+    """
     
     if PLAYWRIGHT_HARVESTER:
         # Use Playwright harvester
@@ -57,7 +62,7 @@ def start_harvesting_thread(provider: str = 'groq') -> bool:
         
         thread = threading.Thread(
             target=start_harvest_async,
-            args=(provider,),
+            args=(provider, headless),
             daemon=True
         )
         thread.start()
