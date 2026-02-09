@@ -635,8 +635,14 @@ def save_harvested_key(provider: str, api_key: str, email: str):
         return False
 
 
-async def run_harvest(provider: str, headless: bool = True, manual_captcha: bool = False):
-    """Run harvesting for specified provider"""
+async def run_harvest(provider: str, headless: bool = False, manual_captcha: bool = True):
+    """Run harvesting for specified provider
+    
+    Args:
+        provider: The AI provider to harvest from  
+        headless: If False (default), shows browser in VNC for manual CAPTCHA solving
+        manual_captcha: If True, pauses for manual CAPTCHA solving
+    """
     global harvest_status
     
     harvest_status['active'] = True
@@ -647,11 +653,21 @@ async def run_harvest(provider: str, headless: bool = True, manual_captcha: bool
     harvest_status['api_key'] = None
     harvest_status['error'] = None
     
-    add_log(f"🚀 Starting automated API key harvesting...")
+    mode = "Headless" if headless else "VISIBLE BROWSER (VNC)"
+    add_log(f"🚀 Starting API key harvesting...")
     add_log(f"Provider: {provider.upper()}")
-    add_log(f"Mode: Stealth Automation")
+    add_log(f"Mode: {mode}")
     
-    harvester = StealthPlaywrightHarvester()
+    if not headless:
+        add_log("")
+        add_log("═" * 50)
+        add_log("📺 BROWSER IS VISIBLE IN VNC!")
+        add_log("🔗 Open the VNC tab in dashboard to see & interact")
+        add_log("🔐 Solve any CAPTCHAs manually when prompted")
+        add_log("═" * 50)
+        add_log("")
+    
+    harvester = StealthPlaywrightHarvester(headless=headless)
     api_key = None
     
     try:
