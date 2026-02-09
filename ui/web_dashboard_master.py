@@ -819,6 +819,18 @@ MASTER_TEMPLATE = """
                             ⏹️ STOP
                         </button>
                     </div>
+                    
+                    <!-- Generation Mode Selection -->
+                    <div style="margin-bottom: 10px;">
+                        <label style="color: #888; font-size: 11px;">Generation Mode:</label>
+                        <select id="rotation-mode" style="width: 100%; padding: 8px; background: #0d0d1a; border: 1px solid #333; color: #fff; font-size: 11px;">
+                            <option value="hybrid" selected>🔀 Hybrid (Recommended) - Mix all methods</option>
+                            <option value="leaked">🔓 Leaked Patterns - Use known breach formats</option>
+                            <option value="stuffing">📝 Credential Stuffing - Dictionary + mutations</option>
+                            <option value="random">🎲 Random - Pure random generation</option>
+                        </select>
+                    </div>
+                    
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <button onclick="pauseKeyRotation()" style="flex: 1; padding: 8px; background: #4d4d1a; border: none; color: #fff; cursor: pointer; font-size: 11px;">
                             ⏸️ PAUSE
@@ -838,6 +850,10 @@ MASTER_TEMPLATE = """
                             <span id="rotation-running" style="color: #ff6600;">Stopped</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888;">Mode:</span>
+                            <span id="rotation-mode-display" style="color: #6666ff;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                             <span style="color: #888;">Keys Generated:</span>
                             <span id="rotation-generated" style="color: #00ff00;">0</span>
                         </div>
@@ -845,9 +861,22 @@ MASTER_TEMPLATE = """
                             <span style="color: #888;">Keys Tested:</span>
                             <span id="rotation-tested" style="color: #00ff00;">0</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="color: #888;">Rate Limited:</span>
+                            <span id="rotation-rate-limited" style="color: #ffaa00;">0</span>
+                        </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #888;">Valid Keys Found:</span>
                             <span id="rotation-valid" style="color: #00ff00; font-weight: bold;">0</span>
+                        </div>
+                        <!-- Generation breakdown -->
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #333;">
+                            <div style="color: #888; font-size: 10px; margin-bottom: 4px;">Generation Breakdown:</div>
+                            <div style="display: flex; gap: 10px; font-size: 10px;">
+                                <span>🔓 Leaked: <span id="gen-leaked" style="color: #ff6600;">0</span></span>
+                                <span>📝 Stuffed: <span id="gen-stuffed" style="color: #6666ff;">0</span></span>
+                                <span>🎲 Random: <span id="gen-random" style="color: #00ff00;">0</span></span>
+                            </div>
                         </div>
                     </div>
                     
