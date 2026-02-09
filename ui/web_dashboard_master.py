@@ -1516,6 +1516,97 @@ def harvest_status():
     except Exception as e:
         return jsonify({'active': False, 'error': str(e), 'logs': [], 'progress': 0})
 
+@app.route('/_dash/harvest/keys', methods=['GET'])
+def get_harvested_keys():
+    """Get list of harvested API keys"""
+    try:
+        import json
+        keys_path = '/app/config/harvested_keys.json'
+        
+        if os.path.exists(keys_path):
+            with open(keys_path, 'r') as f:
+                keys = json.load(f)
+            return jsonify({'success': True, 'keys': keys})
+        else:
+            return jsonify({'success': True, 'keys': []})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'keys': []})
+
+@app.route('/_dash/harvest/apply', methods=['POST'])
+def apply_harvested_keys():
+    """Apply harvested keys to the running backend session"""
+    try:
+        import json
+        keys_path = '/app/config/harvested_keys.json'
+        
+        if not os.path.exists(keys_path):
+            return jsonify({'success': False, 'error': 'No harvested keys found'})
+        
+        with open(keys_path, 'r') as f:
+            keys = json.load(f)
+        
+        if not keys:
+            return jsonify({'success': False, 'error': 'No keys in database'})
+        
+        # Apply keys to the backend
+        applied_count = 0
+        for key_data in keys:
+            try:
+                response = requests.post(
+                    f"{BACKEND_URL}/api/keys/add",
+                    json={
+                        'provider': key_data['provider'],
+                        'api_key': key_data['key']
+                    },
+                    timeout=10
+                )
+                if response.status_code == 200:
+                    applied_count += 1
+            except:
+                pass
+        
+        # Get updated status
+        try:
+            status_resp = requests.get(f"{BACKEND_URL}/status", timeout=5)
+            status_data = status_resp.json()
+            active_count = status_data.get('ai_providers', {}).get('active_count', 0)
+            total_count = status_data.get('ai_providers', {}).get('total_count', 0)
+        except:
+            active_count = applied_count
+            total_count = len(keys)
+        
+        return jsonify({
+            'success': True,
+            'applied': applied_count,
+            'total': len(keys),
+            'active_count': active_count,
+            'total_count': total_count
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/system/restart', methods=['POST'])
+def restart_backend():
+    """Restart the backend service"""
+    try:
+        import subprocess
+        
+        # Restart the backend via pkill and restart
+        subprocess.run(['pkill', '-f', 'lilith_full_backend'], capture_output=True)
+        
+        # Start it again
+        subprocess.Popen(
+            ['/root/.venv/bin/python3', '/app/tools/lilith_full_backend.py'],
+            env={**os.environ, 'BACKEND_HOST': '0.0.0.0', 'BACKEND_PORT': '5000'},
+            cwd='/app',
+            stdout=open('/app/backend_out.log', 'w'),
+            stderr=open('/app/backend_err.log', 'w')
+        )
+        
+        return jsonify({'success': True, 'message': 'Backend restart initiated'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
