@@ -2276,6 +2276,50 @@ MASTER_TEMPLATE = """
                 showAdvancedResult({error: e.message});
             }
         }
+        
+        // ==================== HYDRA BRUTE FORCE FUNCTION ====================
+        
+        async function runHydraBrute() {
+            const target = document.getElementById('hydra-target').value;
+            const service = document.getElementById('hydra-service').value;
+            const username = document.getElementById('hydra-username').value;
+            
+            if (!target) {
+                alert('Enter target IP/Domain');
+                return;
+            }
+            
+            showAdvancedResult({
+                status: 'Starting Hydra brute force attack...',
+                target: target,
+                service: service,
+                username: username || '(using wordlist)'
+            });
+            addLog('[HYDRA] Brute forcing ' + service + ' on ' + target);
+            
+            try {
+                const response = await fetch('/_dash/offensive/password/brute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        target: target,
+                        service: service,
+                        username: username || null,
+                        threads: 4
+                    })
+                });
+                const data = await response.json();
+                showAdvancedResult(data);
+                
+                if (data.credentials_found && data.credentials_found.length > 0) {
+                    addLog('[HYDRA] SUCCESS! Found ' + data.credentials_found.length + ' credential(s)');
+                } else {
+                    addLog('[HYDRA] No credentials found');
+                }
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
 
         async function runMLAnalysis() {
             showAdvancedResult({status: 'Running ML anomaly detection...'});
