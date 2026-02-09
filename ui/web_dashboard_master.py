@@ -748,22 +748,34 @@ MASTER_TEMPLATE = """
             <p style="font-size: 12px; color: #999; margin: 5px 0;">
                 1. Start harvesting from the <strong>Harvester</strong> tab<br>
                 2. When prompted for manual action (login, CAPTCHA), come here<br>
-                3. Interact with the browser below to complete the action<br>
-                4. The harvester will automatically continue once complete
+                3. Click <strong>Open VNC Viewer</strong> to see the browser<br>
+                4. Interact with the browser to complete login/CAPTCHA<br>
+                5. The harvester will automatically continue once complete
             </p>
         </div>
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button class="attack-mode-btn" onclick="refreshVNC()" style="flex: 1;">🔄 Refresh VNC</button>
-            <button class="attack-mode-btn" onclick="openVNCFullscreen()" style="flex: 1;">🔲 Fullscreen</button>
+            <button class="launch-attack-btn" onclick="openVNCWindow()" style="flex: 2;">🖥️ OPEN VNC VIEWER (New Window)</button>
+            <button class="attack-mode-btn" onclick="checkVNCStatus()" style="flex: 1;">🔄 Check Status</button>
         </div>
-        <div style="background: #0a0a0a; border: 2px solid var(--primary-red); border-radius: 8px; overflow: hidden;">
-            <iframe id="vnc-frame" src="/_vnc/" style="width: 100%; height: 600px; border: none;"></iframe>
-        </div>
-        <div class="status-box" style="margin-top: 15px;">
+        <div class="status-box">
             <div class="status-item">
-                <span class="status-label">VNC Status:</span>
+                <span class="status-label">VNC Server:</span>
                 <span class="status-value" id="vnc-status">Checking...</span>
             </div>
+            <div class="status-item">
+                <span class="status-label">Display:</span>
+                <span class="status-value">:99 (1920x1080)</span>
+            </div>
+        </div>
+        <div class="status-box" style="margin-top: 15px;">
+            <h6 style="color: var(--text-yellow);">⚠️ Note</h6>
+            <p style="font-size: 12px; color: #999; margin: 5px 0;">
+                The VNC viewer opens in a new window because websocket connections require direct access.<br>
+                If the window doesn't open, check your browser's popup blocker.
+            </p>
+        </div>
+        <div class="output-display" style="margin-top: 15px; height: 200px;" id="vnc-log">
+            VNC viewer ready. Start a harvest and click "Open VNC Viewer" to see the browser.
         </div>
     </div>
 
