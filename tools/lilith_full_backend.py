@@ -290,6 +290,8 @@ def coding_agent_status():
     npm_ok, npm_out = _check('npm --version')
     groq_key = env.get('GROQ_API_KEY') or None
     return jsonify({
+        'success': True,
+        'available': npx_ok or npm_ok,
         'pi_installed': pi_ok,
         'pi_output': pi_out,
         'npx_available': npx_ok,
