@@ -2152,6 +2152,54 @@ def vnc_status():
     except:
         return jsonify({'running': False})
 
+@app.route('/_dash/browser/screenshot', methods=['GET'])
+def browser_screenshot():
+    """Take a screenshot of the current browser display"""
+    try:
+        import subprocess
+        import base64
+        
+        # Check if display is available
+        result = subprocess.run(['pgrep', '-f', 'Xvfb :99'], capture_output=True)
+        if result.returncode != 0:
+            return jsonify({'success': False, 'error': 'No active display'})
+        
+        # Take screenshot using xwd or scrot
+        screenshot_path = '/tmp/browser_screenshot.png'
+        
+        # Try using import from ImageMagick
+        env = os.environ.copy()
+        env['DISPLAY'] = ':99'
+        
+        result = subprocess.run(
+            ['import', '-window', 'root', screenshot_path],
+            env=env,
+            capture_output=True,
+            timeout=5
+        )
+        
+        if result.returncode != 0:
+            # Try alternative method with scrot
+            result = subprocess.run(
+                ['scrot', screenshot_path],
+                env=env,
+                capture_output=True,
+                timeout=5
+            )
+        
+        if os.path.exists(screenshot_path):
+            with open(screenshot_path, 'rb') as f:
+                image_data = base64.b64encode(f.read()).decode('utf-8')
+            os.remove(screenshot_path)
+            return jsonify({'success': True, 'image': image_data})
+        else:
+            return jsonify({'success': False, 'error': 'Screenshot failed'})
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'Screenshot timed out'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/vnc/start', methods=['POST'])
 def start_vnc():
     """Start VNC server"""
