@@ -68,28 +68,35 @@ def generate_random_password() -> str:
 class StealthPlaywrightHarvester:
     """Stealth Playwright-based API key harvester with full automation"""
     
-    def __init__(self):
+    def __init__(self, headless: bool = True):
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
         self.page: Optional[Page] = None
         self.playwright = None
         self.email_service: Optional[TempEmailService] = None
+        self.headless = headless
         
     async def init_browser(self):
         """Initialize browser with stealth settings"""
         if not PLAYWRIGHT_AVAILABLE:
             raise Exception("Playwright not installed. Run: playwright install chromium")
         
-        add_log("🌐 Initializing stealth browser...")
+        mode = "headless" if self.headless else "VISIBLE (VNC)"
+        add_log(f"🌐 Initializing browser in {mode} mode...")
         
         # Set browser path
         os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
+        
+        # For headed mode, use virtual display
+        if not self.headless:
+            os.environ['DISPLAY'] = ':99'
+            add_log("📺 Using virtual display :99 - View at noVNC!")
         
         self.playwright = await async_playwright().start()
         
         # Launch with stealth arguments
         self.browser = await self.playwright.chromium.launch(
-            headless=True,
+            headless=self.headless,
             args=[
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
