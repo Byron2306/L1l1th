@@ -1,42 +1,64 @@
 /**
  * LuciferOS Dashboard Launcher
- * Starts the Python Flask dashboard on port 3000
+ * Starts the Python Flask backend and dashboard
  */
 const { spawn } = require('child_process');
 const path = require('path');
 
-// Start the Flask dashboard
-const dashboardPath = path.join(__dirname, '..', 'ui', 'web_dashboard_master.py');
+const appDir = path.join(__dirname, '..');
+const backendPath = path.join(appDir, 'tools', 'lilith_full_backend.py');
+const dashboardPath = path.join(appDir, 'ui', 'web_dashboard_master.py');
 
-console.log('Starting LuciferOS Dashboard...');
-console.log('Dashboard path:', dashboardPath);
+console.log('Starting LuciferOS System...');
 
-// Start Flask dashboard
-const dashboard = spawn('python3', [dashboardPath], {
+// Start Flask backend first
+console.log('1. Starting LILITH Backend on port 5000...');
+const backend = spawn('python3', [backendPath], {
     env: {
         ...process.env,
-        WEB_DASHBOARD_PORT: '3000',
-        WEB_DASHBOARD_HOST: '0.0.0.0'
+        BACKEND_HOST: '0.0.0.0',
+        BACKEND_PORT: '5000'
     },
-    cwd: path.join(__dirname, '..'),
+    cwd: appDir,
     stdio: 'inherit'
 });
 
-dashboard.on('error', (err) => {
-    console.error('Failed to start dashboard:', err);
-    process.exit(1);
+backend.on('error', (err) => {
+    console.error('Failed to start backend:', err);
 });
 
-dashboard.on('exit', (code) => {
-    console.log('Dashboard exited with code:', code);
-    process.exit(code);
-});
+// Wait a bit then start dashboard
+setTimeout(() => {
+    console.log('2. Starting Web Dashboard on port 3000...');
+    const dashboard = spawn('python3', [dashboardPath], {
+        env: {
+            ...process.env,
+            WEB_DASHBOARD_PORT: '3000',
+            WEB_DASHBOARD_HOST: '0.0.0.0'
+        },
+        cwd: appDir,
+        stdio: 'inherit'
+    });
 
-// Keep process running
-process.on('SIGTERM', () => {
-    dashboard.kill('SIGTERM');
-});
+    dashboard.on('error', (err) => {
+        console.error('Failed to start dashboard:', err);
+        process.exit(1);
+    });
 
-process.on('SIGINT', () => {
-    dashboard.kill('SIGINT');
-});
+    dashboard.on('exit', (code) => {
+        console.log('Dashboard exited with code:', code);
+        backend.kill('SIGTERM');
+        process.exit(code);
+    });
+
+    // Keep process running
+    process.on('SIGTERM', () => {
+        dashboard.kill('SIGTERM');
+        backend.kill('SIGTERM');
+    });
+
+    process.on('SIGINT', () => {
+        dashboard.kill('SIGINT');
+        backend.kill('SIGINT');
+    });
+}, 3000);
