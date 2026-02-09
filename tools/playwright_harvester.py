@@ -82,6 +82,9 @@ class StealthPlaywrightHarvester:
         
         add_log("🌐 Initializing stealth browser...")
         
+        # Set browser path
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '/pw-browsers'
+        
         self.playwright = await async_playwright().start()
         
         # Launch with stealth arguments
