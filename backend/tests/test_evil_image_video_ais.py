@@ -9,7 +9,7 @@ import requests
 import os
 import sys
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferos.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferos-1.preview.emergentagent.com')
 
 # Add tools path for direct testing
 sys.path.insert(0, '/app/tools')
