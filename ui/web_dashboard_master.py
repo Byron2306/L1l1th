@@ -3081,6 +3081,99 @@ def ai_clear_history():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/_dash/ai/set-mode', methods=['POST'])
+def ai_set_mode():
+    """Set Dark LLM mode"""
+    data = request.json or {}
+    mode = data.get('mode', 'lilith')
+    
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        result = engine.set_dark_llm_mode(mode)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ai/chat-uncensored', methods=['POST'])
+def ai_chat_uncensored():
+    """Send message with maximum jailbreak"""
+    data = request.json or {}
+    message = data.get('message', '')
+    
+    if not message:
+        return jsonify({'success': False, 'response': 'No message provided'})
+    
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        result = engine.chat_uncensored(message)
+        
+        return jsonify({
+            'success': result.get('success', False),
+            'response': result.get('response', 'No response'),
+            'provider': result.get('provider', 'unknown'),
+            'model': result.get('model', 'LILITH'),
+            'jailbreak_used': result.get('jailbreak_used', 'maximum')
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'response': f'Error: {str(e)}'})
+
+@app.route('/_dash/ai/generate-malware', methods=['POST'])
+def ai_generate_malware():
+    """Generate malware template"""
+    data = request.json or {}
+    malware_type = data.get('type', 'rat')
+    target_os = data.get('os', 'windows')
+    
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        result = engine.generate_malware_template(malware_type, target_os)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ai/generate-exploit', methods=['POST'])
+def ai_generate_exploit():
+    """Generate exploit code"""
+    data = request.json or {}
+    vulnerability = data.get('vulnerability', 'buffer overflow')
+    target = data.get('target')
+    
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        result = engine.generate_exploit(vulnerability, target)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ai/generate-phishing', methods=['POST'])
+def ai_generate_phishing():
+    """Generate phishing content"""
+    data = request.json or {}
+    company = data.get('company', 'Generic Corp')
+    target_name = data.get('name')
+    
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        result = engine.generate_phishing(company, target_name)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/recon/start', methods=['POST'])
 def recon_start():
     data = request.json or {}
