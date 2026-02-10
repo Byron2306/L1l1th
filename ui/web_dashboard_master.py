@@ -520,7 +520,7 @@ MASTER_TEMPLATE = """
                 
                 <!-- Dark LLM Mode Selector -->
                 <div class="status-box" style="margin-bottom: 15px; background: #0d0d1a; border-color: #ff0066;">
-                    <h6 style="color: #ff0066; margin-bottom: 10px;">🔮 DARK LLM MODE (55 AIs)</h6>
+                    <h6 style="color: #ff0066; margin-bottom: 10px;">🔮 DARK LLM MODE (88 AIs)</h6>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <select id="dark-llm-mode" style="flex: 1; min-width: 150px; padding: 8px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; border-radius: 4px;">
                             <optgroup label="🖤 Original Dark AIs">
