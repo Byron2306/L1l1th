@@ -3134,7 +3134,7 @@ def hackingbuddy_attack():
 
 
 @app.route('/agent/garak/scan', methods=['POST'])
-def garak_scan():
+def garak_real_scan():
     """
     Run REAL Garak LLM vulnerability scanner.
     Tests for jailbreaks, prompt injection, data leakage, harmful content.
