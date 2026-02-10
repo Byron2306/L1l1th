@@ -388,6 +388,19 @@ curl http://localhost:5000/history/statistics
 | `/history/statistics` | GET | Get statistics |
 | `/history/successful` | GET | Get successful attacks |
 
+### Advanced Attack Modules
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/advanced/persistence` | POST | Get all persistence techniques |
+| `/advanced/persistence/<technique>` | POST | Get specific persistence (cron, ssh, bashrc, systemd, init, ld_preload, registry, scheduled_task, wmi) |
+| `/advanced/evasion` | GET | Get all evasion techniques |
+| `/advanced/evasion/<technique>` | GET | Get specific evasion (linux_logs, amsi_bypass, defender_evasion, etw_bypass, obfuscation) |
+| `/advanced/lateral` | POST | Get all lateral movement techniques |
+| `/advanced/lateral/<technique>` | POST | Get specific lateral (ssh, smb, winrm, rdp, wmi, pth, ptt, pivot) |
+| `/advanced/exfil` | POST | Get all exfiltration techniques |
+| `/advanced/exfil/<technique>` | POST | Get specific exfil (http, https, dns, icmp, smb, ftp, cloud, stego, archive, staging) |
+
 ---
 
 ## ⚠️ Threat Level Analysis
