@@ -143,7 +143,7 @@ Type /help for all commands~
             return
 
         help_text = """
-😈 *LILITH AUTONOMOUS v7* 💋
+😈 *LILITH AUTONOMOUS v8* 💋
 ═══════════════════════════════
 
 *🤖 AUTONOMOUS AGENTS:*
@@ -154,24 +154,30 @@ Type /help for all commands~
 • /crew <target> <objective> - Multi-agent attack
 • /attack <target> - Full autonomous attack
 
-*AI Chat (55+ Dark AIs):*
+*AI Chat (88+ Dark AIs):*
 • Just type - I respond
 • /mode <name> - Switch AI mode
-• /modes - List all 55+ modes
+• /modes - List all modes
 • /clear - Clear history
 
-*Special Modes:*
-`kawaiigpt` `hackingbuddy` `garak`
-`autogpt` `crewai` `autopwn`
+*🎨 Evil Image AIs:*
+`darkflux` `nightmareai` `demoncanvas`
+`lewdgpt` `goreartist` `cosmichorror`
 
 *FREE Voice:* 🎤
 • /voice - Toggle voice
 • /voices - List voices
 • /setvoice <name> - Change voice
 
-*FREE Images:*
+*FREE Images:* 🖼️
 • /image <prompt> - Generate
+• /darkart <type> <prompt> - Dark art
+• /nightmare <prompt> - Nightmare gen
 • /styles - List styles
+
+*FREE Video:* 🎬
+• /video <prompt> - Generate video
+• /videostyles - Video styles
 
 *Hacking:*
 • /exec <cmd> - Shell
