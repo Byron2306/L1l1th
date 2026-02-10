@@ -508,6 +508,8 @@ MASTER_TEMPLATE = """
                 <button class="tab" onclick="switchTab('kawaii')">✨ Kawaii</button>
                 <button class="tab" onclick="switchTab('autogpt')">🧠 AutoGPT</button>
                 <button class="tab" onclick="switchTab('crew')">👥 CrewAI</button>
+                <button class="tab" onclick="switchTab('shrek')">🐸 Shrek</button>
+                <button class="tab" onclick="switchTab('history')">📜 History</button>
                 <button class="tab" onclick="switchTab('advanced')">⚔️ Advanced</button>
                 <button class="tab" onclick="switchTab('coding')">👨‍💻 Coding</button>
                 <button class="tab" onclick="switchTab('memory')">💾 Memory</button>
