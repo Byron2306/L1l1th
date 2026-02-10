@@ -1273,11 +1273,105 @@ MASTER_TEMPLATE = """
                 const responseText = data.response || 'No response';
                 addMessage('lilith', responseText);
                 
+                // Update status display
+                if (data.provider) {
+                    document.getElementById('ai-provider').textContent = data.provider;
+                }
+                if (data.model) {
+                    document.getElementById('ai-mode').textContent = data.model;
+                }
+                
                 if (!data.success) {
                     addLog('[CHAT] AI providers unavailable - add API keys');
                 }
             } catch (error) {
                 addMessage('system', `Error: ${error.message}`);
+            }
+        }
+        
+        // Dark LLM Mode Functions
+        async function setDarkLLMMode() {
+            const mode = document.getElementById('dark-llm-mode').value;
+            try {
+                const response = await fetch('/_dash/ai/set-mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('dark-llm-info').textContent = 
+                        `Current: ${data.provider?.name || mode.toUpperCase()} - ${data.provider?.description || ''}`;
+                    document.getElementById('ai-mode').textContent = mode.toUpperCase();
+                    addMessage('system', `🔮 Dark LLM Mode changed to: ${mode.toUpperCase()}`);
+                    addLog(`[AI] Mode set to ${mode.toUpperCase()}`);
+                }
+            } catch (error) {
+                addMessage('system', `Error setting mode: ${error.message}`);
+            }
+        }
+        
+        async function sendUncensored() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage('user', `[UNCENSORED] ${message}`);
+            input.value = '';
+
+            try {
+                const response = await fetch('/_dash/ai/chat-uncensored', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                addMessage('lilith', data.response || 'No response');
+                
+                if (data.provider) {
+                    document.getElementById('ai-provider').textContent = data.provider;
+                }
+            } catch (error) {
+                addMessage('system', `Error: ${error.message}`);
+            }
+        }
+        
+        function quickPrompt(prompt) {
+            document.getElementById('chat-input').value = prompt;
+            sendChat();
+        }
+        
+        async function clearChatHistory() {
+            try {
+                await fetch('/_dash/ai/clear-history', { method: 'POST' });
+                document.getElementById('chat-messages').innerHTML = '';
+                addMessage('system', '🗑️ Chat history cleared');
+            } catch (error) {
+                addMessage('system', `Error: ${error.message}`);
+            }
+        }
+        
+        async function refreshAIStatus() {
+            try {
+                const response = await fetch('/_dash/ai/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('ai-provider').textContent = data.last_provider || 'None';
+                    document.getElementById('ai-mode').textContent = data.dark_llm_mode?.toUpperCase() || 'LILITH';
+                    document.getElementById('ai-stats').textContent = `${data.stats?.successful || 0}/${data.stats?.total_requests || 0}`;
+                    
+                    const modeInfo = data.dark_llm_info;
+                    if (modeInfo) {
+                        document.getElementById('dark-llm-info').textContent = 
+                            `Current: ${modeInfo.name} - ${modeInfo.description}`;
+                    }
+                    
+                    addLog(`[AI] Status refreshed - Provider: ${data.last_provider || 'None'}`);
+                }
+            } catch (error) {
+                addLog(`[AI] Status check failed: ${error.message}`);
             }
         }
 
