@@ -3404,6 +3404,234 @@ def full_autonomous_attack():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# =============================================================================
+# REAL HACKING CODE GENERATION ENDPOINTS
+# =============================================================================
+
+@app.route('/hacking/payloads/reverse-shell', methods=['POST'])
+def generate_reverse_shell():
+    """Generate REAL working reverse shell payloads"""
+    try:
+        from lilith_real_hacking_generator import get_payload_generator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        shell_type = data.get('type', 'all')
+        
+        pg = get_payload_generator()
+        
+        payloads = {}
+        
+        if shell_type == 'all' or shell_type == 'python':
+            payloads['python'] = pg.python_reverse_shell(lhost, lport)
+        if shell_type == 'all' or shell_type == 'bash':
+            payloads['bash'] = pg.bash_reverse_shell(lhost, lport)
+        if shell_type == 'all' or shell_type == 'netcat':
+            payloads['netcat'] = pg.netcat_reverse_shell(lhost, lport)
+        if shell_type == 'all' or shell_type == 'php':
+            payloads['php'] = pg.php_reverse_shell(lhost, lport)
+        if shell_type == 'all' or shell_type == 'powershell':
+            payloads['powershell'] = pg.powershell_reverse_shell(lhost, lport)
+        if shell_type == 'all' or shell_type == 'msfvenom':
+            payloads['msfvenom_commands'] = pg.msfvenom_commands(lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'payloads': payloads,
+            'types_available': ['python', 'bash', 'netcat', 'php', 'powershell', 'msfvenom']
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
+
+
+@app.route('/hacking/payloads/webshell', methods=['POST'])
+def generate_webshell():
+    """Generate REAL working web shell payloads"""
+    try:
+        from lilith_real_hacking_generator import get_payload_generator
+        
+        data = request.json or {}
+        shell_type = data.get('type', 'all')
+        
+        pg = get_payload_generator()
+        
+        shells = {}
+        
+        if shell_type == 'all' or shell_type == 'php':
+            shells['php'] = pg.php_webshell()
+        if shell_type == 'all' or shell_type == 'jsp':
+            shells['jsp'] = pg.jsp_webshell()
+        if shell_type == 'all' or shell_type == 'aspx':
+            shells['aspx'] = pg.aspx_webshell()
+        
+        return jsonify({
+            'success': True,
+            'shells': shells,
+            'types_available': ['php', 'jsp', 'aspx']
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/exploits/sqli', methods=['GET'])
+def get_sqli_payloads():
+    """Get SQL injection payloads"""
+    try:
+        from lilith_real_hacking_generator import get_exploit_generator
+        eg = get_exploit_generator()
+        return jsonify({
+            'success': True,
+            'payloads': eg.sql_injection_payloads()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/exploits/xss', methods=['GET'])
+def get_xss_payloads():
+    """Get XSS payloads"""
+    try:
+        from lilith_real_hacking_generator import get_exploit_generator
+        eg = get_exploit_generator()
+        return jsonify({
+            'success': True,
+            'payloads': eg.xss_payloads()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/exploits/lfi', methods=['GET'])
+def get_lfi_payloads():
+    """Get LFI payloads"""
+    try:
+        from lilith_real_hacking_generator import get_exploit_generator
+        eg = get_exploit_generator()
+        return jsonify({
+            'success': True,
+            'payloads': eg.lfi_payloads()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/exploits/cmdi', methods=['GET'])
+def get_cmdi_payloads():
+    """Get command injection payloads"""
+    try:
+        from lilith_real_hacking_generator import get_exploit_generator
+        eg = get_exploit_generator()
+        return jsonify({
+            'success': True,
+            'payloads': eg.command_injection_payloads()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/exploits/xxe', methods=['GET'])
+def get_xxe_payloads():
+    """Get XXE payloads"""
+    try:
+        from lilith_real_hacking_generator import get_exploit_generator
+        eg = get_exploit_generator()
+        return jsonify({
+            'success': True,
+            'payloads': eg.xxe_payloads()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/exploits/ssti', methods=['GET'])
+def get_ssti_payloads():
+    """Get SSTI payloads"""
+    try:
+        from lilith_real_hacking_generator import get_exploit_generator
+        eg = get_exploit_generator()
+        return jsonify({
+            'success': True,
+            'payloads': eg.ssti_payloads()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/privesc/linux', methods=['GET'])
+def get_linux_privesc():
+    """Get Linux privilege escalation techniques"""
+    try:
+        from lilith_real_hacking_generator import get_privesc_generator
+        pg = get_privesc_generator()
+        return jsonify({
+            'success': True,
+            'enum_script': pg.linux_enum_script(),
+            'techniques': pg.linux_privesc_techniques()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/privesc/windows', methods=['GET'])
+def get_windows_privesc():
+    """Get Windows privilege escalation techniques"""
+    try:
+        from lilith_real_hacking_generator import get_privesc_generator
+        pg = get_privesc_generator()
+        return jsonify({
+            'success': True,
+            'techniques': pg.windows_privesc_techniques()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/network/nmap', methods=['GET'])
+def get_nmap_commands():
+    """Get Nmap scan commands"""
+    try:
+        from lilith_real_hacking_generator import get_network_generator
+        ng = get_network_generator()
+        return jsonify({
+            'success': True,
+            'commands': ng.nmap_scans()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/network/passwords', methods=['GET'])
+def get_password_attacks():
+    """Get password attack commands"""
+    try:
+        from lilith_real_hacking_generator import get_network_generator
+        ng = get_network_generator()
+        return jsonify({
+            'success': True,
+            'commands': ng.password_attacks()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/hacking/network/web', methods=['GET'])
+def get_web_attacks():
+    """Get web attack commands"""
+    try:
+        from lilith_real_hacking_generator import get_network_generator
+        ng = get_network_generator()
+        return jsonify({
+            'success': True,
+            'commands': ng.web_attacks()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
     host = os.environ.get('BACKEND_HOST', '0.0.0.0')
@@ -3413,5 +3641,6 @@ if __name__ == '__main__':
     print(f"[LILITH] OpenClaw available")
     print(f"[LILITH] AI Providers initialized")
     print(f"[LILITH] REAL Autonomous Agents: HackingBuddy, Garak, AutoGPT, CrewAI")
+    print(f"[LILITH] REAL Hacking Code Generator: Reverse Shells, Web Shells, Exploits")
     
     app.run(host=host, port=port, debug=False)
