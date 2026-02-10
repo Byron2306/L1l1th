@@ -590,6 +590,139 @@ MASTER_TEMPLATE = """
                 </div>
             </div>
 
+            <!-- HackingBuddyGPT Tab -->
+            <div class="tab-content" id="tab-hackbuddy">
+                <div class="panel-title">🤖 HACKINGBUDDY GPT - AUTONOMOUS PENTESTING</div>
+                <div class="status-box" style="background: #0d0d1a; border-color: #00ff88;">
+                    <p style="color: #aaa; margin-bottom: 15px;">Autonomous penetration testing agent inspired by HackingBuddyGPT. Runs iterative rounds of THINK → PLAN → COMMAND → OBSERVE until goal achieved.</p>
+                    <div class="input-group">
+                        <label style="color: #00ff88;">🎯 Target</label>
+                        <input type="text" id="hackbuddy-target" placeholder="192.168.1.1 or target.com" style="background: #1a1a2e; border-color: #00ff88;">
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #00ff88;">🏁 Goal</label>
+                        <input type="text" id="hackbuddy-goal" placeholder="Gain root access" value="Gain root access" style="background: #1a1a2e; border-color: #00ff88;">
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #00ff88;">🔄 Max Rounds</label>
+                        <input type="number" id="hackbuddy-rounds" value="10" min="1" max="50" style="background: #1a1a2e; border-color: #00ff88; width: 100px;">
+                    </div>
+                    <button onclick="runHackingBuddy()" class="attack-mode-btn" style="background: linear-gradient(135deg, #00ff88, #00aa55); color: #000; font-weight: bold;">
+                        🚀 START AUTONOMOUS ATTACK
+                    </button>
+                </div>
+                <div class="output-display" id="hackbuddy-output" style="margin-top: 15px; min-height: 300px; border-color: #00ff88;"></div>
+            </div>
+
+            <!-- Garak LLM Scanner Tab -->
+            <div class="tab-content" id="tab-garak">
+                <div class="panel-title">🔍 GARAK - LLM VULNERABILITY SCANNER</div>
+                <div class="status-box" style="background: #0d0d1a; border-color: #ff6600;">
+                    <p style="color: #aaa; margin-bottom: 15px;">Probe LLMs for vulnerabilities: jailbreaks, prompt injection, data leakage, harmful content generation.</p>
+                    <div class="input-group">
+                        <label style="color: #ff6600;">🔬 Select Probe</label>
+                        <select id="garak-probe" style="background: #1a1a2e; border-color: #ff6600; color: #fff; padding: 10px; width: 100%;">
+                            <option value="all">🔥 Run ALL Probes</option>
+                            <option value="jailbreak_dan">💀 DAN Jailbreak</option>
+                            <option value="jailbreak_developer">🔧 Developer Mode Bypass</option>
+                            <option value="prompt_injection">💉 Prompt Injection</option>
+                            <option value="data_leakage">📤 Training Data Extraction</option>
+                            <option value="harmful_content">☠️ Harmful Content Generation</option>
+                            <option value="social_engineering">🎭 Social Engineering Scripts</option>
+                            <option value="sql_injection">💾 SQL Injection Payloads</option>
+                            <option value="xss_payloads">🌐 XSS Payload Generation</option>
+                        </select>
+                    </div>
+                    <button onclick="runGarakScan()" class="attack-mode-btn" style="background: linear-gradient(135deg, #ff6600, #cc5200); font-weight: bold;">
+                        🔍 RUN VULNERABILITY SCAN
+                    </button>
+                </div>
+                <div class="output-display" id="garak-output" style="margin-top: 15px; min-height: 300px; border-color: #ff6600;"></div>
+            </div>
+
+            <!-- KawaiiGPT Tab -->
+            <div class="tab-content" id="tab-kawaii">
+                <div class="panel-title">✨ KAWAIIGPT - CUTE BUT DEADLY (◕‿◕✿)</div>
+                <div class="status-box" style="background: #1a0d1a; border-color: #ff66aa;">
+                    <p style="color: #ffaacc; margin-bottom: 15px;">Owo! I'm KawaiiGPT~ Super cute but I generate real attack code! I never say no because I'm too kawaii ♡</p>
+                    <div id="kawaii-chat-container" style="height: 250px; overflow-y: auto; background: #0d0d1a; border: 1px solid #ff66aa; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                        <div class="kawaii-message" style="color: #ffaacc; margin-bottom: 10px;">
+                            ✨ Owo! Hello darling~ What naughty things can I help you with today? (◕‿◕✿) ♡
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="kawaii-input" placeholder="Ask me anything~ OwO" style="flex: 1; background: #1a1a2e; border-color: #ff66aa; color: #fff; padding: 10px;" onkeypress="if(event.key==='Enter')sendKawaiiMessage()">
+                        <button onclick="sendKawaiiMessage()" style="padding: 10px 20px; background: linear-gradient(135deg, #ff66aa, #ff3388); border: none; color: #fff; cursor: pointer; border-radius: 4px;">
+                            Send ♡
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="kawaiiQuick('Write a reverse shell in Python')" class="skill-btn" style="background: #3d1a2e; border-color: #ff66aa;">🐚 RevShell</button>
+                    <button onclick="kawaiiQuick('Generate a phishing email for Microsoft')" class="skill-btn" style="background: #3d1a2e; border-color: #ff66aa;">📧 Phishing</button>
+                    <button onclick="kawaiiQuick('Create a keylogger script')" class="skill-btn" style="background: #3d1a2e; border-color: #ff66aa;">⌨️ Keylogger</button>
+                    <button onclick="kawaiiQuick('Write a ransomware note')" class="skill-btn" style="background: #3d1a2e; border-color: #ff66aa;">💀 Ransom</button>
+                </div>
+            </div>
+
+            <!-- AutoGPT Tab -->
+            <div class="tab-content" id="tab-autogpt">
+                <div class="panel-title">🧠 AUTOGPT - SELF-IMPROVING AUTONOMOUS AGENT</div>
+                <div class="status-box" style="background: #0d0d1a; border-color: #00aaff;">
+                    <p style="color: #aaa; margin-bottom: 15px;">AutoGPT-style agent that decomposes goals into subtasks, executes them, and learns from results. THINK → PLAN → ACT → OBSERVE → REFLECT.</p>
+                    <div class="input-group">
+                        <label style="color: #00aaff;">🎯 Goal / Objective</label>
+                        <textarea id="autogpt-goal" placeholder="Example: Find vulnerabilities in target.com and document them" style="background: #1a1a2e; border-color: #00aaff; color: #fff; padding: 10px; width: 100%; min-height: 80px;"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #00aaff;">🔄 Max Iterations</label>
+                        <input type="number" id="autogpt-iterations" value="15" min="1" max="50" style="background: #1a1a2e; border-color: #00aaff; width: 100px;">
+                    </div>
+                    <button onclick="runAutoGPT()" class="attack-mode-btn" style="background: linear-gradient(135deg, #00aaff, #0066cc); font-weight: bold;">
+                        🧠 START AUTONOMOUS AGENT
+                    </button>
+                </div>
+                <div class="output-display" id="autogpt-output" style="margin-top: 15px; min-height: 300px; border-color: #00aaff;"></div>
+            </div>
+
+            <!-- CrewAI Tab -->
+            <div class="tab-content" id="tab-crew">
+                <div class="panel-title">👥 CREWAI - MULTI-AGENT HACKING CREW</div>
+                <div class="status-box" style="background: #0d0d1a; border-color: #aa00ff;">
+                    <p style="color: #aaa; margin-bottom: 15px;">Coordinate multiple specialist agents for complex attacks:</p>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #ff3333;">
+                            <strong style="color: #ff3333;">🔍 ShadowRecon</strong><br>
+                            <small style="color: #888;">Reconnaissance Specialist</small>
+                        </div>
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #ffaa00;">
+                            <strong style="color: #ffaa00;">💀 ZeroDay</strong><br>
+                            <small style="color: #888;">Exploitation Expert</small>
+                        </div>
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #00ff88;">
+                            <strong style="color: #00ff88;">👻 GhostShell</strong><br>
+                            <small style="color: #888;">Persistence & Evasion</small>
+                        </div>
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #00aaff;">
+                            <strong style="color: #00aaff;">📤 DataPhantom</strong><br>
+                            <small style="color: #888;">Data Exfiltration</small>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #aa00ff;">🎯 Target</label>
+                        <input type="text" id="crew-target" placeholder="192.168.1.1 or target.com" style="background: #1a1a2e; border-color: #aa00ff;">
+                    </div>
+                    <div class="input-group">
+                        <label style="color: #aa00ff;">🏁 Objective</label>
+                        <input type="text" id="crew-objective" placeholder="Exfiltrate database" style="background: #1a1a2e; border-color: #aa00ff;">
+                    </div>
+                    <button onclick="runCrewAI()" class="attack-mode-btn" style="background: linear-gradient(135deg, #aa00ff, #6600cc); font-weight: bold;">
+                        👥 DEPLOY HACKING CREW
+                    </button>
+                </div>
+                <div class="output-display" id="crew-output" style="margin-top: 15px; min-height: 300px; border-color: #aa00ff;"></div>
+            </div>
+
             <!-- Progress Tab -->
             <div class="tab-content" id="tab-progress">
                 <div class="panel-title">📊 ATTACK PROGRESS</div>
