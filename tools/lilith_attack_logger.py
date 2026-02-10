@@ -348,7 +348,7 @@ class AttackHistoryLogger:
             'avg_success_rate': 0.0
         }
         
-        if self.collection:
+        if self.collection is not None:
             try:
                 # Total attacks
                 stats['total_attacks'] = self.collection.count_documents({})
