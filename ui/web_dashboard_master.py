@@ -535,11 +535,19 @@ MASTER_TEMPLATE = """
                             <option value="evilgpt">📱 EvilGPT - Mobile Malware & Spyware</option>
                             <option value="ghostgpt">👻 GhostGPT - Stealth & Anti-Forensics</option>
                             <option value="chaosai">💀 ChaosAI - Destructive Operations</option>
-                            <option value="escapeai">🔓 EscapeAI - Sandbox & VM Escape</option>
+                            <option value="escapeai">🚪 EscapeAI - Sandbox & VM Escape</option>
                             <option value="codebreaker">🔐 CodeBreaker - Cryptanalysis</option>
                             <option value="socialengineer">🎭 SocialEngineer - Human Hacking</option>
                             <option value="zeroday">⚡ ZeroDay - 0-Day Exploits</option>
                             <option value="redteam">🔴 RedTeam - Full Spectrum Ops</option>
+                            <option value="devilgpt">😈 DevilGPT - Extreme Uncensored</option>
+                            <option value="blackhatai">🎩 BlackHatAI - Underground Hacking</option>
+                            <option value="pentestgpt">🔍 PentestGPT - Professional Pentest</option>
+                            <option value="malwaredev">🦠 MalwareDev - Malware Engineering</option>
+                            <option value="webexploit">🌐 WebExploit - Web App Attacks</option>
+                            <option value="osintmaster">🔎 OSINTMaster - Intelligence Gathering</option>
+                            <option value="iotattack">📡 IoTAttack - IoT & Hardware</option>
+                            <option value="cloudpwn">☁️ CloudPwn - Cloud Infrastructure</option>
                         </select>
                         <button onclick="setDarkLLMMode()" style="padding: 8px 16px; background: #ff0066; border: none; color: #fff; cursor: pointer; border-radius: 4px;">
                             Apply Mode
