@@ -554,7 +554,7 @@ MASTER_TEMPLATE = """
                         </button>
                     </div>
                     <div style="margin-top: 8px; font-size: 11px; color: #888;">
-                        <span id="dark-llm-info">Current: LILITH - Lethal Intelligence for Tactical Hacking</span>
+                        <span id="dark-llm-info">Current: LILITH - Your seductive succubus hacker~ 😈💋</span>
                     </div>
                 </div>
                 
