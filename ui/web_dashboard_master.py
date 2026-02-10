@@ -502,17 +502,16 @@ MASTER_TEMPLATE = """
         <!-- CENTER PANEL: Main Workspace -->
         <div class="center-panel">
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('lilith')">💬 LILITH AI</button>
-                <button class="tab" onclick="switchTab('progress')">📊 Progress</button>
-                <button class="tab" onclick="switchTab('browser')">🌐 Browser</button>
-                <button class="tab" onclick="switchTab('recon')">🔍 Recon</button>
-                <button class="tab" onclick="switchTab('payload')">💣 Payload</button>
+                <button class="tab active" onclick="switchTab('lilith')">💬 LILITH</button>
+                <button class="tab" onclick="switchTab('hackbuddy')">🤖 HackBuddy</button>
+                <button class="tab" onclick="switchTab('garak')">🔍 Garak</button>
+                <button class="tab" onclick="switchTab('kawaii')">✨ Kawaii</button>
+                <button class="tab" onclick="switchTab('autogpt')">🧠 AutoGPT</button>
+                <button class="tab" onclick="switchTab('crew')">👥 CrewAI</button>
+                <button class="tab" onclick="switchTab('advanced')">⚔️ Advanced</button>
                 <button class="tab" onclick="switchTab('coding')">👨‍💻 Coding</button>
-                <button class="tab" onclick="switchTab('learning')">🧠 Learning</button>
                 <button class="tab" onclick="switchTab('memory')">💾 Memory</button>
                 <button class="tab" onclick="switchTab('harvester')">🔑 Harvester</button>
-                <button class="tab" onclick="switchTab('vnc')">📺 VNC</button>
-                <button class="tab" onclick="switchTab('advanced')">⚔️ Advanced</button>
             </div>
 
             <!-- LILITH Tab -->
