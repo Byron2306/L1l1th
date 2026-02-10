@@ -328,21 +328,27 @@ class NmapScanner:
         }
 
 
-class SQLMapScanner:
-    """SQLMap wrapper for SQL injection testing"""
+class SQLMapScanner(ProxyMixin):
+    """SQLMap wrapper for SQL injection testing with proxy support"""
     
     def __init__(self):
         # Check both system path and venv
         self.available = shutil.which('sqlmap') is not None or os.path.exists('/root/.venv/bin/sqlmap')
         self.sqlmap_path = shutil.which('sqlmap') or '/root/.venv/bin/sqlmap'
     
-    def test_injection(self, url: str, params: Dict = None) -> Dict:
-        """Test for SQL injection vulnerabilities"""
+    def test_injection(self, url: str, params: Dict = None, use_proxy: bool = True) -> Dict:
+        """Test for SQL injection vulnerabilities with optional proxy"""
         if not self.available or not os.path.exists(self.sqlmap_path):
             return self._get_manual_payloads(url)
         
         try:
             cmd = [self.sqlmap_path, '-u', url, '--batch', '--level=2', '--risk=1', '--forms', '--dbs', '--threads=4']
+            
+            # Add proxy if available and requested
+            if use_proxy:
+                proxy = self.get_proxy_string()
+                if proxy:
+                    cmd.extend(['--proxy', f'http://{proxy}'])
             
             if params:
                 for key, value in params.items():
@@ -354,6 +360,15 @@ class SQLMapScanner:
                 text=True,
                 timeout=300
             )
+            
+            is_vulnerable = 'is vulnerable' in result.stdout.lower() or 'injectable' in result.stdout.lower()
+            databases = self._extract_databases(result.stdout)
+            
+            # Save to memory if vulnerable
+            if is_vulnerable:
+                self.save_to_memory('exploit', f'SQLi-{url[:50]}', 
+                                   result.stdout[-2000:], target=url,
+                                   description=f'SQL Injection found: {databases}')
             
             return {
                 'success': True,
