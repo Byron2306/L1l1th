@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 
 class LilithFreeBotV7:
-    """LILITH Bot with autonomous hacking agents and FREE voice/image!"""
+    """LILITH Bot with autonomous hacking agents and FREE voice/image/video!"""
     
     def __init__(self, token: str, allowed_users: list = None):
         self.token = token
@@ -68,6 +68,7 @@ class LilithFreeBotV7:
         self.engine = get_ai_engine() if LILITH_AVAILABLE else None
         self.voice_engine = get_free_voice_engine() if FREE_ENGINES_AVAILABLE else None
         self.image_engine = get_free_image_engine() if FREE_ENGINES_AVAILABLE else None
+        self.video_engine = get_free_video_engine() if FREE_ENGINES_AVAILABLE else None
         self.autonomous = get_autonomous_agent() if AUTONOMOUS_AVAILABLE else None
         self.voice_mode = {}
         self.voice_style = {}
@@ -83,6 +84,10 @@ class LilithFreeBotV7:
         self.app.add_handler(CommandHandler("setvoice", self.set_voice))
         self.app.add_handler(CommandHandler("image", self.generate_image))
         self.app.add_handler(CommandHandler("imagine", self.generate_image))
+        self.app.add_handler(CommandHandler("video", self.generate_video))
+        self.app.add_handler(CommandHandler("videostyles", self.list_video_styles))
+        self.app.add_handler(CommandHandler("darkart", self.generate_dark_art))
+        self.app.add_handler(CommandHandler("nightmare", self.generate_nightmare))
         self.app.add_handler(CommandHandler("styles", self.list_styles))
         self.app.add_handler(CommandHandler("exec", self.execute_command))
         self.app.add_handler(CommandHandler("shell", self.execute_command))
