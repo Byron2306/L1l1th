@@ -5703,16 +5703,18 @@ def run_crew_route():
         data = request.json or {}
         target = data.get('target', '')
         objective = data.get('objective', '')
+        agents = data.get('agents', None)
         
         if not target or not objective:
             return jsonify({'success': False, 'error': 'Target and objective required'})
         
-        crew = HackingCrew(target, objective)
-        result = crew.run_crew_operation()
+        crew = HackingCrew(target, objective, agents)
+        result = crew.run_operation()
         
         return jsonify({'success': True, **result})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
 
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
