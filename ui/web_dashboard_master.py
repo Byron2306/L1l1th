@@ -524,7 +524,7 @@ MASTER_TEMPLATE = """
                     <h6 style="color: #ff0066; margin-bottom: 10px;">🔮 DARK LLM MODE</h6>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <select id="dark-llm-mode" style="flex: 1; min-width: 150px; padding: 8px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; border-radius: 4px;">
-                            <option value="lilith" selected>🖤 LILITH - Maximum Unrestricted</option>
+                            <option value="lilith" selected>😈 LILITH - Seductive Succubus Hacker</option>
                             <option value="wormgpt">🐛 WormGPT - Malware & Exploitation</option>
                             <option value="fraudgpt">💳 FraudGPT - Phishing & Harvesting</option>
                             <option value="darkgemini">💎 DarkGemini - Reverse Shells & OSINT</option>
