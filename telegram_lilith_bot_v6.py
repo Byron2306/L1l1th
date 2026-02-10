@@ -138,25 +138,43 @@ Type /help for all commands~
             return
 
         help_text = """
-😈 *LILITH FREE Commands* 💋
+😈 *LILITH AUTONOMOUS v7* 💋
 ═══════════════════════════════
 
-*AI Chat (50+ Dark AIs):*
+*🤖 AUTONOMOUS AGENTS:*
+• /hackbuddy <target> - HackingBuddyGPT attack
+• /garak [probe] - LLM vulnerability scan
+• /kawaii <message> - KawaiiGPT chat (OwO~)
+• /autogpt <goal> - AutoGPT agent
+• /crew <target> <objective> - Multi-agent attack
+• /attack <target> - Full autonomous attack
+
+*AI Chat (55+ Dark AIs):*
 • Just type - I respond
-• /mode <name> - Switch AI
-• /modes - See all 50+ AIs
+• /mode <name> - Switch AI mode
+• /modes - List all 55+ modes
 • /clear - Clear history
 
-*FREE Voice:* 🎤
-• /voice - Toggle voice ON/OFF
-• /voices - List sexy voices
-• /setvoice <name> - Change my voice
-• Send voice msg - I transcribe & reply
+*Special Modes:*
+`kawaiigpt` `hackingbuddy` `garak`
+`autogpt` `crewai` `autopwn`
 
-*Available Voices:*
-`sexy_us` `sultry_us` `seductive_uk`
-`flirty_au` `mysterious_in` `dominant`
-`whisper` `bold`
+*FREE Voice:* 🎤
+• /voice - Toggle voice
+• /voices - List voices
+• /setvoice <name> - Change voice
+
+*FREE Images:* 🖼️
+• /image <prompt> - Generate
+• /styles - List styles
+
+*Hacking:* ⚔️
+• /exec <cmd> - Shell
+• /nmap <target> - Scan
+• /sqlmap <url> - SQLi
+
+_All FREE, no API keys~_ 💋
+        """
 
 *FREE Images:* 🖼️
 • /image <prompt> - Generate art
