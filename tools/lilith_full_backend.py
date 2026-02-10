@@ -3632,6 +3632,265 @@ def get_web_attacks():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# =============================================================================
+# SHREK PAYLOAD GENERATOR ENDPOINTS
+# =============================================================================
+
+@app.route('/shrek/shells', methods=['POST'])
+def shrek_get_shells():
+    """Get all reverse shells from Shrek generator"""
+    try:
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        
+        shells = ShrekPayloadGenerator.get_all_shells(lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'shells': shells,
+            'count': len(shells)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/shrek/shells/category', methods=['POST'])
+def shrek_get_shells_by_category():
+    """Get reverse shells organized by category"""
+    try:
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        
+        shells_by_cat = ShrekPayloadGenerator.get_by_category(lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'categories': shells_by_cat,
+            'category_count': len(shells_by_cat)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/shrek/shell/<shell_type>', methods=['POST'])
+def shrek_get_specific_shell(shell_type: str):
+    """Get a specific type of shell"""
+    try:
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        
+        # Map shell type to method
+        shell_methods = {
+            'bash_tcp': ShrekPayloadGenerator.bash_tcp,
+            'bash_udp': ShrekPayloadGenerator.bash_udp,
+            'bash_196': ShrekPayloadGenerator.bash_196,
+            'nc_traditional': ShrekPayloadGenerator.nc_traditional,
+            'nc_openbsd': ShrekPayloadGenerator.nc_openbsd,
+            'nc_busybox': ShrekPayloadGenerator.nc_busybox,
+            'ncat_ssl': ShrekPayloadGenerator.ncat_ssl,
+            'python_short': ShrekPayloadGenerator.python_short,
+            'python3_short': ShrekPayloadGenerator.python3_short,
+            'python_pty': ShrekPayloadGenerator.python_pty,
+            'python_full': ShrekPayloadGenerator.python_full,
+            'php_exec': ShrekPayloadGenerator.php_exec,
+            'php_shell_exec': ShrekPayloadGenerator.php_shell_exec,
+            'php_full': ShrekPayloadGenerator.php_full,
+            'php_pentestmonkey': ShrekPayloadGenerator.php_pentestmonkey,
+            'ruby': ShrekPayloadGenerator.ruby,
+            'ruby_full': ShrekPayloadGenerator.ruby_full,
+            'perl': ShrekPayloadGenerator.perl,
+            'perl_nosh': ShrekPayloadGenerator.perl_nosh,
+            'java': ShrekPayloadGenerator.java,
+            'java_runtime': ShrekPayloadGenerator.java_runtime,
+            'powershell': ShrekPayloadGenerator.powershell,
+            'powershell_base64': ShrekPayloadGenerator.powershell_base64,
+            'awk': ShrekPayloadGenerator.awk,
+            'lua': ShrekPayloadGenerator.lua,
+            'socat': ShrekPayloadGenerator.socat,
+            'socat_tty': ShrekPayloadGenerator.socat_tty,
+            'nodejs': ShrekPayloadGenerator.nodejs,
+            'groovy': ShrekPayloadGenerator.groovy,
+            'telnet': ShrekPayloadGenerator.telnet,
+            'xterm': ShrekPayloadGenerator.xterm,
+            'msfvenom_windows': ShrekPayloadGenerator.msfvenom_windows_exe,
+            'msfvenom_linux': ShrekPayloadGenerator.msfvenom_linux_elf,
+            'msfvenom_android': ShrekPayloadGenerator.msfvenom_android_apk,
+            'msfvenom_php': ShrekPayloadGenerator.msfvenom_php,
+            'msfvenom_asp': ShrekPayloadGenerator.msfvenom_asp,
+            'msfvenom_war': ShrekPayloadGenerator.msfvenom_war,
+        }
+        
+        if shell_type not in shell_methods:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown shell type: {shell_type}',
+                'available_types': list(shell_methods.keys())
+            })
+        
+        payload = shell_methods[shell_type](lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'shell_type': shell_type,
+            'lhost': lhost,
+            'lport': lport,
+            'payload': payload
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/shrek/msfvenom', methods=['POST'])
+def shrek_get_msfvenom():
+    """Get MSFVenom payload generation commands"""
+    try:
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        payload_type = data.get('payload', 'windows/meterpreter/reverse_tcp')
+        
+        commands = {
+            'windows_exe': ShrekPayloadGenerator.msfvenom_windows_exe(lhost, lport),
+            'linux_elf': ShrekPayloadGenerator.msfvenom_linux_elf(lhost, lport),
+            'android_apk': ShrekPayloadGenerator.msfvenom_android_apk(lhost, lport),
+            'php': ShrekPayloadGenerator.msfvenom_php(lhost, lport),
+            'asp': ShrekPayloadGenerator.msfvenom_asp(lhost, lport),
+            'war': ShrekPayloadGenerator.msfvenom_war(lhost, lport),
+            'handler': ShrekPayloadGenerator.metasploit_handler(lhost, lport, payload_type)
+        }
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'commands': commands
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# =============================================================================
+# ATTACK HISTORY LOGGING ENDPOINTS
+# =============================================================================
+
+@app.route('/history/attacks', methods=['GET'])
+def get_attack_history():
+    """Get recent attack history"""
+    try:
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        limit = int(request.args.get('limit', 20))
+        attack_type = request.args.get('type')
+        target = request.args.get('target')
+        
+        if target:
+            attacks = logger.get_attacks_by_target(target, limit)
+        elif attack_type:
+            attacks = logger.get_attacks_by_type(attack_type, limit)
+        else:
+            attacks = logger.get_recent_attacks(limit)
+        
+        return jsonify({
+            'success': True,
+            'attacks': attacks,
+            'count': len(attacks)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/history/attacks/<attack_id>', methods=['GET'])
+def get_attack_detail(attack_id: str):
+    """Get details of a specific attack"""
+    try:
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        attack = logger.get_attack(attack_id)
+        
+        if attack:
+            return jsonify({
+                'success': True,
+                'attack': attack
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Attack not found: {attack_id}'
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/history/statistics', methods=['GET'])
+def get_attack_statistics():
+    """Get attack statistics"""
+    try:
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        stats = logger.get_statistics()
+        
+        return jsonify({
+            'success': True,
+            'statistics': stats
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/history/successful', methods=['GET'])
+def get_successful_attacks():
+    """Get only successful attacks"""
+    try:
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        limit = int(request.args.get('limit', 50))
+        attacks = logger.get_successful_attacks(limit)
+        
+        return jsonify({
+            'success': True,
+            'attacks': attacks,
+            'count': len(attacks)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/history/attacks/<attack_id>', methods=['DELETE'])
+def delete_attack_log(attack_id: str):
+    """Delete an attack log"""
+    try:
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        deleted = logger.delete_attack(attack_id)
+        
+        return jsonify({
+            'success': deleted,
+            'message': 'Attack deleted' if deleted else 'Attack not found'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
     host = os.environ.get('BACKEND_HOST', '0.0.0.0')
@@ -3642,5 +3901,7 @@ if __name__ == '__main__':
     print(f"[LILITH] AI Providers initialized")
     print(f"[LILITH] REAL Autonomous Agents: HackingBuddy, Garak, AutoGPT, CrewAI")
     print(f"[LILITH] REAL Hacking Code Generator: Reverse Shells, Web Shells, Exploits")
+    print(f"[LILITH] Shrek Payload Generator: 35+ reverse shell types")
+    print(f"[LILITH] Attack History Logger: MongoDB-backed logging")
     
     app.run(host=host, port=port, debug=False)
