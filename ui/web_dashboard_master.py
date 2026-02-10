@@ -2897,23 +2897,144 @@ MASTER_TEMPLATE = """
         }
 
         async function getEvasionTechniques() {
+            addLog('[ADVANCED] 🛡️ Fetching defense evasion techniques...');
             try {
-                const response = await fetch('/_dash/capabilities/evasion/techniques');
+                const os = document.getElementById('advanced-os-select')?.value || 'all';
+                const response = await fetch('/_dash/advanced/evasion?os=' + os);
                 const data = await response.json();
-                showAdvancedResult(data);
+                if (data.success) {
+                    addLog('[ADVANCED] ✅ Found evasion techniques');
+                    displayAdvancedAttackResult('Defense Evasion', data.techniques);
+                } else {
+                    showAdvancedResult(data);
+                }
             } catch (e) {
                 showAdvancedResult({error: e.message});
             }
         }
 
         async function getPersistence() {
+            addLog('[ADVANCED] 🔒 Fetching persistence techniques...');
+            const lhost = document.getElementById('advanced-lhost')?.value || '10.10.10.10';
+            const lport = parseInt(document.getElementById('advanced-lport')?.value) || 4444;
+            const os = document.getElementById('advanced-os-select')?.value || 'all';
+            
             try {
-                const response = await fetch('/_dash/capabilities/persistence/methods?os=linux');
+                const response = await fetch('/_dash/advanced/persistence', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({lhost: lhost, lport: lport, os: os})
+                });
                 const data = await response.json();
-                showAdvancedResult(data);
+                if (data.success) {
+                    addLog('[ADVANCED] ✅ Found ' + data.technique_count + ' persistence techniques');
+                    displayAdvancedAttackResult('Persistence (LHOST: ' + lhost + ':' + lport + ')', data.techniques);
+                } else {
+                    showAdvancedResult(data);
+                }
             } catch (e) {
                 showAdvancedResult({error: e.message});
             }
+        }
+
+        async function getLateralMovement() {
+            addLog('[ADVANCED] 🔀 Fetching lateral movement techniques...');
+            const target = document.getElementById('advanced-target')?.value || '192.168.1.100';
+            const username = document.getElementById('advanced-username')?.value || 'administrator';
+            const password = document.getElementById('advanced-password')?.value || 'password';
+            
+            try {
+                const response = await fetch('/_dash/advanced/lateral', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target, username: username, password: password})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    addLog('[ADVANCED] ✅ Found ' + data.technique_count + ' lateral movement techniques');
+                    displayAdvancedAttackResult('Lateral Movement (Target: ' + target + ')', data.techniques);
+                } else {
+                    showAdvancedResult(data);
+                }
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        async function getExfiltration() {
+            addLog('[ADVANCED] 📤 Fetching exfiltration techniques...');
+            const server = document.getElementById('advanced-exfil-server')?.value || 'evil.com';
+            
+            try {
+                const response = await fetch('/_dash/advanced/exfil', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({server: server})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    addLog('[ADVANCED] ✅ Found ' + data.technique_count + ' exfiltration techniques');
+                    displayAdvancedAttackResult('Exfiltration (Server: ' + server + ')', data.techniques);
+                } else {
+                    showAdvancedResult(data);
+                }
+            } catch (e) {
+                showAdvancedResult({error: e.message});
+            }
+        }
+
+        function displayAdvancedAttackResult(title, techniques) {
+            const output = document.getElementById('advanced-output');
+            let html = '<div style="color: #ff0000; font-weight: bold; margin-bottom: 10px; font-size: 16px;">💀 ' + title + '</div>';
+            
+            for (const [osType, osTechniques] of Object.entries(techniques)) {
+                html += '<div style="color: #ffff00; margin: 10px 0 5px 0; font-weight: bold;">📌 ' + osType.toUpperCase() + '</div>';
+                
+                for (const [techName, techData] of Object.entries(osTechniques)) {
+                    html += '<div style="background: #1a1a2e; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 3px solid #ff0066;">';
+                    html += '<div style="color: #ff0066; font-weight: bold;">' + (techData.name || techName) + '</div>';
+                    if (techData.description) {
+                        html += '<div style="color: #888; font-size: 11px; margin: 3px 0;">' + techData.description + '</div>';
+                    }
+                    
+                    if (techData.commands) {
+                        html += '<div style="margin-top: 8px;">';
+                        for (const [cmdName, cmdValue] of Object.entries(techData.commands)) {
+                            if (typeof cmdValue === 'string') {
+                                html += '<div style="margin: 4px 0;"><span style="color: #00ff88;">' + cmdName + ':</span>';
+                                html += '<pre style="margin: 2px 0; padding: 5px; background: #000; color: #0f0; font-size: 10px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">' + escapeHtml(cmdValue) + '</pre></div>';
+                            }
+                        }
+                        html += '</div>';
+                    }
+                    
+                    if (techData.techniques) {
+                        html += '<div style="margin-top: 8px;">';
+                        for (const [techKey, techVal] of Object.entries(techData.techniques)) {
+                            if (typeof techVal === 'string') {
+                                html += '<div style="margin: 4px 0;"><span style="color: #00ff88;">' + techKey + ':</span>';
+                                html += '<pre style="margin: 2px 0; padding: 5px; background: #000; color: #0f0; font-size: 10px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">' + escapeHtml(techVal) + '</pre></div>';
+                            }
+                        }
+                        html += '</div>';
+                    }
+                    
+                    if (techData.cleanup) {
+                        html += '<div style="margin-top: 5px; color: #ff6600; font-size: 10px;">🧹 Cleanup: ' + escapeHtml(techData.cleanup) + '</div>';
+                    }
+                    
+                    html += '</div>';
+                }
+            }
+            
+            output.innerHTML = html;
+            output.scrollTop = 0;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         async function getWirelessAttacks() {
