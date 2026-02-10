@@ -5679,24 +5679,38 @@ def run_autogpt_route():
         if not goal:
             return jsonify({'success': False, 'error': 'No goal specified'})
         
-        agent = AutoHackAgent(goal)
-        agent.max_iterations = max_iterations
+        agent = AutoHackAgent(goal, max_iterations)
         
+        iterations_data = []
         for i in range(max_iterations):
             result = agent.think_and_act()
+            iterations_data.append({
+                'iteration': result['iteration'],
+                'thinking': result.get('thinking', '')[:300],
+                'plan': result.get('plan', '')[:200],
+                'tool': result['tool'],
+                'args': result['args'],
+                'result': result['result'][:500],
+                'progress': result.get('progress', 0)
+            })
             if result.get('complete'):
                 break
             import time
-            time.sleep(2)  # Rate limiting
+            time.sleep(1)  # Rate limiting
         
         return jsonify({
             'success': True,
             'goal': goal,
-            'iterations': agent.iteration,
-            'memory': agent.memory
+            'iterations': len(iterations_data),
+            'complete': agent.state.value == 'completed',
+            'iterations_data': iterations_data,
+            'short_term_memory': [{'action': m['action'], 'result': m['result'][:200]} for m in agent.short_term_memory[-5:]],
+            'long_term_memory': agent.long_term_memory,
+            'tools_available': list(agent.TOOLS.keys())
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
 
 @app.route('/_dash/autonomous/crew', methods=['POST'])
 def run_crew_route():
