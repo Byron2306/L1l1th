@@ -5958,6 +5958,131 @@ def run_crew_route():
         import traceback
         return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
 
+
+# ==================== SHREK PAYLOAD ROUTES ====================
+
+@app.route('/_dash/shrek/shells', methods=['POST'])
+def dash_shrek_shells():
+    """Get all Shrek shells"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        
+        shells = ShrekPayloadGenerator.get_all_shells(lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'shells': shells,
+            'count': len(shells)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/shrek/shell/<shell_type>', methods=['POST'])
+def dash_shrek_shell(shell_type: str):
+    """Get specific shell type"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '10.10.10.10')
+        lport = int(data.get('lport', 4444))
+        
+        shell_methods = {
+            'bash_tcp': ShrekPayloadGenerator.bash_tcp,
+            'bash_udp': ShrekPayloadGenerator.bash_udp,
+            'nc_traditional': ShrekPayloadGenerator.nc_traditional,
+            'nc_openbsd': ShrekPayloadGenerator.nc_openbsd,
+            'python_pty': ShrekPayloadGenerator.python_pty,
+            'python_full': ShrekPayloadGenerator.python_full,
+            'php_full': ShrekPayloadGenerator.php_full,
+            'ruby': ShrekPayloadGenerator.ruby,
+            'perl': ShrekPayloadGenerator.perl,
+            'java': ShrekPayloadGenerator.java,
+            'powershell': ShrekPayloadGenerator.powershell,
+            'socat': ShrekPayloadGenerator.socat,
+            'msfvenom_windows': ShrekPayloadGenerator.msfvenom_windows_exe,
+            'msfvenom_linux': ShrekPayloadGenerator.msfvenom_linux_elf,
+            'msfvenom_android': ShrekPayloadGenerator.msfvenom_android_apk,
+        }
+        
+        if shell_type not in shell_methods:
+            return jsonify({
+                'success': False,
+                'error': f'Unknown shell type: {shell_type}',
+                'available_types': list(shell_methods.keys())
+            })
+        
+        payload = shell_methods[shell_type](lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'shell_type': shell_type,
+            'lhost': lhost,
+            'lport': lport,
+            'payload': payload
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== ATTACK HISTORY ROUTES ====================
+
+@app.route('/_dash/history/statistics', methods=['GET'])
+def dash_history_statistics():
+    """Get attack statistics"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        stats = logger.get_statistics()
+        
+        return jsonify({
+            'success': True,
+            'statistics': stats
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/history/attacks', methods=['GET'])
+def dash_history_attacks():
+    """Get attack history"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_attack_logger import get_attack_logger
+        
+        logger = get_attack_logger()
+        limit = int(request.args.get('limit', 20))
+        attack_type = request.args.get('type')
+        
+        if attack_type and attack_type != 'all':
+            attacks = logger.get_attacks_by_type(attack_type, limit)
+        else:
+            attacks = logger.get_recent_attacks(limit)
+        
+        return jsonify({
+            'success': True,
+            'attacks': attacks,
+            'count': len(attacks)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
