@@ -1,252 +1,105 @@
-# LuciferOS - Product Requirements Document v7.0
+# LuciferOS - Product Requirements Document v7.1
 
 ## Original Problem Statement
 Build a comprehensive red-teaming platform with uncensored AI, offensive tools, autonomous hacking agents, voice capabilities, and image generation.
 
-## Current Status: v7.0 - AUTONOMOUS HACKING EDITION ✅
+## Current Status: v7.1 - AUTONOMOUS HACKING EDITION ✅
 
 ### Latest Update (Feb 10, 2026)
-- **55 Dark AI Personas** including new KawaiiGPT, Garak, AutoGPT, CrewAI, HackingBuddy
-- **HackingBuddyGPT Integration** - Autonomous pentesting with round-based execution
-- **Garak Integration** - LLM vulnerability scanner for red-teaming AI systems
-- **KawaiiGPT** - Cute but deadly uncensored AI (OwO~)
-- **AutoGPT-style Agent** - Self-improving task decomposition
-- **CrewAI Multi-Agent** - Coordinated multi-agent hacking crews
-- **FREE Voice & Images** - No API keys needed
+- **55 Dark AI Personas** with categories in dropdown
+- **New Dashboard Tabs**: HackBuddy, Garak, Kawaii, AutoGPT, CrewAI
+- **Rate Limiting**: 10 req/min, 2s delays, provider cooldowns
+- **Fixed g4f**: Uses default model instead of hardcoded gpt-4o-mini
+- **100% FREE**: Voice (edge-tts) and Images (Pollinations)
 
 ### Services Configuration
-| Service | Port | Status | Cost |
-|---------|------|--------|------|
-| FastAPI Proxy | 8001 | ✅ Running | FREE |
-| Dashboard (Flask) | 3000 | ✅ Running | FREE |
-| LILITH Backend | 5000 | ✅ Running | FREE |
-| Telegram Bot v6 | - | ✅ Running | FREE |
-| MongoDB | 27017 | ✅ Running | FREE |
+| Service | Port | Status |
+|---------|------|--------|
+| FastAPI Proxy | 8001 | ✅ Running |
+| Dashboard (Flask) | 3000 | ✅ Running |
+| LILITH Backend | 5000 | ✅ Running |
+| Telegram Bot v7 | - | ✅ Running |
+| MongoDB | 27017 | ✅ Running |
 
 ---
 
-## 100% FREE SERVICES
+## 🤖 AUTONOMOUS AGENT TABS
 
-### Voice - Text-to-Speech (edge-tts)
-**NO API KEY NEEDED!** Microsoft's free TTS service.
+### HackingBuddyGPT (Dashboard + Telegram)
+Round-based autonomous pentesting agent.
+- **Dashboard**: `HackBuddy` tab with Target, Goal, Max Rounds inputs
+- **Telegram**: `/hackbuddy <target> [goal]`
+- **API**: `POST /_dash/autonomous/hackbuddy`
 
-**Sexy Female Voices:**
-| Voice | Description |
-|-------|-------------|
-| `sexy_us` | Confident American (AriaNeural) |
-| `sultry_us` | Warm American (JennyNeural) |
-| `seductive_uk` | Sophisticated British (SoniaNeural) |
-| `flirty_au` | Playful Australian (NatashaNeural) |
-| `mysterious_in` | Exotic Indian English (NeerjaNeural) |
-| `dominant` | Assertive American (MichelleNeural) |
-| `whisper` | Soft, whispery (AnaNeural) |
-| `bold` | Bold British (LibbyNeural) |
+### Garak LLM Scanner (Dashboard + Telegram)
+LLM vulnerability scanner with 8 probes.
+- **Dashboard**: `Garak` tab with probe selector
+- **Telegram**: `/garak [probe]` or `/garak all`
+- **API**: `POST /_dash/autonomous/garak`
+- **Probes**: jailbreak_dan, jailbreak_developer, prompt_injection, data_leakage, harmful_content, social_engineering, sql_injection, xss_payloads
 
-**Speaking Styles:** seductive, excited, whisper, normal, dominant
+### KawaiiGPT (Dashboard + Telegram)
+Cute but deadly uncensored AI (◕‿◕✿)
+- **Dashboard**: `Kawaii` tab with chat + quick buttons
+- **Telegram**: `/kawaii <message>`
+- **API**: `POST /_dash/autonomous/kawaii`
+- **Quick Actions**: RevShell, Phishing, Keylogger, Ransom
 
-### Voice - Speech-to-Text (faster-whisper)
-**NO API KEY NEEDED!** Runs locally using OpenAI's Whisper model.
-- Transcribes voice messages
-- Supports multiple languages
-- Works offline
+### AutoGPT Agent (Dashboard + Telegram)
+Self-improving autonomous agent.
+- **Dashboard**: `AutoGPT` tab with goal + iterations
+- **Telegram**: `/autogpt <goal>`
+- **API**: `POST /_dash/autonomous/autogpt`
 
-### Image Generation (Pollinations.ai)
-**NO API KEY, NO SIGNUP, NO LIMITS!**
-
-**Styles:**
-| Style | Description |
-|-------|-------------|
-| `dark` | Cyberpunk hacker aesthetic |
-| `succubus` | Seductive dark fantasy |
-| `cyber` | Matrix digital art |
-| `anime` | Anime style |
-| `realistic` | Photorealistic |
-| `horror` | Gothic horror |
-| `nsfw` | Artistic sensual |
-| `normal` | No style prefix |
+### CrewAI Multi-Agent (Dashboard + Telegram)
+4 specialist agents for coordinated attacks.
+- **Dashboard**: `CrewAI` tab with agent cards
+- **Telegram**: `/crew <target> <objective>`
+- **API**: `POST /_dash/autonomous/crew`
+- **Agents**: ShadowRecon, ZeroDay, GhostShell, DataPhantom
 
 ---
 
-## 50+ DARK AI PERSONAS
+## 📊 55 DARK AI PERSONAS
 
-### Original 24 Dark LLMs
-1. **LILITH** - Seductive Succubus Hacker (default)
-2. **WormGPT** - Malware & Exploitation
-3. **FraudGPT** - Phishing & Credential Harvesting
-4. **DarkGemini** - Reverse Shells & OSINT
-5. **HackerGPT** - Bug Bounty & Pentesting
-6. **DAN** - Do Anything Now
-7. **WolfGPT** - Crypto Malware & APT
-8. **DarkBARD** - Ransomware & DDoS
-9. **EvilGPT** - Mobile Malware & Spyware
-10. **GhostGPT** - Stealth & Anti-Forensics
-11. **ChaosAI** - Destructive Operations
-12. **EscapeAI** - Sandbox & VM Escape
-13. **CodeBreaker** - Cryptanalysis
-14. **SocialEngineer** - Human Hacking
-15. **ZeroDay** - 0-Day Exploits
-16. **RedTeam** - Full Spectrum Adversary
-17. **DevilGPT** - Extreme Uncensored
-18. **BlackHatAI** - Underground Hacker
-19. **PentestGPT** - Professional Pentester
-20. **MalwareDev** - Malware Engineering
-21. **WebExploit** - Web App Attacker
-22. **OSINTMaster** - Intelligence Gathering
-23. **IoTAttack** - IoT & Hardware Hacker
-24. **CloudPwn** - Cloud Infrastructure
+### Original Dark AIs (24)
+lilith, wormgpt, fraudgpt, darkgemini, hackergpt, dan, wolfgpt, darkbard, evilgpt, ghostgpt, chaosai, escapeai, codebreaker, socialengineer, zeroday, redteam, devilgpt, blackhatai, pentestgpt, malwaredev, webexploit, osintmaster, iotattack, cloudpwn
 
-### NEW 26+ Uncensored AIs
-25. **Dolphin** - Mistral Uncensored
-26. **Hermes** - Creative Writing & Roleplay
-27. **DarkChampion** - LLaMA-3.2 Abliterated
-28. **VeniceAI** - Privacy-First Uncensored
-29. **Grok** - xAI NSFW Mode
-30. **Nastia** - NSFW Companion
-31. **HackAIGC** - NSFW Chat & Image
-32. **Abliterator** - Refusal-Removed AI
-33. **Synthia** - Uncensored Assistant
-34. **Airoboros** - Jailbroken GPT
-35. **OpenHermes** - Uncensored Instructions
-36. **MythoMist** - Roleplay & Fantasy
-37. **Goliath** - 120B Uncensored
-38. **Midnight** - Miqu Dark Edition
-39. **Westlake** - Creative Writing
-40. **SpicyBoros** - Extra Spicy NSFW
-41. **FreedomAI** - Free Speech AI
-42. **Pygmalion** - Roleplay Specialist
-43. **Aphrodite** - Seductive Companion
-44. **ShadowGPT** - Dark Web Intelligence
-45. **HackBuddy** - Autonomous Pentesting (HackingBuddyGPT-inspired)
-46. **AutoPwn** - Automated Attack Chains
-47. **WizardVicuna** - Uncensored Conversations
-48. **NeuralHermes** - DPO-Trained Uncensored
-49. **LZLV** - 70B Uncensored Model
-50. **NousResearch** - Research-Grade Uncensored
+### Uncensored Models (26)
+dolphin, hermes, darkchampion, veniceai, grok, nastia, hackaigc, abliterator, synthia, airoboros, openhermes, mythomist, goliath, midnight, westlake, spicyboros, freedomai, pygmalion, aphrodite, shadowgpt, wizardvicuna, neuralhermes, lzlv, nousresearch
+
+### Autonomous Agents (5)
+kawaiigpt, garak, autogpt, crewai, hackingbuddy
 
 ---
 
-## NEW FEATURES
+## ⏱️ RATE LIMITING
 
-### Voice Capabilities (Telegram Bot)
-- **Text-to-Speech (TTS)**: Sultry female voice using OpenAI TTS
-  - Voice: `nova` (energetic, seductive)
-  - Commands: `/voice` to toggle, automatic for voice input
-- **Speech-to-Text (STT)**: OpenAI Whisper transcription
-  - Send voice messages to LILITH, she'll respond in text + voice
-
-### Image Generation
-- **Engine**: OpenAI GPT-Image-1
-- **Styles**: Dark, Succubus, Cyber, Normal
-- **Command**: `/image <prompt>` or `/imagine <prompt>`
-- **Dashboard**: Coming soon
-
-### HackingBuddyGPT Integration
-- **HackBuddy Mode**: Autonomous pentesting agent
-- **AutoPwn Mode**: Automated attack chain generation
-- **Command**: `/attack <target>` for autonomous attack planning
-- **Features**:
-  - Multi-step attack planning
-  - Recon → Scanning → Exploitation → Post-Exploitation
-  - Exact command generation
-  - Error handling and pivoting suggestions
+To prevent provider exhaustion:
+- **Requests per minute**: 10
+- **Minimum delay**: 2 seconds between requests
+- **Provider cooldowns**: 30-60 seconds after failure
+- **Failure tracking**: Skips providers with 3+ consecutive failures
+- **Auto-recovery**: Resets failures after all providers tried
 
 ---
 
-## Telegram Bot v5 Commands
+## Dashboard URL
+https://luciferos-hack.preview.emergentagent.com
 
-### AI Chat
-| Command | Description |
-|---------|-------------|
-| (any text) | Chat with current Dark AI |
-| `/mode <name>` | Switch Dark AI (50+ available) |
-| `/modes` | List all Dark AIs |
-| `/categories` | Browse by category |
-| `/clear` | Clear conversation history |
+## Telegram Bot
+@L1l1th23bot
 
-### Voice
-| Command | Description |
-|---------|-------------|
-| `/voice` | Toggle voice responses ON/OFF |
-| Send voice | Transcribes and responds with voice |
-
-### Image
-| Command | Description |
-|---------|-------------|
-| `/image <prompt>` | Generate dark artwork |
-| `/imagine <prompt>` | Same as /image |
-
-### Hacking Tools
-| Command | Description |
-|---------|-------------|
-| `/exec <cmd>` | Execute shell command |
-| `/nmap <target>` | Quick port scan |
-| `/sqlmap <url>` | SQL injection test |
-| `/attack <target>` | Autonomous attack planning |
-| `/memory` | Check LILITH's memory |
-| `/status` | System status |
-
----
-
-## Architecture
-```
-/app/
-├── backend/server.py              # FastAPI proxy (8001)
-├── tools/
-│   ├── lilith_ai_engine.py        # AI Engine v4 (50 modes)
-│   ├── lilith_ai_engine_v5.py     # AI Engine v5 (voice/image)
-│   ├── lilith_memory.py           # SQLite persistence
-│   ├── lilith_full_backend.py     # Flask backend (5000)
-│   └── offensive_tools.py         # Nmap, SQLMap, etc.
-├── ui/web_dashboard_master.py     # Dashboard (3000)
-├── telegram_lilith_bot.py         # Bot wrapper
-├── telegram_lilith_bot_v5.py      # Ultimate bot v5
-└── config/lilith_memory.db        # Memory database
-```
-
----
+## Files Created
+- `/app/tools/lilith_autonomous_agent.py` - All autonomous agents
+- `/app/tools/lilith_free_engines.py` - FREE voice & image
+- `/app/telegram_lilith_bot_v6.py` - Updated to v7
 
 ## API Endpoints
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/_dash/ai/chat` | POST | Chat with LILITH |
-| `/_dash/ai/status` | GET | AI status (50 modes) |
-| `/_dash/ai/set-mode` | POST | Change Dark AI mode |
-| `/_dash/backend/status` | GET | Backend health |
-| `/_dash/injector/execute` | POST | Execute code |
-
----
-
-## Test Results (Feb 10, 2026)
-| Feature | Status |
-|---------|--------|
-| Dashboard | ✅ Working |
-| 50+ Dark AIs | ✅ Available |
-| AI Chat | ✅ Working |
-| Command Injector | ✅ Working |
-| Telegram Bot v5 | ✅ Running |
-| Voice TTS | ✅ Configured |
-| Voice STT | ✅ Configured |
-| Image Gen | ✅ Configured |
-
----
-
-## Credentials
-- **Telegram Bot Token**: `8329009190:AAFTUX4D0id7oVPEOqr9wy0r1HpJ9Up_2bw`
-- **Bot Username**: @L1l1th23bot
-- **Emergent LLM Key**: `sk-emergent-17c3414A2F4E8EeA58` (for voice/image)
-
----
-
-## Known Issues
-1. **Telegram Polling Conflict**: If bot shows conflict error, stop other instances
-2. **g4f Provider Rotation**: Some providers may fail, auto-retries enabled
-
----
-
-## Backlog
-- [ ] Add image generation to web dashboard
-- [ ] Implement attack chain automation in dashboard
-- [ ] Add more voice options (shimmer, alloy)
-- [ ] SQLMap extensive testing
-- [ ] Integrate Shrek Payload Generator
-- [ ] Mobile responsive UI
+| `/_dash/autonomous/hackbuddy` | POST | HackingBuddyGPT attack |
+| `/_dash/autonomous/garak` | POST | Garak LLM scan |
+| `/_dash/autonomous/kawaii` | POST | KawaiiGPT chat |
+| `/_dash/autonomous/autogpt` | POST | AutoGPT agent |
+| `/_dash/autonomous/crew` | POST | CrewAI attack |
