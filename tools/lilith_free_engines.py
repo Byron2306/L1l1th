@@ -52,13 +52,13 @@ class LilithFreeVoiceEngine:
         'bold': 'en-GB-LibbyNeural',         # Bold British
     }
     
-    # Voice styles for extra seduction
+    # Voice styles for extra seduction (pitch uses Hz format)
     STYLES = {
-        'seductive': {'rate': '-10%', 'pitch': '-5%'},   # Slower, deeper
-        'excited': {'rate': '+10%', 'pitch': '+10%'},    # Fast, high
-        'whisper': {'rate': '-20%', 'pitch': '-10%'},    # Very slow, low
-        'normal': {'rate': '+0%', 'pitch': '+0%'},
-        'dominant': {'rate': '-5%', 'pitch': '-15%'},    # Commanding
+        'seductive': {'rate': '-10%', 'pitch': '-5Hz'},   # Slower, deeper
+        'excited': {'rate': '+10%', 'pitch': '+10Hz'},    # Fast, high
+        'whisper': {'rate': '-20%', 'pitch': '-10Hz'},    # Very slow, low
+        'normal': {'rate': '+0%', 'pitch': '+0Hz'},
+        'dominant': {'rate': '-5%', 'pitch': '-15Hz'},    # Commanding
     }
     
     def __init__(self):
