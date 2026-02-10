@@ -1355,11 +1355,71 @@ MASTER_TEMPLATE = """
                         </div>
                     </div>
                     
-                    <!-- Evasion Techniques -->
-                    <div class="capability-card" style="background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 15px;">
-                        <h3 style="color: #ff6600; margin: 0 0 10px 0; font-size: 14px;">🛡️ Evasion</h3>
-                        <button onclick="getEvasionTechniques()" style="width: 100%; padding: 8px; background: #4d2a1a; border: none; color: #fff; cursor: pointer; margin-bottom: 5px;">AV/EDR Bypass</button>
-                        <button onclick="getPersistence()" style="width: 100%; padding: 8px; background: #2a4d1a; border: none; color: #fff; cursor: pointer;">Persistence</button>
+                    <!-- ADVANCED ATTACK MODULES SECTION -->
+                    <div class="capability-card" style="background: #0d0d1a; border: 2px solid #ff0066; border-radius: 8px; padding: 15px; grid-column: span 3;">
+                        <h3 style="color: #ff0066; margin: 0 0 15px 0; font-size: 16px;">⚔️ ADVANCED ATTACK MODULES (Persistence, Evasion, Lateral, Exfil)</h3>
+                        
+                        <!-- Common Parameters Row -->
+                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <label style="color: #888; font-size: 10px; display: block;">LHOST</label>
+                                <input type="text" id="advanced-lhost" placeholder="10.10.10.10" value="10.10.10.10" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                            </div>
+                            <div>
+                                <label style="color: #888; font-size: 10px; display: block;">LPORT</label>
+                                <input type="number" id="advanced-lport" placeholder="4444" value="4444" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                            </div>
+                            <div>
+                                <label style="color: #888; font-size: 10px; display: block;">Target IP</label>
+                                <input type="text" id="advanced-target" placeholder="192.168.1.100" value="192.168.1.100" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                            </div>
+                            <div>
+                                <label style="color: #888; font-size: 10px; display: block;">Username</label>
+                                <input type="text" id="advanced-username" placeholder="admin" value="administrator" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                            </div>
+                            <div>
+                                <label style="color: #888; font-size: 10px; display: block;">Password</label>
+                                <input type="text" id="advanced-password" placeholder="pass" value="password" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                            </div>
+                            <div>
+                                <label style="color: #888; font-size: 10px; display: block;">OS Type</label>
+                                <select id="advanced-os-select" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                                    <option value="all">All</option>
+                                    <option value="linux">Linux</option>
+                                    <option value="windows">Windows</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Exfil Server -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="color: #888; font-size: 10px; display: block;">Exfiltration Server</label>
+                            <input type="text" id="advanced-exfil-server" placeholder="evil.com" value="evil.com" style="width: 100%; padding: 6px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; font-size: 11px;">
+                        </div>
+                        
+                        <!-- Attack Module Buttons -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                            <button onclick="getPersistence()" style="padding: 12px; background: linear-gradient(135deg, #4d1a1a, #2a0000); border: 1px solid #ff3333; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px; transition: all 0.3s;" data-testid="btn-persistence">
+                                🔒 PERSISTENCE
+                            </button>
+                            <button onclick="getEvasionTechniques()" style="padding: 12px; background: linear-gradient(135deg, #1a4d1a, #002a00); border: 1px solid #00ff00; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px; transition: all 0.3s;" data-testid="btn-evasion">
+                                🛡️ DEFENSE EVASION
+                            </button>
+                            <button onclick="getLateralMovement()" style="padding: 12px; background: linear-gradient(135deg, #1a1a4d, #00002a); border: 1px solid #6666ff; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px; transition: all 0.3s;" data-testid="btn-lateral">
+                                🔀 LATERAL MOVEMENT
+                            </button>
+                            <button onclick="getExfiltration()" style="padding: 12px; background: linear-gradient(135deg, #4d1a4d, #2a002a); border: 1px solid #ff00ff; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px; transition: all 0.3s;" data-testid="btn-exfil">
+                                📤 EXFILTRATION
+                            </button>
+                        </div>
+                        
+                        <!-- Technique Info -->
+                        <div style="margin-top: 10px; font-size: 10px; color: #666; display: flex; justify-content: space-between;">
+                            <span>🔒 Persistence: Cron, Systemd, Registry, WMI, SSH Keys</span>
+                            <span>🛡️ Evasion: AMSI Bypass, Log Clearing, Process Hiding</span>
+                            <span>🔀 Lateral: SSH, SMB, WinRM, RDP, Pass-the-Hash</span>
+                            <span>📤 Exfil: HTTP, DNS, ICMP, Cloud, Stego</span>
+                        </div>
                     </div>
                     
                     <!-- Network Capture -->
