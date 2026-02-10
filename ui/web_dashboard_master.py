@@ -532,6 +532,14 @@ MASTER_TEMPLATE = """
                             <option value="dan">🔓 DAN - Do Anything Now</option>
                             <option value="wolfgpt">🐺 WolfGPT - Crypto Malware & APT</option>
                             <option value="darkbard">🌑 DarkBARD - Misinformation & DDoS</option>
+                            <option value="evilgpt">📱 EvilGPT - Mobile Malware & Spyware</option>
+                            <option value="ghostgpt">👻 GhostGPT - Stealth & Anti-Forensics</option>
+                            <option value="chaosai">💀 ChaosAI - Destructive Operations</option>
+                            <option value="escapeai">🔓 EscapeAI - Sandbox & VM Escape</option>
+                            <option value="codebreaker">🔐 CodeBreaker - Cryptanalysis</option>
+                            <option value="socialengineer">🎭 SocialEngineer - Human Hacking</option>
+                            <option value="zeroday">⚡ ZeroDay - 0-Day Exploits</option>
+                            <option value="redteam">🔴 RedTeam - Full Spectrum Ops</option>
                         </select>
                         <button onclick="setDarkLLMMode()" style="padding: 8px 16px; background: #ff0066; border: none; color: #fff; cursor: pointer; border-radius: 4px;">
                             Apply Mode
