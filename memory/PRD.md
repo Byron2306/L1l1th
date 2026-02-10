@@ -1,72 +1,63 @@
-# LuciferOS - Product Requirements Document v4.5
+# LuciferOS - Product Requirements Document v5.0
 
 ## Original Problem Statement
-Build a comprehensive red-teaming platform with:
-- Web dashboard for all offensive security tools
-- Autonomous API key harvester with learning
-- Integration of real offensive security tools
-- Metasploit-like interface with payload generation
-- Uncensored AI assistant with persistent memory
+Build a comprehensive red-teaming platform with uncensored AI, offensive tools, and command injection capabilities.
 
-## Current Status: v4.5 - 24 Dark LLM Modes ✅
+## Current Status: v5.0 - Command Injector Edition ✅
 
-### What's New in v4.5
-- **24 Dark LLM Personas** (8 new additions)
-- **Proxy Rotation Integration** into all offensive tools
-- **Coding Agent with LILITH Fallback** (works without Groq key)
-- **Enhanced Memory System** auto-saves exploits from AI
+### New Features in v5.0
+- **⚡ COMMAND INJECTOR** - Paste and execute scripts/commands directly
+- **24 Dark LLM Personas** - Maximum AI modes
+- **Proxy Rotation** - Integrated into all tools
+- **Telegram Bot Token Set** - Ready to activate
+
+### Command Injector Features
+| Feature | Description |
+|---------|-------------|
+| **Execute** | Run bash, python, powershell, SQL, XSS payloads |
+| **Test** | Syntax validation before execution |
+| **Encode** | Base64, URL encoding for payloads |
+| **Save** | Store to LILITH memory |
+| **Templates** | RevShell, SQLi, XSS, LFI, RCE, WebShell, PrivEsc, Enum |
+
+### Quick Templates Available
+- 🐚 **RevShell** - Bash, Python, Netcat reverse shells
+- 💉 **SQLi** - SQL injection payloads
+- 📜 **XSS** - Cross-site scripting payloads
+- 📁 **LFI** - Local file inclusion
+- 💀 **RCE** - Remote code execution
+- 🕸️ **WebShell** - PHP web shells
+- ⬆️ **PrivEsc** - Privilege escalation commands
+- 🔍 **Enum** - System enumeration scripts
 
 ### 24 Dark LLM Modes
-| Category | Modes |
-|----------|-------|
-| **Maximum** | LILITH, DevilGPT |
-| **Malware** | WormGPT, EvilGPT, MalwareDev, WolfGPT |
-| **Web** | FraudGPT, WebExploit |
-| **Network** | DarkGemini, IoTAttack, CloudPwn |
-| **Stealth** | GhostGPT, ChaosAI, EscapeAI |
-| **Recon** | HackerGPT, PentestGPT, OSINTMaster |
-| **Exploit** | ZeroDay, RedTeam |
-| **Social** | SocialEngineer |
-| **Crypto** | CodeBreaker |
-| **General** | DAN, BlackHatAI, DarkBARD |
+LILITH, WormGPT, FraudGPT, DarkGemini, HackerGPT, DAN, WolfGPT, DarkBARD, EvilGPT, GhostGPT, ChaosAI, EscapeAI, CodeBreaker, SocialEngineer, ZeroDay, RedTeam, DevilGPT, BlackHatAI, PentestGPT, MalwareDev, WebExploit, OSINTMaster, IoTAttack, CloudPwn
 
-### Core Features
+### Telegram Bot
+- Token: `8329009190:AAFTUX4D0id7oVPEOqr9wy0r1HpJ9Up_2bw`
+- Status: Token set in environment
+- To start: `python3 /app/telegram_lilith_bot.py`
 
-#### 🤖 AI System
-- 24 Dark LLM personas with specialized prompts
-- g4f integration for free AI access
-- Memory auto-saves conversations and extracts exploits
-- Coding agent with LILITH fallback
+### API Endpoints
 
-#### 🔄 Proxy Rotation (NEW)
-- Integrated into SQLMap, requests
-- Auto-fetch from 5+ proxy sources
-- Parallel testing and rotation
-- HTTP, HTTPS, SOCKS4/5 support
+#### Command Injector
+- `POST /_dash/injector/execute` - Execute code
+- `POST /_dash/injector/test` - Test syntax
 
-#### ⚔️ Offensive Tools
-- Nmap ✅ (proxy-aware)
-- SQLMap ✅ (proxy-aware, saves findings to memory)
-- Hydra ✅
-- Dirb ✅
-- Hashcat ✅
+### Testing Results
+| Feature | Status |
+|---------|--------|
+| Command Injector | ✅ Execute & Test working |
+| 24 Dark LLM Modes | ✅ All available |
+| Proxy Rotation | ✅ Integrated |
+| Coding Agent | ✅ LILITH fallback |
+| Memory System | ✅ Saving |
+| Telegram Token | ✅ Set |
 
-#### 🧠 Memory System
-- SQLite database
-- Auto-extract code from AI responses
-- Save targets, credentials, exploits
-- Export knowledge base
+## Dashboard URL
+https://pentest-hub-18.preview.emergentagent.com
 
-#### 🔥 Shrek Payloads
-- 24+ reverse shell types
-- msfvenom command generation
-
-#### 📱 Telegram Bot
-- Ready at `/app/telegram_lilith_bot.py`
-- Needs bot token from @BotFather
-- Set via: `POST /_dash/telegram/set-token`
-
-### Architecture
+## Architecture
 ```
 /app/
 ├── tools/
@@ -74,54 +65,15 @@ Build a comprehensive red-teaming platform with:
 │   ├── lilith_memory.py      # Persistent storage
 │   ├── proxy_rotator.py      # Proxy rotation
 │   ├── offensive_tools.py    # Proxy-aware tools
-│   ├── shrek_payloads.py     # Payload generator
-│   └── lilith_full_backend.py # Coding agent fallback
+│   └── shrek_payloads.py     # Payload generator
 ├── ui/
-│   └── web_dashboard_master.py
-└── telegram_lilith_bot.py    # Ready for activation
+│   └── web_dashboard_master.py  # Command Injector UI
+├── telegram_lilith_bot.py    # Telegram bot
+└── backend/.env              # Telegram token stored
 ```
-
-### API Endpoints
-
-#### New/Updated
-- `POST /_dash/proxy/fetch` - Fetch proxies
-- `POST /_dash/proxy/test` - Test proxies
-- `GET /_dash/proxy/get` - Get working proxy
-- `GET /_dash/memory/stats` - Memory statistics
-- `POST /_dash/memory/save-exploit` - Save exploit
-- `POST /_dash/shrek/shells` - All shells
-- `POST /skill/run` - Coding agent (LILITH fallback)
-
-## Testing Results
-
-| Feature | Status |
-|---------|--------|
-| 24 Dark LLM Modes | ✅ Working |
-| Memory System | ✅ Saving |
-| Proxy Rotation | ✅ Integrated |
-| Shrek Payloads | ✅ 24 types |
-| Coding Agent | ✅ LILITH fallback |
-| SQLMap | ✅ Found vuln on testphp.vulnweb.com |
-| Telegram Bot | ⏳ Needs token |
-
-## How to Activate Telegram
-
-1. Message @BotFather on Telegram
-2. Create new bot: `/newbot`
-3. Get token (format: `123456789:ABC...`)
-4. Set via API:
-```bash
-curl -X POST "/_dash/telegram/set-token" \
-  -H "Content-Type: application/json" \
-  -d '{"token": "YOUR_BOT_TOKEN"}'
-```
-5. Run: `python3 /app/telegram_lilith_bot.py`
-
-## Dashboard
-https://pentest-hub-18.preview.emergentagent.com
 
 ## Backlog
-- [ ] More AI provider integrations
-- [ ] Auto-recon mode (chain tools)
-- [ ] Dashboard UI improvements
-- [ ] Additional exploit modules
+- [ ] Start Telegram bot as background service
+- [ ] Add more injection templates
+- [ ] Auto-recon mode
+- [ ] Mobile responsive UI
