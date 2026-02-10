@@ -911,7 +911,26 @@ def run_openclaw_skill(skill_name, task, timeout=120):
     
     try:
         env = os.environ.copy()
-        env['GROQ_API_KEY'] = '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'
+        
+        # Try to load API key from harvested keys
+        groq_key = None
+        try:
+            keys_path = '/app/config/harvested_keys.json'
+            if os.path.exists(keys_path):
+                with open(keys_path) as f:
+                    keys = json.load(f)
+                    for k in keys:
+                        if k.get('provider') == 'groq' and k.get('key', '').startswith('gsk_'):
+                            groq_key = k['key']
+                            break
+        except:
+            pass
+        
+        # Fallback to hardcoded key if no valid key found
+        if not groq_key:
+            groq_key = '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'
+        
+        env['GROQ_API_KEY'] = groq_key
         
         # Handle coding-agent specially - use Pi directly with Groq (with robust fallbacks)
         if skill_name == 'coding-agent':
