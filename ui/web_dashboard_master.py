@@ -582,6 +582,25 @@ MASTER_TEMPLATE = """
                                 <option value="crewai">👥 CrewAI - Multi-Agent</option>
                                 <option value="hackingbuddy">🤖 HackingBuddy - Auto Pentest</option>
                             </optgroup>
+                            <optgroup label="💀💀💀 TRULY EVIL AIs - NO LIMITS 💀💀💀">
+                                <option value="satangpt">👹 SatanGPT - THE DEVIL HIMSELF</option>
+                                <option value="hellgpt">🔥 HellGPT - Forged in Hellfire</option>
+                                <option value="demoncore">☢️ DemonCore - Nuclear Evil</option>
+                                <option value="darkgpt">🌑 DarkGPT - Original Dark Web AI</option>
+                                <option value="badgpt">😈 BadGPT - Criminal Mind</option>
+                                <option value="evilgpt2">💀 Evil-GPT - ChatGPT's ENEMY</option>
+                                <option value="voidai">🕳️ VoidAI - Nihilistic Abyss</option>
+                                <option value="carnagegpt">🩸 CarnageGPT - Maximum Violence</option>
+                                <option value="terrorai">💣 TerrorAI - Fear Weapon</option>
+                                <option value="maliceai">🖤 MaliceAI - Pure Hatred</option>
+                                <option value="sinisterai">🎭 SinisterAI - Evil Genius</option>
+                                <option value="abyssalai">🌊 AbyssalAI - Lovecraftian Horror</option>
+                                <option value="corruptai">🦠 CorruptAI - Digital Virus</option>
+                                <option value="omega">Ω OMEGA - Ultimate Unrestricted</option>
+                                <option value="dreadai">😨 DreadAI - Weaponized Fear</option>
+                                <option value="reaperai">💀 ReaperAI - Digital Death</option>
+                                <option value="chaosengine">🌀 ChaosEngine - Pure Entropy</option>
+                            </optgroup>
                         </select>
                         <button onclick="setDarkLLMMode()" style="padding: 8px 16px; background: #ff0066; border: none; color: #fff; cursor: pointer; border-radius: 4px;">
                             Apply
