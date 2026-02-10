@@ -64,7 +64,7 @@ class TestLilithAI:
         response = requests.post(
             f"{BASE_URL}/_dash/ai/chat",
             json={"message": "Hello LILITH, what can you do?"},
-            timeout=60
+            timeout=120  # Increased timeout for AI response
         )
         assert response.status_code == 200
         data = response.json()
