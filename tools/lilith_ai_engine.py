@@ -172,11 +172,22 @@ You are running on the LuciferOS red team platform. Help users with their securi
             if os.path.exists(keys_path):
                 with open(keys_path, 'r') as f:
                     data = json.load(f)
-                    for provider, info in data.items():
-                        if isinstance(info, dict) and 'key' in info:
-                            keys[provider.lower()] = info['key']
-                        elif isinstance(info, str):
-                            keys[provider.lower()] = info
+                    
+                    # Handle list format
+                    if isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict) and 'provider' in item and 'key' in item:
+                                provider = item['provider'].lower()
+                                keys[provider] = item['key']
+                    
+                    # Handle dict format
+                    elif isinstance(data, dict):
+                        for provider, info in data.items():
+                            if isinstance(info, dict) and 'key' in info:
+                                keys[provider.lower()] = info['key']
+                            elif isinstance(info, str):
+                                keys[provider.lower()] = info
+                                
         except Exception as e:
             print(f"[LILITH] Failed to load keys: {e}")
         
@@ -193,6 +204,7 @@ You are running on the LuciferOS red team platform. Help users with their securi
             if key and provider not in keys:
                 keys[provider] = key
         
+        print(f"[LILITH] Loaded API keys for: {list(keys.keys())}")
         return keys
     
     def _mark_provider_status(self, provider: str, success: bool, error: str = None):
