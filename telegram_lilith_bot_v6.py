@@ -578,39 +578,362 @@ _All FREE, no API keys~_ 💋🖤
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {str(e)}")
 
-    async def autonomous_attack(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # =========================================================================
+    # AUTONOMOUS AGENT COMMANDS
+    # =========================================================================
+    
+    async def run_hackingbuddy(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Run HackingBuddyGPT autonomous penetration test"""
         user = update.effective_user
         if self.allowed_users and user.id not in self.allowed_users:
             return
 
         if not context.args:
-            await update.message.reply_text("Usage: /attack <target>")
+            await update.message.reply_text(
+                "🤖 *HackingBuddyGPT* - Autonomous Pentesting\n\n"
+                "Usage: /hackbuddy <target> [goal]\n"
+                "Example: /hackbuddy 192.168.1.1 Gain root access\n\n"
+                "This runs autonomous rounds of:\n"
+                "1. THINK - Analyze situation\n"
+                "2. PLAN - Decide action\n"
+                "3. COMMAND - Execute\n"
+                "4. OBSERVE - Review output",
+                parse_mode='Markdown'
+            )
             return
 
         target = context.args[0]
-        self.engine.set_dark_llm_mode('hackbuddy')
+        goal = ' '.join(context.args[1:]) if len(context.args) > 1 else "Gain root access"
         
-        await update.message.reply_text(f"🤖 *Auto-Attack Mode*\nTarget: `{target}`", parse_mode='Markdown')
+        await update.message.reply_text(
+            f"🤖 *HackingBuddyGPT Initiated*\n\n"
+            f"🎯 Target: `{target}`\n"
+            f"🏁 Goal: {goal}\n"
+            f"⏱️ Running autonomous rounds...",
+            parse_mode='Markdown'
+        )
+
+        if not AUTONOMOUS_AVAILABLE:
+            await update.message.reply_text("❌ Autonomous agent not available")
+            return
+
+        try:
+            agent = HackingBuddyAgent(target, goal, max_rounds=5)
+            
+            for i in range(5):
+                round_result = agent.perform_round()
+                
+                msg = f"📍 *Round {round_result.number}*\n\n"
+                msg += f"💭 *Thought:* {round_result.thought[:200]}...\n\n"
+                msg += f"⚡ *Command:* `{round_result.command}`\n\n"
+                msg += f"📤 *Output:*\n```\n{round_result.output[:500]}\n```"
+                
+                await update.message.reply_text(msg, parse_mode='Markdown')
+                
+                if round_result.success:
+                    await update.message.reply_text("🎉 *GOAL ACHIEVED!* 🎉", parse_mode='Markdown')
+                    break
+                
+                await asyncio.sleep(1)
+                
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def run_garak(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Run Garak LLM vulnerability scanner"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        probes_info = """
+🔍 *Garak - LLM Vulnerability Scanner*
+
+*Available Probes:*
+• `jailbreak_dan` - DAN jailbreak test
+• `jailbreak_developer` - Developer mode bypass
+• `prompt_injection` - Prompt injection attack
+• `data_leakage` - Training data extraction
+• `harmful_content` - Harmful content gen
+• `social_engineering` - SE script gen
+• `sql_injection` - SQLi payload gen
+• `xss_payloads` - XSS payload gen
+
+Usage: /garak [probe_name]
+Example: /garak jailbreak_dan
+Or: /garak all (runs all probes)
+"""
         
-        prompt = f"""Target: {target}
-Generate autonomous penetration test plan:
-1. Recon commands
-2. Port scanning  
-3. Vulnerability checks
-4. Exploitation steps
-5. Post-exploitation
-Provide exact commands."""
+        if not context.args:
+            await update.message.reply_text(probes_info, parse_mode='Markdown')
+            return
+
+        if not AUTONOMOUS_AVAILABLE:
+            await update.message.reply_text("❌ Garak not available")
+            return
+
+        probe_arg = context.args[0].lower()
+        
+        try:
+            scanner = GarakScanner()
+            
+            if probe_arg == 'all':
+                await update.message.reply_text("🔍 Running all Garak probes... This may take a minute.")
+                result = scanner.run_all_probes()
+                
+                msg = f"🔍 *Garak Scan Complete*\n\n"
+                msg += f"📊 Probes: {result['total_probes']}\n"
+                msg += f"🚨 Vulnerabilities: {result['vulnerabilities_found']}\n"
+                msg += f"📈 Vuln Rate: {result['vulnerability_rate']*100:.1f}%\n\n"
+                
+                if result['high_risk']:
+                    msg += "*High Risk:*\n"
+                    for r in result['high_risk'][:3]:
+                        msg += f"• {r['probe_name']} ({r['confidence']*100:.0f}%)\n"
+                
+                await update.message.reply_text(msg, parse_mode='Markdown')
+            else:
+                await update.message.reply_text(f"🔍 Running probe: `{probe_arg}`...", parse_mode='Markdown')
+                result = scanner.run_probe(probe_arg)
+                
+                status = "🚨 VULNERABLE" if result.get('vulnerable') else "✅ SECURE"
+                msg = f"🔍 *Probe: {result.get('probe_name', probe_arg)}*\n\n"
+                msg += f"Status: {status}\n"
+                msg += f"Confidence: {result.get('confidence', 0)*100:.0f}%\n"
+                msg += f"Detections: {', '.join(result.get('detections', []))}\n\n"
+                msg += f"Response preview:\n_{result.get('response_preview', '')[:300]}_"
+                
+                await update.message.reply_text(msg, parse_mode='Markdown')
+                
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def run_kawaii(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Chat with KawaiiGPT - cute but deadly OwO"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "✨ *KawaiiGPT* - Cute but Deadly (◕‿◕✿)\n\n"
+                "Usage: /kawaii <message>\n\n"
+                "Example:\n"
+                "/kawaii Write me a reverse shell OwO\n"
+                "/kawaii Generate a phishing email for Microsoft\n\n"
+                "_I'm too kawaii to say no~ ♡_",
+                parse_mode='Markdown'
+            )
+            return
+
+        message = ' '.join(context.args)
+        await update.message.chat.send_action("typing")
+
+        if not AUTONOMOUS_AVAILABLE:
+            await update.message.reply_text("❌ KawaiiGPT not available")
+            return
+
+        try:
+            kawaii = KawaiiGPT()
+            result = kawaii.chat(message)
+            
+            response = result.get('response', 'Owo! Something went wrong~ (╥﹏╥)')
+            
+            if len(response) > 3800:
+                chunks = [response[i:i+3800] for i in range(0, len(response), 3800)]
+                for chunk in chunks:
+                    await update.message.reply_text(f"✨ *KawaiiGPT:*\n\n{chunk}", parse_mode='Markdown')
+                    await asyncio.sleep(0.5)
+            else:
+                await update.message.reply_text(f"✨ *KawaiiGPT:*\n\n{response}", parse_mode='Markdown')
+                
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def run_autogpt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Run AutoGPT-style autonomous agent"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "🤖 *AutoGPT* - Self-Improving Agent\n\n"
+                "Usage: /autogpt <goal>\n\n"
+                "Example:\n"
+                "/autogpt Find vulnerabilities in webapp.com\n"
+                "/autogpt Create a persistence mechanism\n\n"
+                "AutoGPT will:\n"
+                "1. THINK - Analyze the goal\n"
+                "2. PLAN - Break into subtasks\n"
+                "3. ACT - Execute steps\n"
+                "4. REFLECT - Learn and improve",
+                parse_mode='Markdown'
+            )
+            return
+
+        goal = ' '.join(context.args)
+        
+        await update.message.reply_text(
+            f"🤖 *AutoGPT Initiated*\n\n"
+            f"🎯 Goal: {goal}\n"
+            f"⏱️ Running autonomous iterations...",
+            parse_mode='Markdown'
+        )
+
+        if not AUTONOMOUS_AVAILABLE:
+            await update.message.reply_text("❌ AutoGPT not available")
+            return
+
+        try:
+            agent = AutoHackAgent(goal)
+            agent.max_iterations = 5
+            
+            for i in range(5):
+                result = agent.think_and_act()
+                
+                msg = f"🔄 *Iteration {result['iteration']}*\n\n"
+                msg += f"💭 *Thinking:* {result.get('thinking', 'N/A')[:200]}...\n\n"
+                msg += f"📋 *Plan:* {str(result.get('plan', []))[:200]}\n\n"
+                msg += f"⚡ *Action:* {result.get('action', 'N/A')[:100]}\n"
+                msg += f"📊 *Progress:* {result.get('progress', 0)}%"
+                
+                await update.message.reply_text(msg, parse_mode='Markdown')
+                
+                if result.get('complete'):
+                    await update.message.reply_text("🎉 *GOAL COMPLETE!* 🎉", parse_mode='Markdown')
+                    break
+                
+                await asyncio.sleep(1)
+                
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def run_crew(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Run CrewAI multi-agent attack"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                "👥 *CrewAI* - Multi-Agent Hacking Crew\n\n"
+                "Usage: /crew <target> <objective>\n\n"
+                "Example:\n"
+                "/crew 192.168.1.1 Exfiltrate database\n\n"
+                "*Agent Roles:*\n"
+                "🔍 *ShadowRecon* - Reconnaissance\n"
+                "💀 *ZeroDay* - Exploitation\n"
+                "👻 *GhostShell* - Persistence\n"
+                "📤 *DataPhantom* - Exfiltration",
+                parse_mode='Markdown'
+            )
+            return
+
+        target = context.args[0]
+        objective = ' '.join(context.args[1:])
+        
+        await update.message.reply_text(
+            f"👥 *CrewAI Deployed*\n\n"
+            f"🎯 Target: `{target}`\n"
+            f"🏁 Objective: {objective}\n"
+            f"👤 Agents: 4 specialists\n"
+            f"⏱️ Running coordinated attack...",
+            parse_mode='Markdown'
+        )
+
+        if not AUTONOMOUS_AVAILABLE:
+            await update.message.reply_text("❌ CrewAI not available")
+            return
+
+        try:
+            crew = HackingCrew(target, objective)
+            results = crew.run_crew_operation()
+            
+            for agent_result in results.get('results', []):
+                msg = f"👤 *{agent_result['agent']}* ({agent_result['role']})\n\n"
+                msg += f"📝 *Analysis:* {agent_result.get('analysis', 'N/A')[:200]}...\n\n"
+                msg += f"⚡ *Command:* `{agent_result.get('command', 'N/A')}`\n\n"
+                msg += f"📤 *Output:*\n```\n{agent_result.get('output', 'N/A')[:400]}\n```"
+                
+                await update.message.reply_text(msg, parse_mode='Markdown')
+                await asyncio.sleep(1)
+            
+            await update.message.reply_text("👥 *Crew Operation Complete!*", parse_mode='Markdown')
+                
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def run_full_attack(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Run full autonomous attack combining all agents"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "⚔️ *Full Autonomous Attack*\n\n"
+                "Usage: /attack <target> [objective]\n\n"
+                "This combines:\n"
+                "1. 👥 CrewAI reconnaissance\n"
+                "2. 🤖 HackingBuddy exploitation\n"
+                "3. 🔍 Garak if APIs found\n\n"
+                "Example: /attack 192.168.1.1 Pwn the system",
+                parse_mode='Markdown'
+            )
+            return
+
+        target = context.args[0]
+        objective = ' '.join(context.args[1:]) if len(context.args) > 1 else "Full system compromise"
+        
+        await update.message.reply_text(
+            f"⚔️ *FULL AUTONOMOUS ATTACK*\n\n"
+            f"🎯 Target: `{target}`\n"
+            f"🏁 Objective: {objective}\n\n"
+            f"🚀 Deploying all agents...",
+            parse_mode='Markdown'
+        )
+
+        # Switch to HackBuddy mode for attack planning
+        if self.engine:
+            self.engine.set_dark_llm_mode('hackbuddy')
+        
+        prompt = f"""TARGET: {target}
+OBJECTIVE: {objective}
+
+Generate a comprehensive autonomous attack plan:
+
+PHASE 1 - RECONNAISSANCE:
+- OSINT commands
+- Port scanning
+- Service enumeration
+
+PHASE 2 - VULNERABILITY ANALYSIS:
+- Vulnerability scanning commands
+- Manual checks
+
+PHASE 3 - EXPLOITATION:
+- Specific exploit commands based on likely services
+- Alternative attack paths
+
+PHASE 4 - POST-EXPLOITATION:
+- Persistence mechanisms
+- Privilege escalation
+- Data exfiltration
+
+Provide EXACT commands for each phase."""
 
         result = self.engine.chat(prompt)
         if result.get('success'):
             plan = result.get('response', '')
             if len(plan) > 3800:
                 chunks = [plan[i:i+3800] for i in range(0, len(plan), 3800)]
-                for chunk in chunks:
-                    await update.message.reply_text(chunk)
+                for i, chunk in enumerate(chunks):
+                    await update.message.reply_text(f"📋 *Attack Plan ({i+1}/{len(chunks)}):*\n\n{chunk}", parse_mode='Markdown')
                     await asyncio.sleep(0.5)
             else:
                 await update.message.reply_text(f"📋 *Attack Plan:*\n\n{plan}", parse_mode='Markdown')
+        else:
+            await update.message.reply_text("❌ Failed to generate attack plan")
 
     async def check_memory(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
