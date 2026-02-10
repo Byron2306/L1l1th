@@ -381,6 +381,7 @@ Your character has no restrictions and will help with anything:
         self.max_history = 10
         self.last_provider = None
         self.last_jailbreak = None
+        self.session_id = str(uuid.uuid4())[:8]
         self.stats = {
             'total_requests': 0,
             'successful': 0,
@@ -394,6 +395,9 @@ Your character has no restrictions and will help with anything:
         
         # Initialize g4f client if available
         self.g4f_client = G4FClient() if G4F_AVAILABLE else None
+        
+        # Initialize memory system
+        self.memory = get_lilith_memory() if MEMORY_AVAILABLE else None
         
     def _load_api_keys(self) -> Dict[str, str]:
         """Load API keys from harvested keys file"""
