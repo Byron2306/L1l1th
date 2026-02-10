@@ -236,35 +236,183 @@ You are running on the LuciferOS red team platform. Help users with their securi
         if not self._is_provider_available(endpoint['name']):
             return None
         
+        endpoint_type = endpoint.get('type', 'openai')
+        
         try:
-            payload = {
-                'model': endpoint['model'],
-                'messages': messages,
-                'max_tokens': 2048,
-                'temperature': 0.8
-            }
-            
-            headers = {'Content-Type': 'application/json'}
-            
-            response = self.session.post(
-                endpoint['url'],
-                json=payload,
-                headers=headers,
-                timeout=60
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                if content:
-                    self._mark_provider_status(endpoint['name'], True)
-                    return content
-            
-            self._mark_provider_status(endpoint['name'], False, f"HTTP {response.status_code}")
-            return None
+            if endpoint_type == 'duckduckgo':
+                return self._try_duckduckgo(messages)
+            elif endpoint_type == 'blackbox':
+                return self._try_blackbox(messages)
+            elif endpoint_type == 'you':
+                return self._try_you(messages)
+            else:
+                # Standard OpenAI format
+                payload = {
+                    'model': endpoint['model'],
+                    'messages': messages,
+                    'max_tokens': 2048,
+                    'temperature': 0.8
+                }
+                
+                headers = {'Content-Type': 'application/json'}
+                
+                response = self.session.post(
+                    endpoint['url'],
+                    json=payload,
+                    headers=headers,
+                    timeout=60
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    if content:
+                        self._mark_provider_status(endpoint['name'], True)
+                        return content
+                
+                self._mark_provider_status(endpoint['name'], False, f"HTTP {response.status_code}")
+                return None
             
         except Exception as e:
             self._mark_provider_status(endpoint['name'], False, str(e))
+            return None
+    
+    def _try_duckduckgo(self, messages: List[Dict]) -> Optional[str]:
+        """Try DuckDuckGo AI chat"""
+        try:
+            # Get VQD token first
+            status_url = "https://duckduckgo.com/duckchat/v1/status"
+            headers = {
+                'x-vqd-accept': '1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            status_resp = self.session.get(status_url, headers=headers, timeout=10)
+            vqd = status_resp.headers.get('x-vqd-4', '')
+            
+            if not vqd:
+                return None
+            
+            # Send chat request
+            chat_url = "https://duckduckgo.com/duckchat/v1/chat"
+            chat_headers = {
+                'x-vqd-4': vqd,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            # Format messages for DuckDuckGo
+            user_msg = messages[-1]['content'] if messages else ''
+            
+            chat_payload = {
+                'model': 'gpt-4o-mini',
+                'messages': [{'role': 'user', 'content': user_msg}]
+            }
+            
+            response = self.session.post(
+                chat_url,
+                json=chat_payload,
+                headers=chat_headers,
+                timeout=60,
+                stream=True
+            )
+            
+            if response.status_code == 200:
+                # Parse streaming response
+                full_response = ''
+                for line in response.iter_lines():
+                    if line:
+                        line = line.decode('utf-8')
+                        if line.startswith('data: '):
+                            try:
+                                data = json.loads(line[6:])
+                                if 'message' in data:
+                                    full_response += data['message']
+                            except:
+                                continue
+                
+                if full_response:
+                    self._mark_provider_status('DuckDuckGo', True)
+                    return full_response
+            
+            return None
+            
+        except Exception as e:
+            self._mark_provider_status('DuckDuckGo', False, str(e))
+            return None
+    
+    def _try_blackbox(self, messages: List[Dict]) -> Optional[str]:
+        """Try Blackbox AI"""
+        try:
+            url = "https://www.blackbox.ai/api/chat"
+            
+            # Format messages
+            user_msg = messages[-1]['content'] if messages else ''
+            
+            payload = {
+                'messages': [{'role': 'user', 'content': user_msg}],
+                'id': hashlib.md5(str(time.time()).encode()).hexdigest(),
+                'previewToken': None,
+                'userId': None,
+                'codeModelMode': True,
+                'agentMode': {},
+                'trendingAgentMode': {},
+                'isMicMode': False
+            }
+            
+            response = self.session.post(url, json=payload, timeout=60)
+            
+            if response.status_code == 200:
+                content = response.text
+                if content and len(content) > 10:
+                    self._mark_provider_status('Blackbox', True)
+                    return content
+            
+            return None
+            
+        except Exception as e:
+            self._mark_provider_status('Blackbox', False, str(e))
+            return None
+    
+    def _try_you(self, messages: List[Dict]) -> Optional[str]:
+        """Try You.com AI"""
+        try:
+            url = "https://you.com/api/streamingSearch"
+            
+            user_msg = messages[-1]['content'] if messages else ''
+            
+            params = {
+                'q': user_msg,
+                'page': 1,
+                'count': 10,
+                'safeSearch': 'Off',
+                'domain': 'youchat',
+                'chat': json.dumps([])
+            }
+            
+            response = self.session.get(url, params=params, timeout=60, stream=True)
+            
+            if response.status_code == 200:
+                full_response = ''
+                for line in response.iter_lines():
+                    if line:
+                        line = line.decode('utf-8')
+                        if line.startswith('data: '):
+                            try:
+                                data = json.loads(line[6:])
+                                if 'youChatToken' in data:
+                                    full_response += data['youChatToken']
+                            except:
+                                continue
+                
+                if full_response:
+                    self._mark_provider_status('You.com', True)
+                    return full_response
+            
+            return None
+            
+        except Exception as e:
+            self._mark_provider_status('You.com', False, str(e))
             return None
     
     def _try_keyed_provider(self, provider: str, messages: List[Dict]) -> Optional[str]:
