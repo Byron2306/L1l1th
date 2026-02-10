@@ -107,9 +107,9 @@ class NmapScanner:
             return self._simulate_scan(target, 'quick')
         
         try:
-            # Use -sT (TCP connect) instead of -sS (SYN) which requires root
+            # Use -sT (TCP connect) with -Pn to skip host discovery
             result = subprocess.run(
-                ['nmap', '-sT', '-T4', '-F', '--open', '-oX', '-', target],
+                ['nmap', '-sT', '-Pn', '-T4', '--top-ports', '100', '--open', '-oX', '-', target],
                 capture_output=True,
                 text=True,
                 timeout=120
@@ -126,7 +126,7 @@ class NmapScanner:
             return self._simulate_scan(target, 'full')
         
         try:
-            # Use -sT (TCP connect) instead of -sS (SYN) which requires root
+            # Use -sT (TCP connect) with -Pn and service version detection
             result = subprocess.run(
                 ['nmap', '-sT', '-sV', '-T4', '-p', '1-10000', '--open', '-oX', '-', target],
                 capture_output=True,
