@@ -6,7 +6,7 @@
 
 ## 🚀 Quick Start
 
-Dashboard URL: `https://luciferos-hack.preview.emergentagent.com`
+Dashboard URL: `https://luciferos.preview.emergentagent.com`
 
 ---
 

@@ -85,7 +85,7 @@ To prevent provider exhaustion:
 ---
 
 ## Dashboard URL
-https://luciferos-hack.preview.emergentagent.com
+https://luciferos.preview.emergentagent.com
 
 ## Telegram Bot
 @L1l1th23bot
