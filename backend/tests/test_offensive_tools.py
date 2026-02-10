@@ -9,7 +9,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://lucifer-redteam.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pentest-hub-18.preview.emergentagent.com')
 
 class TestDashboardStatus:
     """Test dashboard status endpoints"""

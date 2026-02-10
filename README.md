@@ -6,7 +6,7 @@
 
 ## 🚀 Quick Start
 
-Dashboard URL: `https://lucifer-redteam.preview.emergentagent.com`
+Dashboard URL: `https://pentest-hub-18.preview.emergentagent.com`
 
 ---
 
