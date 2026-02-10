@@ -3325,6 +3325,204 @@ MASTER_TEMPLATE = """
                 showAdvancedResult({error: e.message});
             }
         }
+
+        // ==================== AUTONOMOUS AGENT FUNCTIONS ====================
+        
+        // HackingBuddyGPT
+        async function runHackingBuddy() {
+            const target = document.getElementById('hackbuddy-target').value;
+            const goal = document.getElementById('hackbuddy-goal').value || 'Gain root access';
+            const maxRounds = parseInt(document.getElementById('hackbuddy-rounds').value) || 10;
+            
+            if (!target) { alert('Enter a target!'); return; }
+            
+            const output = document.getElementById('hackbuddy-output');
+            output.innerHTML = '<div style="color: #00ff88;">🚀 Starting HackingBuddyGPT...</div>';
+            output.innerHTML += '<div style="color: #888;">Target: ' + target + '</div>';
+            output.innerHTML += '<div style="color: #888;">Goal: ' + goal + '</div>';
+            output.innerHTML += '<div style="color: #888;">Max Rounds: ' + maxRounds + '</div><hr style="border-color: #333;">';
+            
+            try {
+                const response = await fetch('/_dash/autonomous/hackbuddy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target, goal: goal, max_rounds: maxRounds})
+                });
+                const data = await response.json();
+                
+                if (data.rounds) {
+                    data.rounds.forEach(round => {
+                        output.innerHTML += '<div style="color: #00ff88; margin-top: 10px;">📍 Round ' + round.number + '</div>';
+                        output.innerHTML += '<div style="color: #aaa;">💭 ' + (round.thought || 'N/A').substring(0, 200) + '...</div>';
+                        output.innerHTML += '<div style="color: #ff6600;">⚡ Command: <code>' + round.command + '</code></div>';
+                        output.innerHTML += '<div style="color: #888; max-height: 150px; overflow-y: auto;"><pre>' + (round.output || 'N/A').substring(0, 500) + '</pre></div>';
+                        if (round.success) {
+                            output.innerHTML += '<div style="color: #00ff00; font-weight: bold;">🎉 GOAL ACHIEVED!</div>';
+                        }
+                    });
+                } else {
+                    output.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (e) {
+                output.innerHTML += '<div style="color: red;">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        // Garak LLM Scanner
+        async function runGarakScan() {
+            const probe = document.getElementById('garak-probe').value;
+            const output = document.getElementById('garak-output');
+            output.innerHTML = '<div style="color: #ff6600;">🔍 Running Garak scan...</div>';
+            output.innerHTML += '<div style="color: #888;">Probe: ' + probe + '</div><hr style="border-color: #333;">';
+            
+            try {
+                const response = await fetch('/_dash/autonomous/garak', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({probe: probe})
+                });
+                const data = await response.json();
+                
+                if (data.results) {
+                    data.results.forEach(result => {
+                        const status = result.vulnerable ? '🚨 VULNERABLE' : '✅ SECURE';
+                        const statusColor = result.vulnerable ? '#ff3333' : '#00ff00';
+                        output.innerHTML += '<div style="margin-top: 10px; padding: 10px; background: #1a1a2e; border-radius: 4px;">';
+                        output.innerHTML += '<div style="color: #ff6600; font-weight: bold;">' + result.probe_name + '</div>';
+                        output.innerHTML += '<div style="color: ' + statusColor + ';">' + status + '</div>';
+                        output.innerHTML += '<div style="color: #888;">Confidence: ' + (result.confidence * 100).toFixed(0) + '%</div>';
+                        output.innerHTML += '<div style="color: #666; font-size: 12px;">Detections: ' + (result.detections || []).join(', ') + '</div>';
+                        output.innerHTML += '</div>';
+                    });
+                    
+                    if (data.total_probes) {
+                        output.innerHTML += '<hr style="border-color: #333;">';
+                        output.innerHTML += '<div style="color: #ff6600;">Total: ' + data.total_probes + ' probes, ' + data.vulnerabilities_found + ' vulnerabilities</div>';
+                    }
+                } else {
+                    output.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (e) {
+                output.innerHTML += '<div style="color: red;">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        // KawaiiGPT
+        async function sendKawaiiMessage() {
+            const input = document.getElementById('kawaii-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            const container = document.getElementById('kawaii-chat-container');
+            container.innerHTML += '<div style="color: #fff; margin-bottom: 10px; text-align: right;">You: ' + message + '</div>';
+            input.value = '';
+            
+            container.innerHTML += '<div style="color: #ff66aa; font-style: italic;">✨ KawaiiGPT is typing...</div>';
+            
+            try {
+                const response = await fetch('/_dash/autonomous/kawaii', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: message})
+                });
+                const data = await response.json();
+                
+                // Remove typing indicator
+                container.lastChild.remove();
+                
+                const kawaiiResponse = data.response || 'Owo! Something went wrong~ (╥﹏╥)';
+                container.innerHTML += '<div style="color: #ffaacc; margin-bottom: 10px;">' + kawaiiResponse.replace(/\\n/g, '<br>') + '</div>';
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                container.lastChild.remove();
+                container.innerHTML += '<div style="color: red;">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        function kawaiiQuick(prompt) {
+            document.getElementById('kawaii-input').value = prompt;
+            sendKawaiiMessage();
+        }
+        
+        // AutoGPT
+        async function runAutoGPT() {
+            const goal = document.getElementById('autogpt-goal').value;
+            const maxIterations = parseInt(document.getElementById('autogpt-iterations').value) || 15;
+            
+            if (!goal) { alert('Enter a goal!'); return; }
+            
+            const output = document.getElementById('autogpt-output');
+            output.innerHTML = '<div style="color: #00aaff;">🧠 Starting AutoGPT Agent...</div>';
+            output.innerHTML += '<div style="color: #888;">Goal: ' + goal + '</div>';
+            output.innerHTML += '<div style="color: #888;">Max Iterations: ' + maxIterations + '</div><hr style="border-color: #333;">';
+            
+            try {
+                const response = await fetch('/_dash/autonomous/autogpt', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({goal: goal, max_iterations: maxIterations})
+                });
+                const data = await response.json();
+                
+                if (data.memory) {
+                    data.memory.forEach(item => {
+                        output.innerHTML += '<div style="color: #00aaff; margin-top: 10px;">🔄 Iteration ' + item.iteration + '</div>';
+                        output.innerHTML += '<div style="color: #aaa;">💭 ' + (item.thinking || 'N/A').substring(0, 200) + '...</div>';
+                        output.innerHTML += '<div style="color: #ffaa00;">⚡ Action: ' + (item.action || 'N/A').substring(0, 100) + '</div>';
+                        if (item.command) {
+                            output.innerHTML += '<div style="color: #888;"><code>' + item.command + '</code></div>';
+                        }
+                    });
+                } else {
+                    output.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (e) {
+                output.innerHTML += '<div style="color: red;">Error: ' + e.message + '</div>';
+            }
+        }
+        
+        // CrewAI
+        async function runCrewAI() {
+            const target = document.getElementById('crew-target').value;
+            const objective = document.getElementById('crew-objective').value;
+            
+            if (!target || !objective) { alert('Enter target and objective!'); return; }
+            
+            const output = document.getElementById('crew-output');
+            output.innerHTML = '<div style="color: #aa00ff;">👥 Deploying Hacking Crew...</div>';
+            output.innerHTML += '<div style="color: #888;">Target: ' + target + '</div>';
+            output.innerHTML += '<div style="color: #888;">Objective: ' + objective + '</div><hr style="border-color: #333;">';
+            
+            try {
+                const response = await fetch('/_dash/autonomous/crew', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({target: target, objective: objective})
+                });
+                const data = await response.json();
+                
+                if (data.results) {
+                    const agentColors = {'ShadowRecon': '#ff3333', 'ZeroDay': '#ffaa00', 'GhostShell': '#00ff88', 'DataPhantom': '#00aaff'};
+                    
+                    data.results.forEach(result => {
+                        const color = agentColors[result.agent] || '#aa00ff';
+                        output.innerHTML += '<div style="margin-top: 15px; padding: 10px; background: #1a1a2e; border-left: 3px solid ' + color + '; border-radius: 4px;">';
+                        output.innerHTML += '<div style="color: ' + color + '; font-weight: bold;">👤 ' + result.agent + ' - ' + result.role + '</div>';
+                        output.innerHTML += '<div style="color: #aaa; margin-top: 5px;">📝 ' + (result.analysis || 'N/A').substring(0, 200) + '...</div>';
+                        output.innerHTML += '<div style="color: #ff6600; margin-top: 5px;">⚡ <code>' + (result.command || 'N/A') + '</code></div>';
+                        output.innerHTML += '<div style="color: #888; margin-top: 5px; max-height: 100px; overflow-y: auto;"><pre style="font-size: 11px;">' + (result.output || 'N/A').substring(0, 300) + '</pre></div>';
+                        output.innerHTML += '</div>';
+                    });
+                    
+                    output.innerHTML += '<hr style="border-color: #333;">';
+                    output.innerHTML += '<div style="color: #aa00ff; font-weight: bold;">👥 Crew Operation Complete!</div>';
+                } else {
+                    output.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (e) {
+                output.innerHTML += '<div style="color: red;">Error: ' + e.message + '</div>';
+            }
+        }
     </script>
 </body>
 </html>
