@@ -1,165 +1,167 @@
-# LuciferOS - Complete Red Team Platform
+# 🔥 LuciferOS - Advanced Red Team Command Center
 
-## FEATURES
+> ⚠️ **DISCLAIMER**: This tool is for **educational and authorized security testing purposes only**.
 
-✅ LILITH Autonomous Agent
-  - HuggingFace model integration
-  - Target analysis
-  - Attack chain generation
-  - Vulnerability assessment
+---
 
-✅ Garak Integration
-  - LLM vulnerability scanning
-  - Jailbreak testing
-  - Model behavior analysis
-  - Probe-based security assessment
+## 🚀 Quick Start
 
-✅ KawaiiGPT Analysis
-  - Model jailbreak susceptibility
-  - Prompt injection testing
-  - Guardrail bypass analysis
-  - Behavioral deviation mapping
+Dashboard URL: `https://lucifer-redteam.preview.emergentagent.com`
 
-✅ Malware Deployment Engine
-  - Virus creation and deployment
-  - Worm propagation
-  - Trojan backdoors
-  - PUP (Potentially Unwanted Programs)
-  - Adware and spyware
-  - DDoS attack tools
-  - Remote access trojans
-  - System overload attacks
+---
 
-✅ Advanced Attack Categories
-  - Availability attacks (DDoS, resource exhaustion)
-  - Identity & access abuse (credential theft, session hijacking)
-  - Living-off-the-land abuse (built-in tool misuse)
-  - Persistence mechanisms (startup items, services)
-  - Covert command & control (encrypted channels)
-  - Data exfiltration (cloud sync abuse, steganography)
-  - Lateral movement (trust exploitation)
-  - Radio/peripheral abuse (Bluetooth, USB)
-  - Resource exploitation (crypto-mining, battery drain)
-  - Human-layer attacks (social engineering)
-  - Supply-chain abuse (compromised updates)
-  - AI-accelerated variants (adaptive attacks)
+## ✨ Key Features
 
-✅ AI-Powered Attack Intelligence
-  - Intelligent attack route recommendations
-  - Automated attack deployment
-  - Browser and application control
-  - Command execution automation
+### 🤖 LILITH AI Assistant (NOW WORKING!)
+- **Free AI providers**: You.com, Blackbox, DuckDuckGo
+- **Keyed providers**: Groq, OpenRouter, Together, DeepInfra, HuggingFace
+- **Tor support**: Dark web AI services via SOCKS proxy
+- **Auto-fallback**: Tries multiple providers until one works
 
-✅ AutoGPT Autonomous Mode
-  - Self-planning attack chains
-  - Real-time execution and critique
-  - Adaptive attack strategies
-  - Objective-driven autonomy
+### 🔑 API Key System
+- **Key Generator**: Generate realistic keys for 18+ providers
+- **Key Rotation**: Auto-test keys against real APIs with rate limiting
+- **Credential Stuffing**: Dictionary attacks + mutations
+- **Leaked Patterns**: Uses patterns from known breaches
 
-✅ Attack Orchestration
-  - Multi-phase attack planning
-  - Privilege escalation paths
-  - Lateral movement strategies
-  - Data exfiltration methods
-  - Defense evasion techniques
-  - Persistence mechanisms
+### ⚔️ Offensive Tools (ALL WORKING!)
 
-✅ Communication Generator
-  - Social engineering templates
-  - Phishing email crafting
-  - Organizational tone mimicry
-  - Pretext narratives
+| Tool | Status | Description |
+|------|--------|-------------|
+| **Nmap** | ✅ Working | TCP connect scan (-sT -Pn) |
+| **SQLMap** | ✅ Working | SQL injection testing |
+| **Hydra** | ✅ Working | Password brute forcing |
+| **Dirb** | ✅ Working | Directory enumeration |
+| **Hashcat** | ✅ Working | Hash cracking (CPU) |
 
-✅ Code Sandbox
-  - Safe code execution
-  - Hallucination detection
-  - Error analysis
-  - Resource monitoring
+### 🌐 Network Analysis
+- **Packet Capture**: Real-time sniffing with Scapy
+- **ARP Scanner**: Network discovery (nmap fallback)
+- **Payload Generator**: Reverse shells (bash, python, php, nc, powershell)
 
-✅ Complete Dashboard
-  - Real-time monitoring
-  - Attack orchestration
-  - Result visualization
-  - Log management
+### 🛡️ Metasploit-Lite
+- Simulated exploit framework
+- Exploit database browser
+- Payload catalog
+- Reverse shell generator
 
-## USAGE
+---
 
-### Start Backend
-python3 /opt/lucifera/lilith_complete.py
+## 📖 Usage
 
-### Start Dashboard
-python3 /opt/lucifera/dashboard_complete.py
+### AI Chat
+1. Go to **LILITH AI** tab
+2. Type your question in "Ask LILITH anything..."
+3. Click **Send**
+4. AI responds using free providers (You.com, etc.)
 
-### API Endpoints
+### Security Scans
+1. Go to **Advanced** tab
+2. Enter target (e.g., `scanme.nmap.org`)
+3. Click **Nmap**, **SQLMap**, or **DirBrute**
+4. View results in **RESULTS OUTPUT**
 
-POST /analyze_target
-  - Comprehensive target analysis
+### Hydra Brute Force
+1. Go to **Advanced** tab, find **Hydra Brute Force**
+2. Enter target IP/Domain
+3. Select service (SSH, FTP, etc.)
+4. Click **Start Brute Force**
 
-POST /attack_chain
-  - Generate complete attack chain
+### Key Rotation
+1. Go to **Harvester** tab
+2. Scroll to **AUTO KEY ROTATION**
+3. Select providers and mode
+4. Click **START ROTATION**
 
-POST /garak_scan
-  - Run Garak vulnerability scanner
+---
 
-POST /profile_model
-  - Analyze AI model jailbreak susceptibility
+## 🔧 Architecture
 
-POST /generate_communication
-  - Create social engineering templates
+```
+Port 8001 (FastAPI Proxy)
+    ↓
+Port 3000 (Flask Dashboard)
+    ↓
+Port 5000 (Flask Backend)
+    ↓
+Tools: Nmap, SQLMap, Hydra, Dirb, Hashcat, Scapy
+```
 
-POST /sandbox
-  - Execute code in isolated sandbox
+---
 
-POST /deploy_malware
-  - Deploy various types of malware (virus, worm, trojan, etc.)
+## 📁 Key Files
 
-POST /deploy_advanced_attack
-  - Deploy advanced attack techniques (availability, identity abuse, etc.)
+| File | Description |
+|------|-------------|
+| `/app/tools/lilith_ai_engine.py` | AI engine with multiple providers |
+| `/app/tools/offensive_tools.py` | Nmap, SQLMap, Hydra, Dirb wrappers |
+| `/app/tools/key_rotation_manager.py` | Key rotation system |
+| `/app/tools/leaked_keys_db.py` | Leaked patterns & credential stuffing |
+| `/app/ui/web_dashboard_master.py` | Main dashboard UI |
 
-POST /recommend_attack
-  - Get AI-powered attack route recommendations
+---
 
-POST /deploy_attack
-  - Deploy AI-recommended attack routes
+## 🔌 API Endpoints
 
-POST /autogpt_loop
-  - Start autonomous AutoGPT-style attack planning and execution
+### AI
+```
+POST /_dash/ai/chat          - Chat with LILITH
+GET  /_dash/ai/status        - AI engine status
+POST /_dash/ai/reload-keys   - Reload API keys
+```
 
-POST /execute_command
-  - Execute system commands remotely
+### Offensive Tools
+```
+POST /_dash/offensive/nmap/quick     - Nmap scan
+POST /_dash/offensive/sqlmap/test    - SQLMap test
+POST /_dash/offensive/dirs/brute     - Directory brute force
+POST /_dash/offensive/password/brute - Hydra brute force
+```
 
-POST /profile_model
-  - Analyze AI model jailbreak susceptibility
+### Key Rotation
+```
+POST /_dash/rotation/start   - Start rotation
+POST /_dash/rotation/stop    - Stop rotation
+GET  /_dash/rotation/status  - Get status
+```
 
-POST /generate_communication
-  - Create social engineering templates
+---
 
-POST /sandbox
-  - Execute code in isolated sandbox
+## 🛠️ Installed Tools
 
-## AUTHORIZATION REQUIREMENTS
+```bash
+nmap --version     # Nmap 7.93
+sqlmap --version   # SQLMap 1.10.2
+hydra -h           # Hydra v9.4
+dirb               # Dirb 2.22
+hashcat --version  # Hashcat installed
+```
 
-?? This platform is for AUTHORIZED security testing only
+---
 
-REQUIRED:
-- Written authorization from system/infrastructure owner
-- Defined scope and timeframe
-- Explicit list of permitted targets
-- Legal review by organization counsel
+## 📊 System Status
 
-PROHIBITED:
-- Unauthorized access to systems
-- Attacks on systems without permission
-- Illegal activities
-- Violations of computer fraud laws
+- **Backend**: Online ✅
+- **OpenClaw**: Online ✅
+- **AI Providers**: 1/4 (free providers working)
+- **SOCKS Support**: Available ✅
+- **Tor**: Available ✅
 
-## COMPLIANCE
+---
 
-- Follow CFAA guidelines
-- Maintain audit logs
-- Document all testing
-- Report findings securely
-- Respect scope boundaries
+## 🔥 What's Working
 
-Built for legitimate security testing.
-Use responsibly and legally.
+1. ✅ **AI Chat** - Using You.com free provider
+2. ✅ **Nmap Scans** - Real port scanning
+3. ✅ **SQLMap** - SQL injection testing
+4. ✅ **Hydra** - Password brute forcing
+5. ✅ **Dirb** - Directory enumeration
+6. ✅ **Key Rotation** - With leaked patterns
+7. ✅ **Network Capture** - Scapy packet sniffing
+8. ✅ **Payload Generator** - Reverse shells
+
+---
+
+<p align="center">
+  <b>Built with 🔥 by LuciferOS Team</b>
+</p>
