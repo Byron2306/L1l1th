@@ -1208,6 +1208,91 @@ MASTER_TEMPLATE = """
                 </div>
             </div>
 
+            <!-- Shrek Payload Generator Tab -->
+            <div class="tab-content" id="tab-shrek">
+                <div class="panel-title">🐸 SHREK PAYLOAD GENERATOR</div>
+                <div style="color: #00ff00; margin-bottom: 15px; font-size: 12px;">
+                    24+ Reverse Shell Types | MSFVenom Commands | One-Click Generation
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h3 style="color: #ff0066; margin: 0 0 10px 0;">🎯 Target Configuration</h3>
+                        <input type="text" id="shrek-lhost" placeholder="LHOST (Your IP)" value="10.10.10.10" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <input type="text" id="shrek-lport" placeholder="LPORT" value="4444" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff; margin-bottom: 10px;">
+                        <button onclick="generateShrekShells()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #00ff00, #006600); border: none; color: #000; font-weight: bold; cursor: pointer; font-size: 14px;">🐸 Generate All Shells</button>
+                        
+                        <h3 style="color: #ff0066; margin: 20px 0 10px 0;">⚡ Quick Generate</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
+                            <button onclick="generateShrekShell('bash_tcp')" class="shrek-btn">Bash TCP</button>
+                            <button onclick="generateShrekShell('python_pty')" class="shrek-btn">Python PTY</button>
+                            <button onclick="generateShrekShell('php_full')" class="shrek-btn">PHP Full</button>
+                            <button onclick="generateShrekShell('nc_traditional')" class="shrek-btn">Netcat</button>
+                            <button onclick="generateShrekShell('powershell')" class="shrek-btn">PowerShell</button>
+                            <button onclick="generateShrekShell('perl')" class="shrek-btn">Perl</button>
+                            <button onclick="generateShrekShell('ruby')" class="shrek-btn">Ruby</button>
+                            <button onclick="generateShrekShell('java')" class="shrek-btn">Java</button>
+                            <button onclick="generateShrekShell('socat')" class="shrek-btn">Socat</button>
+                        </div>
+                        
+                        <h3 style="color: #ff0066; margin: 20px 0 10px 0;">💣 MSFVenom Payloads</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
+                            <button onclick="generateShrekShell('msfvenom_windows')" class="shrek-btn" style="background: #4d1a1a;">Windows EXE</button>
+                            <button onclick="generateShrekShell('msfvenom_linux')" class="shrek-btn" style="background: #1a4d1a;">Linux ELF</button>
+                            <button onclick="generateShrekShell('msfvenom_android')" class="shrek-btn" style="background: #1a1a4d;">Android APK</button>
+                            <button onclick="generateShrekShell('msfvenom_php')" class="shrek-btn" style="background: #4d1a4d;">PHP</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: #00ff00; margin: 0 0 10px 0;">📋 Generated Payload</h3>
+                        <textarea id="shrek-output" readonly style="width: 100%; height: 400px; background: #0a0a0a; border: 1px solid #333; color: #00ff00; font-family: monospace; padding: 10px; resize: none;"></textarea>
+                        <button onclick="copyShrekPayload()" style="width: 100%; padding: 10px; background: #333; border: none; color: #fff; cursor: pointer; margin-top: 10px;">📋 Copy to Clipboard</button>
+                    </div>
+                </div>
+                <style>
+                    .shrek-btn { padding: 8px; background: #2a2a2a; border: 1px solid #444; color: #fff; cursor: pointer; font-size: 11px; }
+                    .shrek-btn:hover { background: #3a3a3a; border-color: #00ff00; }
+                </style>
+            </div>
+
+            <!-- Attack History Tab -->
+            <div class="tab-content" id="tab-history">
+                <div class="panel-title">📜 ATTACK HISTORY</div>
+                <div style="color: #00ff00; margin-bottom: 15px; font-size: 12px;">
+                    MongoDB-backed logging | All autonomous attacks recorded | Replay & Analysis
+                </div>
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px;">
+                    <div>
+                        <h3 style="color: #ff0066; margin: 0 0 10px 0;">📊 Statistics</h3>
+                        <div id="attack-stats" style="background: #1a1a1a; padding: 15px; border-radius: 8px;">
+                            <div style="color: #00ff00; margin-bottom: 10px;"><span style="color: #666;">Total Attacks:</span> <span id="stat-total">0</span></div>
+                            <div style="color: #00ff00; margin-bottom: 10px;"><span style="color: #666;">Successful:</span> <span id="stat-success">0</span></div>
+                            <div style="color: #ff3333; margin-bottom: 10px;"><span style="color: #666;">Failed:</span> <span id="stat-failed">0</span></div>
+                            <div style="color: #ffff00; margin-bottom: 10px;"><span style="color: #666;">Unique Targets:</span> <span id="stat-targets">0</span></div>
+                            <div style="color: #00ffff; margin-bottom: 10px;"><span style="color: #666;">Total Rounds:</span> <span id="stat-rounds">0</span></div>
+                            <div style="color: #ff00ff;"><span style="color: #666;">Avg Success:</span> <span id="stat-avg">0%</span></div>
+                        </div>
+                        <button onclick="refreshAttackHistory()" style="width: 100%; padding: 10px; background: #333; border: none; color: #fff; cursor: pointer; margin-top: 10px;">🔄 Refresh</button>
+                        
+                        <h3 style="color: #ff0066; margin: 20px 0 10px 0;">🔍 Filter</h3>
+                        <select id="history-filter" onchange="filterHistory()" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: #fff;">
+                            <option value="all">All Attacks</option>
+                            <option value="hackingbuddy">HackingBuddy</option>
+                            <option value="crewai">CrewAI</option>
+                            <option value="autogpt">AutoGPT</option>
+                            <option value="garak">Garak</option>
+                            <option value="nmap">Nmap</option>
+                            <option value="sqlmap">SQLMap</option>
+                        </select>
+                    </div>
+                    <div>
+                        <h3 style="color: #00ff00; margin: 0 0 10px 0;">📋 Recent Attacks</h3>
+                        <div id="attack-list" style="background: #0a0a0a; border: 1px solid #333; height: 450px; overflow-y: auto; padding: 10px;">
+                            <div style="color: #666; text-align: center; padding: 50px;">Click Refresh to load attack history</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Advanced Capabilities Tab -->
             <div class="tab-content" id="tab-advanced">
                 <div class="panel-title">⚔️ ADVANCED RED TEAM CAPABILITIES</div>
