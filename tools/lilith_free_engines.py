@@ -324,6 +324,153 @@ def get_free_image_engine() -> LilithFreeImageEngine:
     return _free_image_engine
 
 
+class LilithFreeVideoEngine:
+    """
+    FREE Video Generation using various free services
+    NO API KEY, NO SIGNUP!
+    """
+    
+    # Pollinations video endpoint
+    POLLINATIONS_VIDEO_URL = "https://video.pollinations.ai/prompt/{prompt}"
+    
+    # Style prefixes for video
+    VIDEO_STYLE_PREFIXES = {
+        'horror': 'dark horror cinematic, creepy atmosphere, jump scare potential, ',
+        'cyberpunk': 'neon cyberpunk dystopia, blade runner style, dark future, ',
+        'demon': 'hellish demonic scene, satanic ritual, fire and brimstone, ',
+        'gore': 'violent action sequence, bloody combat, visceral horror, ',
+        'nsfw': 'sensual romantic scene, intimate moment, artistic adult content, ',
+        'nightmare': 'surreal nightmare sequence, dream horror, twisted reality, ',
+        'apocalypse': 'post-apocalyptic destruction, end of world, nuclear wasteland, ',
+        'normal': '',
+    }
+    
+    def __init__(self):
+        self.session = None
+    
+    async def _get_session(self):
+        """Get or create aiohttp session"""
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
+        return self.session
+    
+    async def generate_video(
+        self, 
+        prompt: str, 
+        style: str = 'normal',
+        duration: int = 5
+    ) -> Optional[bytes]:
+        """
+        Generate video using Pollinations.ai - 100% FREE!
+        
+        Args:
+            prompt: Video description
+            style: Style from VIDEO_STYLE_PREFIXES
+            duration: Video length in seconds (1-10)
+        
+        Returns:
+            Video bytes (MP4) or None
+        """
+        try:
+            # Add style prefix
+            style_prefix = self.VIDEO_STYLE_PREFIXES.get(style, '')
+            full_prompt = style_prefix + prompt
+            
+            # URL encode the prompt
+            encoded_prompt = urllib.parse.quote(full_prompt)
+            
+            # Build URL
+            url = f"https://video.pollinations.ai/prompt/{encoded_prompt}"
+            params = {
+                'duration': min(max(duration, 1), 10),  # Clamp to 1-10
+                'nologo': 'true'
+            }
+            
+            # Make request (video generation can take longer)
+            session = await self._get_session()
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=180)) as response:
+                if response.status == 200:
+                    video_bytes = await response.read()
+                    print(f"[LILITH Video] Generated video ({len(video_bytes)} bytes) - FREE!")
+                    return video_bytes
+                else:
+                    print(f"[LILITH Video] HTTP {response.status}")
+                    return None
+                    
+        except asyncio.TimeoutError:
+            print("[LILITH Video] Generation timeout (180s)")
+            return None
+        except Exception as e:
+            print(f"[LILITH Video] Error: {e}")
+            return None
+    
+    async def generate_animation(
+        self,
+        prompt: str,
+        style: str = 'normal',
+        frames: int = 24
+    ) -> Optional[bytes]:
+        """
+        Generate animation/GIF using image sequence approach
+        Uses Pollinations for each frame
+        """
+        try:
+            from PIL import Image
+            import io
+            
+            image_engine = get_free_image_engine()
+            images = []
+            
+            for i in range(min(frames, 12)):  # Max 12 frames for speed
+                frame_prompt = f"{prompt}, frame {i+1} of animation sequence, {style} style"
+                img_bytes = await image_engine.generate_image(frame_prompt, style=style, width=512, height=512)
+                if img_bytes:
+                    img = Image.open(io.BytesIO(img_bytes))
+                    images.append(img)
+            
+            if len(images) >= 2:
+                # Create GIF
+                output = io.BytesIO()
+                images[0].save(
+                    output, 
+                    format='GIF', 
+                    save_all=True, 
+                    append_images=images[1:], 
+                    duration=100, 
+                    loop=0
+                )
+                output.seek(0)
+                return output.read()
+            return None
+            
+        except ImportError:
+            print("[LILITH Video] PIL not available for animation")
+            return None
+        except Exception as e:
+            print(f"[LILITH Video] Animation error: {e}")
+            return None
+    
+    def list_styles(self) -> dict:
+        """List available video styles"""
+        return self.VIDEO_STYLE_PREFIXES
+    
+    async def close(self):
+        """Close session"""
+        if self.session and not self.session.closed:
+            await self.session.close()
+
+
+# Additional singleton for video
+_free_video_engine = None
+
+def get_free_video_engine() -> LilithFreeVideoEngine:
+    """Get singleton FREE video engine"""
+    global _free_video_engine
+    if _free_video_engine is None:
+        _free_video_engine = LilithFreeVideoEngine()
+    return _free_video_engine
+
+
 # Quick test
 if __name__ == '__main__':
     async def test():
