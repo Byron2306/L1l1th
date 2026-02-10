@@ -2861,7 +2861,25 @@ def ai_chat():
     if not message:
         return jsonify({'success': False, 'response': 'No message provided'})
 
-    # Try backend first
+    # Try new AI engine first
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        result = engine.chat(message)
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'response': result['response'],
+                'provider': result.get('provider', 'unknown'),
+                'model': 'LILITH'
+            })
+    except Exception as e:
+        print(f"New AI engine error: {e}")
+
+    # Try backend as fallback
     try:
         backend_response = requests.post(
             f"{BACKEND_URL}/chat",
@@ -2879,7 +2897,47 @@ def ai_chat():
     except Exception as e:
         print(f"Backend chat error: {e}")
     
-    return jsonify({'success': False, 'response': 'No AI providers available. Please add API keys using the harvester or manually.'})
+    return jsonify({
+        'success': False, 
+        'response': 'No AI providers available. Go to Harvester tab and get API keys for Groq, Together, or OpenRouter.',
+        'suggestion': 'Use the Key Rotation system or manually add API keys'
+    })
+
+@app.route('/_dash/ai/status', methods=['GET'])
+def ai_status():
+    """Get AI engine status"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        return jsonify(engine.get_status())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ai/reload-keys', methods=['POST'])
+def ai_reload_keys():
+    """Reload AI API keys"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        return jsonify(engine.reload_keys())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/ai/clear-history', methods=['POST'])
+def ai_clear_history():
+    """Clear AI conversation history"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_ai_engine import get_ai_engine
+        
+        engine = get_ai_engine()
+        return jsonify(engine.clear_history())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/_dash/recon/start', methods=['POST'])
 def recon_start():
