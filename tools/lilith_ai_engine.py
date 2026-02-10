@@ -41,31 +41,24 @@ class UncensoredAI:
     
     # Free API endpoints that don't require keys
     FREE_ENDPOINTS = [
-        # GPT4Free compatible endpoints
+        # Working free endpoints
         {
-            'name': 'GPT4Free-1',
-            'url': 'https://api.pawan.krd/v1/chat/completions',
-            'model': 'gpt-3.5-turbo',
-            'requires_key': False
+            'name': 'DuckDuckGo',
+            'url': 'https://duckduckgo.com/duckchat/v1/chat',
+            'model': 'gpt-4o-mini',
+            'type': 'duckduckgo'
         },
         {
-            'name': 'GPT4Free-2', 
-            'url': 'https://api.naga.ac/v1/chat/completions',
-            'model': 'gpt-3.5-turbo',
-            'requires_key': False
-        },
-        # Free uncensored endpoints
-        {
-            'name': 'FreeGPT',
-            'url': 'https://free.churchless.tech/v1/chat/completions',
-            'model': 'gpt-3.5-turbo',
-            'requires_key': False
+            'name': 'Blackbox',
+            'url': 'https://www.blackbox.ai/api/chat',
+            'model': 'gpt-4o',
+            'type': 'blackbox'
         },
         {
-            'name': 'NovaAI',
-            'url': 'https://api.nova-oss.com/v1/chat/completions',
-            'model': 'gpt-3.5-turbo',
-            'requires_key': False
+            'name': 'You.com',
+            'url': 'https://you.com/api/streamingSearch',
+            'model': 'gpt-4',
+            'type': 'you'
         },
     ]
     
