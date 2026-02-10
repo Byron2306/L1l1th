@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LILITH Telegram Bot - Routes to FREE v6 Edition"""
+"""LILITH Telegram Bot - Routes to AUTONOMOUS v7 Edition"""
 import sys
 sys.path.insert(0, '/app')
 sys.path.insert(0, '/app/tools')
