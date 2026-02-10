@@ -424,16 +424,50 @@ This system represents a **significant offensive security capability** that coul
 │ Reconnaissance   │ ████████████████████████████████████ 90%   │
 │ Initial Access   │ ██████████████████████████████████ 85%     │
 │ Execution        │ ████████████████████████████████████ 90%   │
-│ Persistence      │ ████████████████████████████ 70%           │
+│ Persistence      │ ████████████████████████████████████ 90%   │
 │ Priv Escalation  │ ████████████████████████████████ 80%       │
-│ Defense Evasion  │ ██████████████████████ 55%                 │
+│ Defense Evasion  │ ██████████████████████████████████ 85%     │
 │ Credential Access│ ██████████████████████████████ 75%         │
-│ Lateral Movement │ ████████████████████████ 60%               │
+│ Lateral Movement │ ██████████████████████████████████ 85%     │
 │ Collection       │ ████████████████████████████ 70%           │
-│ Exfiltration     │ ██████████████████████████ 65%             │
+│ Exfiltration     │ ██████████████████████████████████ 85%     │
 │ Impact           │ ████████████████████████████████████ 90%   │
 └──────────────────┴─────────────────────────────────────────────┘
 ```
+
+### Persistence Techniques (90% ↑)
+
+| Platform | Techniques |
+|----------|------------|
+| **Linux** | Cron jobs, SSH keys, Bashrc/profile, Systemd services, Init scripts, LD_PRELOAD hooks |
+| **Windows** | Registry Run keys, Scheduled Tasks, WMI Event Subscriptions, Winlogon |
+
+### Defense Evasion Techniques (85% ↑)
+
+| Platform | Techniques |
+|----------|------------|
+| **Linux** | Log clearing (auth, syslog, wtmp, history), Process hiding, Timestomping |
+| **Windows** | AMSI bypass, Defender evasion, ETW bypass, Event log clearing, Obfuscation |
+
+### Lateral Movement Techniques (85% ↑)
+
+| Protocol | Methods |
+|----------|---------|
+| **SSH** | Password auth, Key auth, Tunneling, Dynamic SOCKS |
+| **SMB** | PSExec, WMIExec, SMBExec, CrackMapExec, Pass-the-Hash |
+| **WinRM** | Evil-WinRM, PowerShell remoting, Invoke-Command |
+| **RDP** | xfreerdp, rdesktop |
+| **Other** | WMI, Pass-the-Ticket, Network pivoting (Chisel, SSHuttle) |
+
+### Exfiltration Techniques (85% ↑)
+
+| Channel | Methods |
+|---------|---------|
+| **HTTP/S** | POST data, Headers, Encrypted transfer |
+| **DNS** | Subdomain encoding (covert) |
+| **ICMP** | Ping data payload (covert) |
+| **Cloud** | Pastebin, transfer.sh, file.io, Discord webhooks |
+| **Other** | SMB shares, FTP, Steganography, Archive encryption |
 
 ### MITRE ATT&CK Coverage
 
