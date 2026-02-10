@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="31" skipped="0" tests="31" time="1.611" timestamp="2026-02-10T22:05:56.627411+00:00" hostname="agent-env-59d75caa-b7a0-498d-a045-5ef2b15cd6ab"><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_all_techniques" time="0.081"><failure message="AssertionError: Expected 200, got 404: &lt;!doctype html&gt;&#10;  &lt;html lang=en&gt;&#10;  &lt;title&gt;404 Not Found&lt;/title&gt;&#10;  &lt;h1&gt;Not Found&lt;/h1&gt;&#10;  &lt;p&gt;The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.&lt;/p&gt;&#10;  &#10;assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:35: in test_persistence_all_techniques
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+E   AssertionError: Expected 200, got 404: &lt;!doctype html&gt;
+E     &lt;html lang=en&gt;
+E     &lt;title&gt;404 Not Found&lt;/title&gt;
+E     &lt;h1&gt;Not Found&lt;/h1&gt;
+E     &lt;p&gt;The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.&lt;/p&gt;
+E     
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_linux_only" time="0.037"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:69: in test_persistence_linux_only
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_windows_only" time="0.038"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:84: in test_persistence_windows_only
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_cron_specific" time="0.041"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:99: in test_persistence_cron_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_systemd_specific" time="0.045"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:122: in test_persistence_systemd_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_registry_specific" time="0.039"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:137: in test_persistence_registry_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestPersistenceAPI" name="test_persistence_invalid_technique" time="0.039"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:157: in test_persistence_invalid_technique
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestDefenseEvasionAPI" name="test_evasion_all_techniques" time="0.041"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:174: in test_evasion_all_techniques
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestDefenseEvasionAPI" name="test_evasion_amsi_bypass_specific" time="0.037"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:206: in test_evasion_amsi_bypass_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestDefenseEvasionAPI" name="test_evasion_defender_specific" time="0.037"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:226: in test_evasion_defender_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestDefenseEvasionAPI" name="test_evasion_linux_logs_specific" time="0.035"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:244: in test_evasion_linux_logs_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestDefenseEvasionAPI" name="test_evasion_etw_bypass_specific" time="0.043"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:263: in test_evasion_etw_bypass_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestDefenseEvasionAPI" name="test_evasion_obfuscation_specific" time="0.038"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:276: in test_evasion_obfuscation_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_all_techniques" time="0.039"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:295: in test_lateral_all_techniques
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_ssh_specific" time="0.039"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:318: in test_lateral_ssh_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_smb_specific" time="0.038"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:339: in test_lateral_smb_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_winrm_specific" time="0.036"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:363: in test_lateral_winrm_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_rdp_specific" time="0.037"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:383: in test_lateral_rdp_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_wmi_specific" time="0.038"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:403: in test_lateral_wmi_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_pth_specific" time="0.041"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:422: in test_lateral_pth_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestLateralMovementAPI" name="test_lateral_pivot_specific" time="0.034"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:438: in test_lateral_pivot_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_all_techniques" time="0.033"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:463: in test_exfil_all_techniques
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_http_specific" time="0.040"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:488: in test_exfil_http_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_dns_specific" time="0.038"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:508: in test_exfil_dns_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_icmp_specific" time="0.037"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:531: in test_exfil_icmp_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_https_specific" time="0.036"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:550: in test_exfil_https_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_cloud_specific" time="0.040"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:566: in test_exfil_cloud_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_stego_specific" time="0.038"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:587: in test_exfil_stego_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_archive_specific" time="0.037"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:606: in test_exfil_archive_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestExfiltrationAPI" name="test_exfil_staging_specific" time="0.041"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:627: in test_exfil_staging_specific
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_advanced_attacks.TestAdvancedAttackIntegration" name="test_full_attack_chain_persistence_to_exfil" time="0.052"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_advanced_attacks.py:653: in test_full_attack_chain_persistence_to_exfil
+    assert persist_resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase></testsuite></testsuites>
