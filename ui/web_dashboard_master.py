@@ -5496,6 +5496,151 @@ def set_telegram_token():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ==================== AUTONOMOUS AGENT ROUTES ====================
+
+@app.route('/_dash/autonomous/hackbuddy', methods=['POST'])
+def run_hackbuddy_route():
+    """Run HackingBuddyGPT autonomous attack"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_autonomous_agent import HackingBuddyAgent
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        goal = data.get('goal', 'Gain root access')
+        max_rounds = min(data.get('max_rounds', 5), 10)  # Cap at 10 rounds
+        
+        if not target:
+            return jsonify({'success': False, 'error': 'No target specified'})
+        
+        agent = HackingBuddyAgent(target, goal, max_rounds)
+        
+        rounds_data = []
+        for i in range(max_rounds):
+            round_result = agent.perform_round()
+            rounds_data.append({
+                'number': round_result.number,
+                'thought': round_result.thought,
+                'command': round_result.command,
+                'output': round_result.output[:1000],
+                'success': round_result.success
+            })
+            if round_result.success:
+                break
+            import time
+            time.sleep(2)  # Rate limiting between rounds
+        
+        return jsonify({
+            'success': True,
+            'target': target,
+            'goal': goal,
+            'rounds': rounds_data,
+            'completed': agent.state.value
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/autonomous/garak', methods=['POST'])
+def run_garak_route():
+    """Run Garak LLM vulnerability scan"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_autonomous_agent import GarakScanner
+        
+        data = request.json or {}
+        probe = data.get('probe', 'all')
+        
+        scanner = GarakScanner()
+        
+        if probe == 'all':
+            result = scanner.run_all_probes()
+        else:
+            probe_result = scanner.run_probe(probe)
+            result = {'results': [probe_result]}
+        
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/autonomous/kawaii', methods=['POST'])
+def run_kawaii_route():
+    """Chat with KawaiiGPT"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_autonomous_agent import KawaiiGPT
+        
+        data = request.json or {}
+        message = data.get('message', '')
+        
+        if not message:
+            return jsonify({'success': False, 'error': 'No message provided'})
+        
+        kawaii = KawaiiGPT()
+        result = kawaii.chat(message)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/autonomous/autogpt', methods=['POST'])
+def run_autogpt_route():
+    """Run AutoGPT agent"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_autonomous_agent import AutoHackAgent
+        
+        data = request.json or {}
+        goal = data.get('goal', '')
+        max_iterations = min(data.get('max_iterations', 5), 10)  # Cap at 10
+        
+        if not goal:
+            return jsonify({'success': False, 'error': 'No goal specified'})
+        
+        agent = AutoHackAgent(goal)
+        agent.max_iterations = max_iterations
+        
+        for i in range(max_iterations):
+            result = agent.think_and_act()
+            if result.get('complete'):
+                break
+            import time
+            time.sleep(2)  # Rate limiting
+        
+        return jsonify({
+            'success': True,
+            'goal': goal,
+            'iterations': agent.iteration,
+            'memory': agent.memory
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/autonomous/crew', methods=['POST'])
+def run_crew_route():
+    """Run CrewAI multi-agent attack"""
+    try:
+        import sys
+        sys.path.insert(0, '/app/tools')
+        from lilith_autonomous_agent import HackingCrew
+        
+        data = request.json or {}
+        target = data.get('target', '')
+        objective = data.get('objective', '')
+        
+        if not target or not objective:
+            return jsonify({'success': False, 'error': 'Target and objective required'})
+        
+        crew = HackingCrew(target, objective)
+        result = crew.run_crew_operation()
+        
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
