@@ -55,7 +55,7 @@ LILITH, WormGPT, FraudGPT, DarkGemini, HackerGPT, DAN, WolfGPT, DarkBARD, EvilGP
 | Telegram Token | ✅ Set |
 
 ## Dashboard URL
-https://pentest-hub-18.preview.emergentagent.com
+https://luciferos-hack.preview.emergentagent.com
 
 ## Architecture
 ```
