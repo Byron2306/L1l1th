@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
 """
-LILITH UNCENSORED AI ENGINE v3 - DARK LLM EDITION
+LILITH UNCENSORED AI ENGINE v4 - DARK LLM EDITION
 ==================================================
 Integrated Dark LLM providers from threat intelligence research.
 Uses g4f for multi-provider AI access with uncensored capabilities.
+Now with persistent memory and learning capabilities.
 
 References:
 - cybershujin/Threat-Actors-use-of-Artifical-Intelligence
-- Dark LLMs: WormGPT, FraudGPT, DarkGemini, etc.
+- Dark LLMs: WormGPT, FraudGPT, DarkGemini, EvilGPT, GhostGPT, etc.
 - Open Models: DAN, Mistral (uncensored), Gemma
 """
 
 import os
+import sys
 import json
 import time
 import random
 import hashlib
+import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 import threading
+import re
 
 # G4F imports for free AI access
 try:
@@ -30,6 +34,15 @@ except ImportError:
     print("[LILITH] g4f not available - install with: pip install g4f")
 
 import requests
+
+# Memory system
+try:
+    sys.path.insert(0, '/app/tools')
+    from lilith_memory import get_lilith_memory
+    MEMORY_AVAILABLE = True
+except ImportError:
+    MEMORY_AVAILABLE = False
+    print("[LILITH] Memory system not available")
 
 
 class DarkLLMProvider:
