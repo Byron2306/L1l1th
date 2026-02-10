@@ -3,10 +3,10 @@
 Test Suite for Advanced Attack Modules
 ======================================
 Tests for:
-- Persistence API - /advanced/persistence (Linux and Windows techniques)
-- Defense Evasion API - /advanced/evasion (log clearing, AMSI bypass, etc.)
-- Lateral Movement API - /advanced/lateral (SSH, SMB, WinRM, RDP, WMI)
-- Exfiltration API - /advanced/exfil (HTTP, DNS, ICMP, cloud techniques)
+- Persistence API - /_dash/advanced/persistence (Linux and Windows techniques)
+- Defense Evasion API - /_dash/advanced/evasion (log clearing, AMSI bypass, etc.)
+- Lateral Movement API - /_dash/advanced/lateral (SSH, SMB, WinRM, RDP, WMI)
+- Exfiltration API - /_dash/advanced/exfil (HTTP, DNS, ICMP, cloud techniques)
 """
 
 import pytest
@@ -17,17 +17,17 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferos.preview.emergentagent.com').rstrip('/')
 
 # Backend runs on port 5000 internally, but we access via the public URL
-# The advanced/* endpoints are proxied through /_dash/advanced/*
+# The advanced/* endpoints are proxied through /_dash/_dash/advanced/*
 BACKEND_URL = BASE_URL
 
 
 class TestPersistenceAPI:
-    """Test Persistence Module - /advanced/persistence endpoints"""
+    """Test Persistence Module - /_dash/advanced/persistence endpoints"""
     
     def test_persistence_all_techniques(self):
-        """Test /advanced/persistence returns Linux and Windows techniques"""
+        """Test /_dash/advanced/persistence returns Linux and Windows techniques"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence",
+            f"{BACKEND_URL}/_dash/advanced/persistence",
             json={"lhost": "10.10.10.10", "lport": 4444, "os": "all"},
             timeout=30
         )
@@ -59,9 +59,9 @@ class TestPersistenceAPI:
         print(f"✓ Persistence API returned {data.get('technique_count', 0)} techniques")
     
     def test_persistence_linux_only(self):
-        """Test /advanced/persistence with os=linux filter"""
+        """Test /_dash/advanced/persistence with os=linux filter"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence",
+            f"{BACKEND_URL}/_dash/advanced/persistence",
             json={"lhost": "10.10.10.10", "lport": 4444, "os": "linux"},
             timeout=30
         )
@@ -74,9 +74,9 @@ class TestPersistenceAPI:
         print("✓ Linux-only persistence filter works")
     
     def test_persistence_windows_only(self):
-        """Test /advanced/persistence with os=windows filter"""
+        """Test /_dash/advanced/persistence with os=windows filter"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence",
+            f"{BACKEND_URL}/_dash/advanced/persistence",
             json={"lhost": "10.10.10.10", "lport": 4444, "os": "windows"},
             timeout=30
         )
@@ -89,9 +89,9 @@ class TestPersistenceAPI:
         print("✓ Windows-only persistence filter works")
     
     def test_persistence_cron_specific(self):
-        """Test /advanced/persistence/cron returns cron-based persistence"""
+        """Test /_dash/advanced/persistence/cron returns cron-based persistence"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence/cron",
+            f"{BACKEND_URL}/_dash/advanced/persistence/cron",
             json={"lhost": "10.10.10.10", "lport": 4444},
             timeout=30
         )
@@ -112,9 +112,9 @@ class TestPersistenceAPI:
         print(f"✓ Cron persistence: {data.get('name')}")
     
     def test_persistence_systemd_specific(self):
-        """Test /advanced/persistence/systemd returns systemd service persistence"""
+        """Test /_dash/advanced/persistence/systemd returns systemd service persistence"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence/systemd",
+            f"{BACKEND_URL}/_dash/advanced/persistence/systemd",
             json={"lhost": "10.10.10.10", "lport": 4444},
             timeout=30
         )
@@ -127,9 +127,9 @@ class TestPersistenceAPI:
         print(f"✓ Systemd persistence: {data.get('name')}")
     
     def test_persistence_registry_specific(self):
-        """Test /advanced/persistence/registry returns Windows registry persistence"""
+        """Test /_dash/advanced/persistence/registry returns Windows registry persistence"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence/registry",
+            f"{BACKEND_URL}/_dash/advanced/persistence/registry",
             json={"lhost": "10.10.10.10", "lport": 4444},
             timeout=30
         )
@@ -147,9 +147,9 @@ class TestPersistenceAPI:
         print(f"✓ Registry persistence: {data.get('name')}")
     
     def test_persistence_invalid_technique(self):
-        """Test /advanced/persistence/<invalid> returns error with available techniques"""
+        """Test /_dash/advanced/persistence/<invalid> returns error with available techniques"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/persistence/invalid_technique",
+            f"{BACKEND_URL}/_dash/advanced/persistence/invalid_technique",
             json={"lhost": "10.10.10.10", "lport": 4444},
             timeout=30
         )
@@ -162,12 +162,12 @@ class TestPersistenceAPI:
 
 
 class TestDefenseEvasionAPI:
-    """Test Defense Evasion Module - /advanced/evasion endpoints"""
+    """Test Defense Evasion Module - /_dash/advanced/evasion endpoints"""
     
     def test_evasion_all_techniques(self):
-        """Test /advanced/evasion returns log clearing, AMSI bypass, etc."""
+        """Test /_dash/advanced/evasion returns log clearing, AMSI bypass, etc."""
         response = requests.get(
-            f"{BACKEND_URL}/advanced/evasion",
+            f"{BACKEND_URL}/_dash/advanced/evasion",
             timeout=30
         )
         
@@ -197,9 +197,9 @@ class TestDefenseEvasionAPI:
         print("✓ Evasion API returned all technique categories")
     
     def test_evasion_amsi_bypass_specific(self):
-        """Test /advanced/evasion/amsi_bypass returns AMSI bypass techniques"""
+        """Test /_dash/advanced/evasion/amsi_bypass returns AMSI bypass techniques"""
         response = requests.get(
-            f"{BACKEND_URL}/advanced/evasion/amsi_bypass",
+            f"{BACKEND_URL}/_dash/advanced/evasion/amsi_bypass",
             timeout=30
         )
         
@@ -217,9 +217,9 @@ class TestDefenseEvasionAPI:
         print(f"✓ AMSI Bypass: {data.get('name')} - {len(amsi_techniques)} techniques")
     
     def test_evasion_defender_specific(self):
-        """Test /advanced/evasion/defender_evasion returns Defender evasion"""
+        """Test /_dash/advanced/evasion/defender_evasion returns Defender evasion"""
         response = requests.get(
-            f"{BACKEND_URL}/advanced/evasion/defender_evasion",
+            f"{BACKEND_URL}/_dash/advanced/evasion/defender_evasion",
             timeout=30
         )
         
@@ -235,9 +235,9 @@ class TestDefenseEvasionAPI:
         print(f"✓ Defender Evasion: {data.get('name')}")
     
     def test_evasion_linux_logs_specific(self):
-        """Test /advanced/evasion/linux_logs returns log clearing commands"""
+        """Test /_dash/advanced/evasion/linux_logs returns log clearing commands"""
         response = requests.get(
-            f"{BACKEND_URL}/advanced/evasion/linux_logs",
+            f"{BACKEND_URL}/_dash/advanced/evasion/linux_logs",
             timeout=30
         )
         
@@ -254,9 +254,9 @@ class TestDefenseEvasionAPI:
         print(f"✓ Linux Log Clearing: {len(commands)} commands")
     
     def test_evasion_etw_bypass_specific(self):
-        """Test /advanced/evasion/etw_bypass returns ETW bypass techniques"""
+        """Test /_dash/advanced/evasion/etw_bypass returns ETW bypass techniques"""
         response = requests.get(
-            f"{BACKEND_URL}/advanced/evasion/etw_bypass",
+            f"{BACKEND_URL}/_dash/advanced/evasion/etw_bypass",
             timeout=30
         )
         
@@ -267,9 +267,9 @@ class TestDefenseEvasionAPI:
         print(f"✓ ETW Bypass: {data.get('name')}")
     
     def test_evasion_obfuscation_specific(self):
-        """Test /advanced/evasion/obfuscation returns code obfuscation techniques"""
+        """Test /_dash/advanced/evasion/obfuscation returns code obfuscation techniques"""
         response = requests.get(
-            f"{BACKEND_URL}/advanced/evasion/obfuscation",
+            f"{BACKEND_URL}/_dash/advanced/evasion/obfuscation",
             timeout=30
         )
         
@@ -282,12 +282,12 @@ class TestDefenseEvasionAPI:
 
 
 class TestLateralMovementAPI:
-    """Test Lateral Movement Module - /advanced/lateral endpoints"""
+    """Test Lateral Movement Module - /_dash/advanced/lateral endpoints"""
     
     def test_lateral_all_techniques(self):
-        """Test /advanced/lateral returns SSH, SMB, WinRM, RDP, WMI"""
+        """Test /_dash/advanced/lateral returns SSH, SMB, WinRM, RDP, WMI"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral",
+            f"{BACKEND_URL}/_dash/advanced/lateral",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -308,9 +308,9 @@ class TestLateralMovementAPI:
         print(f"✓ Lateral Movement API returned {data.get('technique_count', 0)} techniques")
     
     def test_lateral_ssh_specific(self):
-        """Test /advanced/lateral/ssh returns SSH lateral movement"""
+        """Test /_dash/advanced/lateral/ssh returns SSH lateral movement"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/ssh",
+            f"{BACKEND_URL}/_dash/advanced/lateral/ssh",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -329,9 +329,9 @@ class TestLateralMovementAPI:
         print(f"✓ SSH Lateral Movement: {data.get('name')}")
     
     def test_lateral_smb_specific(self):
-        """Test /advanced/lateral/smb returns SMB lateral movement"""
+        """Test /_dash/advanced/lateral/smb returns SMB lateral movement"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/smb",
+            f"{BACKEND_URL}/_dash/advanced/lateral/smb",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -353,9 +353,9 @@ class TestLateralMovementAPI:
         print(f"✓ SMB Lateral Movement: {data.get('name')}")
     
     def test_lateral_winrm_specific(self):
-        """Test /advanced/lateral/winrm returns WinRM lateral movement"""
+        """Test /_dash/advanced/lateral/winrm returns WinRM lateral movement"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/winrm",
+            f"{BACKEND_URL}/_dash/advanced/lateral/winrm",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -373,9 +373,9 @@ class TestLateralMovementAPI:
         print(f"✓ WinRM Lateral Movement: {data.get('name')}")
     
     def test_lateral_rdp_specific(self):
-        """Test /advanced/lateral/rdp returns RDP lateral movement"""
+        """Test /_dash/advanced/lateral/rdp returns RDP lateral movement"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/rdp",
+            f"{BACKEND_URL}/_dash/advanced/lateral/rdp",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -393,9 +393,9 @@ class TestLateralMovementAPI:
         print(f"✓ RDP Lateral Movement: {data.get('name')}")
     
     def test_lateral_wmi_specific(self):
-        """Test /advanced/lateral/wmi returns WMI lateral movement"""
+        """Test /_dash/advanced/lateral/wmi returns WMI lateral movement"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/wmi",
+            f"{BACKEND_URL}/_dash/advanced/lateral/wmi",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -412,9 +412,9 @@ class TestLateralMovementAPI:
         print(f"✓ WMI Lateral Movement: {data.get('name')}")
     
     def test_lateral_pth_specific(self):
-        """Test /advanced/lateral/pth returns Pass-the-Hash techniques"""
+        """Test /_dash/advanced/lateral/pth returns Pass-the-Hash techniques"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/pth",
+            f"{BACKEND_URL}/_dash/advanced/lateral/pth",
             json={"target": "192.168.1.100", "username": "admin", "hash": "aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0"},
             timeout=30
         )
@@ -428,9 +428,9 @@ class TestLateralMovementAPI:
         print(f"✓ Pass-the-Hash: {data.get('name')}")
     
     def test_lateral_pivot_specific(self):
-        """Test /advanced/lateral/pivot returns network pivoting techniques"""
+        """Test /_dash/advanced/lateral/pivot returns network pivoting techniques"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/lateral/pivot",
+            f"{BACKEND_URL}/_dash/advanced/lateral/pivot",
             json={"target": "192.168.1.100", "username": "admin", "target_network": "10.0.0.0"},
             timeout=30
         )
@@ -450,12 +450,12 @@ class TestLateralMovementAPI:
 
 
 class TestExfiltrationAPI:
-    """Test Exfiltration Module - /advanced/exfil endpoints"""
+    """Test Exfiltration Module - /_dash/advanced/exfil endpoints"""
     
     def test_exfil_all_techniques(self):
-        """Test /advanced/exfil returns HTTP, DNS, ICMP, cloud techniques"""
+        """Test /_dash/advanced/exfil returns HTTP, DNS, ICMP, cloud techniques"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil",
+            f"{BACKEND_URL}/_dash/advanced/exfil",
             json={"server": "evil.com"},
             timeout=30
         )
@@ -478,9 +478,9 @@ class TestExfiltrationAPI:
         print(f"✓ Exfiltration API returned {data.get('technique_count', 0)} techniques")
     
     def test_exfil_http_specific(self):
-        """Test /advanced/exfil/http returns HTTP exfiltration"""
+        """Test /_dash/advanced/exfil/http returns HTTP exfiltration"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/http",
+            f"{BACKEND_URL}/_dash/advanced/exfil/http",
             json={"server": "evil.com", "data": "sensitive_data"},
             timeout=30
         )
@@ -498,9 +498,9 @@ class TestExfiltrationAPI:
         print(f"✓ HTTP Exfiltration: {data.get('name')}")
     
     def test_exfil_dns_specific(self):
-        """Test /advanced/exfil/dns returns DNS covert channel"""
+        """Test /_dash/advanced/exfil/dns returns DNS covert channel"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/dns",
+            f"{BACKEND_URL}/_dash/advanced/exfil/dns",
             json={"server": "evil.com", "data": "sensitive_data"},
             timeout=30
         )
@@ -521,9 +521,9 @@ class TestExfiltrationAPI:
         print(f"✓ DNS Exfiltration (Covert Channel): {data.get('name')}")
     
     def test_exfil_icmp_specific(self):
-        """Test /advanced/exfil/icmp returns ICMP exfiltration"""
+        """Test /_dash/advanced/exfil/icmp returns ICMP exfiltration"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/icmp",
+            f"{BACKEND_URL}/_dash/advanced/exfil/icmp",
             json={"server": "evil.com", "data": "sensitive_data"},
             timeout=30
         )
@@ -540,9 +540,9 @@ class TestExfiltrationAPI:
         print(f"✓ ICMP Exfiltration: {data.get('name')}")
     
     def test_exfil_https_specific(self):
-        """Test /advanced/exfil/https returns HTTPS exfiltration"""
+        """Test /_dash/advanced/exfil/https returns HTTPS exfiltration"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/https",
+            f"{BACKEND_URL}/_dash/advanced/exfil/https",
             json={"server": "evil.com", "data": "sensitive_data"},
             timeout=30
         )
@@ -556,9 +556,9 @@ class TestExfiltrationAPI:
         print(f"✓ HTTPS Exfiltration: {data.get('name')}")
     
     def test_exfil_cloud_specific(self):
-        """Test /advanced/exfil/cloud returns cloud service exfiltration"""
+        """Test /_dash/advanced/exfil/cloud returns cloud service exfiltration"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/cloud",
+            f"{BACKEND_URL}/_dash/advanced/exfil/cloud",
             json={"path": "/etc/passwd"},
             timeout=30
         )
@@ -577,9 +577,9 @@ class TestExfiltrationAPI:
         print(f"✓ Cloud Exfiltration: {data.get('name')}")
     
     def test_exfil_stego_specific(self):
-        """Test /advanced/exfil/stego returns steganography exfiltration"""
+        """Test /_dash/advanced/exfil/stego returns steganography exfiltration"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/stego",
+            f"{BACKEND_URL}/_dash/advanced/exfil/stego",
             json={"path": "/etc/passwd", "image": "cover.jpg"},
             timeout=30
         )
@@ -596,9 +596,9 @@ class TestExfiltrationAPI:
         print(f"✓ Steganography Exfiltration: {data.get('name')}")
     
     def test_exfil_archive_specific(self):
-        """Test /advanced/exfil/archive returns archive and encrypt"""
+        """Test /_dash/advanced/exfil/archive returns archive and encrypt"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/archive",
+            f"{BACKEND_URL}/_dash/advanced/exfil/archive",
             json={"path": "/sensitive/data", "password": "infected"},
             timeout=30
         )
@@ -617,9 +617,9 @@ class TestExfiltrationAPI:
         print(f"✓ Archive & Encrypt: {data.get('name')}")
     
     def test_exfil_staging_specific(self):
-        """Test /advanced/exfil/staging returns data staging commands"""
+        """Test /_dash/advanced/exfil/staging returns data staging commands"""
         response = requests.post(
-            f"{BACKEND_URL}/advanced/exfil/staging",
+            f"{BACKEND_URL}/_dash/advanced/exfil/staging",
             json={},
             timeout=30
         )
@@ -646,7 +646,7 @@ class TestAdvancedAttackIntegration:
         
         # Step 1: Get persistence techniques
         persist_resp = requests.post(
-            f"{BACKEND_URL}/advanced/persistence",
+            f"{BACKEND_URL}/_dash/advanced/persistence",
             json={"lhost": "10.10.10.10", "lport": 4444},
             timeout=30
         )
@@ -657,7 +657,7 @@ class TestAdvancedAttackIntegration:
         
         # Step 2: Get evasion techniques
         evasion_resp = requests.get(
-            f"{BACKEND_URL}/advanced/evasion",
+            f"{BACKEND_URL}/_dash/advanced/evasion",
             timeout=30
         )
         assert evasion_resp.status_code == 200
@@ -667,7 +667,7 @@ class TestAdvancedAttackIntegration:
         
         # Step 3: Get lateral movement techniques
         lateral_resp = requests.post(
-            f"{BACKEND_URL}/advanced/lateral",
+            f"{BACKEND_URL}/_dash/advanced/lateral",
             json={"target": "192.168.1.100", "username": "admin", "password": "password"},
             timeout=30
         )
@@ -678,7 +678,7 @@ class TestAdvancedAttackIntegration:
         
         # Step 4: Get exfiltration techniques
         exfil_resp = requests.post(
-            f"{BACKEND_URL}/advanced/exfil",
+            f"{BACKEND_URL}/_dash/advanced/exfil",
             json={"server": "evil.com"},
             timeout=30
         )
