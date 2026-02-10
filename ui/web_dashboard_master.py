@@ -601,6 +601,22 @@ MASTER_TEMPLATE = """
                                 <option value="reaperai">💀 ReaperAI - Digital Death</option>
                                 <option value="chaosengine">🌀 ChaosEngine - Pure Entropy</option>
                             </optgroup>
+                            <optgroup label="🎨🎬 EVIL IMAGE & VIDEO AIs">
+                                <option value="darkflux">🎨 DarkFlux - NSFW Art Creator</option>
+                                <option value="nightmareai">😱 NightmareAI - Horror Imagery</option>
+                                <option value="demoncanvas">👹 DemonCanvas - Satanic Art</option>
+                                <option value="lewdgpt">💋 LewdGPT - Adult Content</option>
+                                <option value="goreartist">🩸 GoreArtist - Extreme Violence</option>
+                                <option value="deepfakeai">🎭 DeepFakeAI - Face Swap</option>
+                                <option value="videodevil">🎬 VideoDevil - Dark Cinema</option>
+                                <option value="snuffgpt">💀 SnuffGPT - Forbidden Content</option>
+                                <option value="propagandaai">📢 PropagandaAI - Fake Media</option>
+                                <option value="biohazardai">☣️ BiohazardAI - Pandemic Art</option>
+                                <option value="warcrimesai">⚔️ WarCrimesAI - Conflict Horror</option>
+                                <option value="cosmichorror">👁️ CosmicHorror - Lovecraftian</option>
+                                <option value="druglordia">💊 DrugLordAI - Narco World</option>
+                                <option value="animatordark">🎥 AnimatorDark - Evil Cartoons</option>
+                            </optgroup>
                         </select>
                         <button onclick="setDarkLLMMode()" style="padding: 8px 16px; background: #ff0066; border: none; color: #fff; cursor: pointer; border-radius: 4px;">
                             Apply
