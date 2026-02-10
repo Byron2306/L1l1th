@@ -40,7 +40,7 @@ except ImportError as e:
 
 # Import FREE engines
 try:
-    from lilith_free_engines import get_free_voice_engine, get_free_image_engine
+    from lilith_free_engines import get_free_voice_engine, get_free_image_engine, get_free_video_engine
     FREE_ENGINES_AVAILABLE = True
 except ImportError as e:
     print(f"[TELEGRAM] Free engines import error: {e}")
