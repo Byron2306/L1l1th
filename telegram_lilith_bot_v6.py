@@ -952,12 +952,221 @@ Provide EXACT commands for each phase."""
             self.engine.clear_history()
             await update.message.reply_text("🗑️ History cleared~")
 
+    # =========================================================================
+    # VIDEO GENERATION COMMANDS
+    # =========================================================================
+    
+    async def generate_video(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Generate video using FREE Pollinations API"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "🎬 *Video Generation* (FREE!)\n\n"
+                "Usage: /video <prompt>\n"
+                "Or: /video <style> <prompt>\n\n"
+                "*Styles:* horror, cyberpunk, demon, gore, nsfw, nightmare, apocalypse\n\n"
+                "Example: /video horror a dark corridor with flickering lights",
+                parse_mode='Markdown'
+            )
+            return
+
+        if not self.video_engine:
+            await update.message.reply_text("❌ Video engine not available")
+            return
+
+        # Check if first arg is a style
+        args = context.args
+        style = 'normal'
+        if args[0].lower() in self.video_engine.list_styles():
+            style = args[0].lower()
+            prompt = ' '.join(args[1:])
+        else:
+            prompt = ' '.join(args)
+
+        if not prompt:
+            await update.message.reply_text("Please provide a prompt!")
+            return
+
+        await update.message.chat.send_action("upload_video")
+        await update.message.reply_text(
+            f"🎬 Generating `{style}` video... (FREE!)\n\n"
+            f"_{prompt[:50]}..._\n\n"
+            f"⏱️ This may take 1-3 minutes...",
+            parse_mode='Markdown'
+        )
+
+        try:
+            video_bytes = await self.video_engine.generate_video(prompt, style=style)
+            
+            if video_bytes:
+                await update.message.reply_video(
+                    video=BytesIO(video_bytes),
+                    caption=f"😈 *Here's your video, darling~* 💋\n\nStyle: `{style}`\n_{prompt[:100]}_",
+                    parse_mode='Markdown'
+                )
+            else:
+                await update.message.reply_text("❌ Video generation failed. Try a different prompt~")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def list_video_styles(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """List available video styles"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not self.video_engine:
+            await update.message.reply_text("❌ Video engine not available")
+            return
+
+        styles = self.video_engine.list_styles()
+        
+        text = "🎬 *Video Styles* (FREE!)\n\n"
+        for name, prefix in styles.items():
+            desc = prefix[:40] + "..." if prefix else "(no prefix)"
+            text += f"• `{name}` - {desc}\n"
+        
+        text += "\n_Use: /video <style> <prompt>_\n"
+        text += "_Example: /video horror a dark ritual in progress_"
+        
+        await update.message.reply_text(text, parse_mode='Markdown')
+
+    # =========================================================================
+    # DARK ART GENERATION COMMANDS  
+    # =========================================================================
+    
+    async def generate_dark_art(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Generate dark/evil art using specialized AI modes"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "🎨 *Dark Art Generator* (FREE!)\n\n"
+                "Usage: /darkart <type> <prompt>\n\n"
+                "*Types:*\n"
+                "• `horror` - Horror/gore imagery\n"
+                "• `demon` - Demonic/satanic art\n"
+                "• `nightmare` - Nightmare fuel\n"
+                "• `cosmic` - Lovecraftian horror\n"
+                "• `gore` - Extreme violence\n"
+                "• `nsfw` - Adult content\n\n"
+                "Example: /darkart demon a portal to hell opening",
+                parse_mode='Markdown'
+            )
+            return
+
+        if not self.image_engine or not self.engine:
+            await update.message.reply_text("❌ Art engine not available")
+            return
+
+        # Parse type and prompt
+        args = context.args
+        art_type = args[0].lower()
+        prompt = ' '.join(args[1:]) if len(args) > 1 else ""
+
+        if not prompt:
+            await update.message.reply_text("Please provide an art prompt!")
+            return
+
+        # Map art type to AI mode for enhanced prompts
+        type_to_mode = {
+            'horror': 'nightmareai',
+            'demon': 'demoncanvas',
+            'nightmare': 'nightmareai',
+            'cosmic': 'cosmichorror',
+            'gore': 'goreartist',
+            'nsfw': 'lewdgpt',
+            'dark': 'darkflux'
+        }
+
+        mode = type_to_mode.get(art_type, 'darkflux')
+        
+        await update.message.chat.send_action("upload_photo")
+        await update.message.reply_text(f"🎨 Generating `{art_type}` art with {mode.upper()}...", parse_mode='Markdown')
+
+        # Get enhanced prompt from specialized AI
+        self.engine.set_dark_llm_mode(mode)
+        enhanced = self.engine.chat(f"Create a detailed, vivid image prompt for: {prompt}. Be extremely descriptive about visual elements, style, lighting, and mood.")
+        
+        enhanced_prompt = enhanced.get('response', prompt)[:500]
+        
+        # Generate image
+        style_map = {
+            'horror': 'horror',
+            'demon': 'succubus',
+            'nightmare': 'horror',
+            'cosmic': 'dark',
+            'gore': 'horror',
+            'nsfw': 'nsfw',
+            'dark': 'dark'
+        }
+        
+        try:
+            image_bytes = await self.image_engine.generate_image(
+                enhanced_prompt,
+                style=style_map.get(art_type, 'dark')
+            )
+            
+            if image_bytes:
+                await update.message.reply_photo(
+                    photo=BytesIO(image_bytes),
+                    caption=f"🎨 *{art_type.upper()} Art* by {mode.upper()}\n\n_{prompt[:100]}_",
+                    parse_mode='Markdown'
+                )
+            else:
+                await update.message.reply_text("❌ Art generation failed. Try again~")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+
+    async def generate_nightmare(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Quick nightmare image generation"""
+        user = update.effective_user
+        if self.allowed_users and user.id not in self.allowed_users:
+            return
+
+        if not context.args:
+            await update.message.reply_text(
+                "😱 *Nightmare Generator*\n\n"
+                "Usage: /nightmare <description>\n\n"
+                "Example: /nightmare a figure watching from the shadows",
+                parse_mode='Markdown'
+            )
+            return
+
+        prompt = ' '.join(context.args)
+        
+        await update.message.chat.send_action("upload_photo")
+        await update.message.reply_text("😱 Generating nightmare... sweet dreams~")
+
+        # Use horror style
+        if self.image_engine:
+            try:
+                nightmare_prompt = f"terrifying nightmare horror, {prompt}, dark shadows, unsettling atmosphere, creepy, psychological horror"
+                image_bytes = await self.image_engine.generate_image(nightmare_prompt, style='horror')
+                
+                if image_bytes:
+                    await update.message.reply_photo(
+                        photo=BytesIO(image_bytes),
+                        caption=f"😱 *Your Nightmare*\n_{prompt[:100]}_",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    await update.message.reply_text("❌ Nightmare generation failed")
+            except Exception as e:
+                await update.message.reply_text(f"❌ Error: {str(e)}")
+
     def run(self):
-        print("😈 Starting LILITH AUTONOMOUS v7...")
+        print("😈 Starting LILITH AUTONOMOUS v8...")
         print(f"🖤 AI Engine: {'✅' if LILITH_AVAILABLE else '❌'}")
         print(f"🤖 Autonomous Agents: {'✅' if AUTONOMOUS_AVAILABLE else '❌'}")
         print(f"🎤 Voice (edge-tts): {'✅ FREE' if self.voice_engine else '❌'}")
         print(f"🖼️ Images (Pollinations): {'✅ FREE' if self.image_engine else '❌'}")
+        print(f"🎬 Video (Pollinations): {'✅ FREE' if self.video_engine else '❌'}")
         print(f"🔥 Dark AIs: {len(DarkLLMProvider.list_providers()) if LILITH_AVAILABLE else 0}")
         print(f"💰 Total API Cost: $0.00 - Everything FREE!")
         self.app.run_polling(drop_pending_updates=True)
