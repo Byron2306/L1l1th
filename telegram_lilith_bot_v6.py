@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-LILITH ULTIMATE TELEGRAM BOT v6 - 100% FREE EDITION 😈
-======================================================
+LILITH ULTIMATE TELEGRAM BOT v7 - AUTONOMOUS EDITION 😈
+=======================================================
 NO API KEYS NEEDED for voice or image!
 
-Uses:
-- edge-tts: FREE Microsoft TTS (sexy female voices)
-- faster-whisper: FREE local STT 
-- Pollinations.ai: FREE unlimited image generation
-- g4f: FREE AI chat (50+ Dark AIs)
+Includes:
+- HackingBuddyGPT: Autonomous pentesting
+- Garak: LLM vulnerability scanning
+- KawaiiGPT: Cute but deadly AI
+- AutoGPT: Self-improving agent
+- CrewAI: Multi-agent hacking crews
+- 55+ Dark AI personas
+- FREE voice (edge-tts) and images (Pollinations)
 """
 
 import os
@@ -17,6 +20,7 @@ import subprocess
 import asyncio
 import logging
 import tempfile
+import json
 from io import BytesIO
 from telegram import Update, InputFile
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -42,11 +46,19 @@ except ImportError as e:
     print(f"[TELEGRAM] Free engines import error: {e}")
     FREE_ENGINES_AVAILABLE = False
 
+# Import Autonomous Agent
+try:
+    from lilith_autonomous_agent import get_autonomous_agent, HackingBuddyAgent, GarakScanner, KawaiiGPT, AutoHackAgent, HackingCrew
+    AUTONOMOUS_AVAILABLE = True
+except ImportError as e:
+    print(f"[TELEGRAM] Autonomous agent import error: {e}")
+    AUTONOMOUS_AVAILABLE = False
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class LilithFreeBotV6:
+class LilithFreeBotV7:
     """LILITH Bot with 100% FREE voice and image generation!"""
     
     def __init__(self, token: str, allowed_users: list = None):
