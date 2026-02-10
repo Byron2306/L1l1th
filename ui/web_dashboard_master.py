@@ -4428,7 +4428,7 @@ def crack_hash():
             return jsonify({'success': False, 'error': 'No hash provided'})
         
         cracker = get_hash_cracker()
-        result = cracker.crack_with_john(hash_value, wordlist=wordlist)
+        result = cracker.crack_hash(hash_value, mode=hash_type, wordlist=wordlist)
         
         return jsonify(result)
     except Exception as e:
@@ -4436,15 +4436,16 @@ def crack_hash():
 
 @app.route('/_dash/network/metasploit/exploits', methods=['GET'])
 def get_exploits():
-    """Get Metasploit exploits"""
+    """Get Metasploit exploits - Enhanced"""
     try:
         sys.path.insert(0, '/app/tools')
         from network_capture import get_metasploit
         
         search = request.args.get('search', None)
+        platform = request.args.get('platform', None)
         
         msf = get_metasploit()
-        result = msf.get_exploits(search)
+        result = msf.search_exploits(query=search, platform=platform)
         
         return jsonify(result)
     except Exception as e:
@@ -4452,18 +4453,123 @@ def get_exploits():
 
 @app.route('/_dash/network/metasploit/payloads', methods=['POST'])
 def generate_payload():
-    """Generate Metasploit payload"""
+    """Generate Metasploit payload - Enhanced"""
     try:
         sys.path.insert(0, '/app/tools')
         from network_capture import get_metasploit
         
         data = request.json or {}
-        payload = data.get('payload', 'cmd/unix/reverse_bash')
+        payload_type = data.get('type', 'reverse_tcp')
+        platform = data.get('platform', 'bash')
+        lhost = data.get('lhost', '127.0.0.1')
+        lport = data.get('lport', 4444)
+        encode = data.get('encode', False)
+        
+        msf = get_metasploit()
+        result = msf.generate_payload(payload_type, lhost, lport, platform=platform, encode=encode)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/metasploit/all-shells', methods=['POST'])
+def generate_all_shells():
+    """Generate all reverse shell types"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_metasploit
+        
+        data = request.json or {}
         lhost = data.get('lhost', '127.0.0.1')
         lport = data.get('lport', 4444)
         
         msf = get_metasploit()
-        result = msf.generate_payload(payload, lhost, lport)
+        result = msf.generate_all_shells(lhost, lport)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/metasploit/exploit-info', methods=['GET'])
+def get_exploit_info():
+    """Get exploit details"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_metasploit
+        
+        exploit_name = request.args.get('name', '')
+        
+        if not exploit_name:
+            return jsonify({'success': False, 'error': 'No exploit name provided'})
+        
+        msf = get_metasploit()
+        result = msf.get_exploit_info(exploit_name)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/capture/stop', methods=['POST'])
+def stop_network_capture():
+    """Stop packet capture"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_packet_capture
+        
+        capture = get_packet_capture()
+        result = capture.stop_capture()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/capture/analyze', methods=['POST'])
+def analyze_pcap():
+    """Analyze PCAP file"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_packet_capture
+        
+        data = request.json or {}
+        pcap_file = data.get('file', '')
+        
+        if not pcap_file:
+            return jsonify({'success': False, 'error': 'No PCAP file specified'})
+        
+        capture = get_packet_capture()
+        result = capture.analyze_pcap(pcap_file)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/interfaces', methods=['GET'])
+def list_network_interfaces():
+    """List network interfaces"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_packet_capture
+        
+        capture = get_packet_capture()
+        result = capture.list_interfaces()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/network/arp/spoof-detect', methods=['POST'])
+def detect_arp_spoofing():
+    """Detect ARP spoofing"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from network_capture import get_arp_scanner
+        
+        data = request.json or {}
+        gateway_ip = data.get('gateway', '192.168.1.1')
+        monitor_time = data.get('time', 30)
+        
+        scanner = get_arp_scanner()
+        result = scanner.detect_arp_spoofing(gateway_ip, monitor_time)
         
         return jsonify(result)
     except Exception as e:
