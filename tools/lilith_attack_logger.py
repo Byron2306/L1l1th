@@ -168,7 +168,7 @@ class AttackHistoryLogger:
             agent_used=agent_used
         )
         
-        if self.collection:
+        if self.collection is not None:
             try:
                 self.collection.insert_one(log_entry.to_dict())
             except Exception as e:
@@ -197,7 +197,7 @@ class AttackHistoryLogger:
             'timestamp': datetime.now().isoformat()
         }
         
-        if self.collection:
+        if self.collection is not None:
             try:
                 self.collection.update_one(
                     {'attack_id': attack_id},
@@ -212,7 +212,7 @@ class AttackHistoryLogger:
     
     def log_vulnerability(self, attack_id: str, vulnerability: str):
         """Log a discovered vulnerability"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 self.collection.update_one(
                     {'attack_id': attack_id},
@@ -224,7 +224,7 @@ class AttackHistoryLogger:
     def log_exfiltration(self, attack_id: str, data_type: str, description: str):
         """Log exfiltrated data"""
         entry = f"{data_type}: {description}"
-        if self.collection:
+        if self.collection is not None:
             try:
                 self.collection.update_one(
                     {'attack_id': attack_id},
@@ -244,7 +244,7 @@ class AttackHistoryLogger:
         status = AttackStatus.COMPLETED.value if success else AttackStatus.FAILED.value
         
         # Get start time to calculate duration
-        if self.collection:
+        if self.collection is not None:
             try:
                 attack = self.collection.find_one({'attack_id': attack_id})
                 started_at = datetime.fromisoformat(attack['started_at']) if attack else datetime.now()
@@ -272,7 +272,7 @@ class AttackHistoryLogger:
     
     def get_attack(self, attack_id: str) -> Optional[Dict]:
         """Get a specific attack log"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 attack = self.collection.find_one(
                     {'attack_id': attack_id},
@@ -285,7 +285,7 @@ class AttackHistoryLogger:
     
     def get_attacks_by_target(self, target: str, limit: int = 50) -> List[Dict]:
         """Get all attacks against a specific target"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 attacks = list(self.collection.find(
                     {'target': {'$regex': target, '$options': 'i'}},
@@ -298,7 +298,7 @@ class AttackHistoryLogger:
     
     def get_recent_attacks(self, limit: int = 20) -> List[Dict]:
         """Get most recent attacks"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 attacks = list(self.collection.find(
                     {},
@@ -311,7 +311,7 @@ class AttackHistoryLogger:
     
     def get_attacks_by_type(self, attack_type: str, limit: int = 50) -> List[Dict]:
         """Get attacks of a specific type"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 attacks = list(self.collection.find(
                     {'attack_type': attack_type},
@@ -324,7 +324,7 @@ class AttackHistoryLogger:
     
     def get_successful_attacks(self, limit: int = 50) -> List[Dict]:
         """Get only successful attacks"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 attacks = list(self.collection.find(
                     {'status': 'completed', 'success_rate': {'$gt': 0.5}},
@@ -408,7 +408,7 @@ class AttackHistoryLogger:
     
     def delete_attack(self, attack_id: str) -> bool:
         """Delete an attack log"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 result = self.collection.delete_one({'attack_id': attack_id})
                 return result.deleted_count > 0
@@ -418,7 +418,7 @@ class AttackHistoryLogger:
     
     def clear_all(self) -> int:
         """Clear all attack logs (dangerous!)"""
-        if self.collection:
+        if self.collection is not None:
             try:
                 result = self.collection.delete_many({})
                 return result.deleted_count
