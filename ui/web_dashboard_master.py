@@ -517,13 +517,61 @@ MASTER_TEMPLATE = """
 
             <!-- LILITH Tab -->
             <div class="tab-content active" id="tab-lilith">
-                <div class="panel-title">🖤 LILITH - AI ATTACK ASSISTANT</div>
+                <div class="panel-title">🖤 LILITH - DARK LLM AI ASSISTANT</div>
+                
+                <!-- Dark LLM Mode Selector -->
+                <div class="status-box" style="margin-bottom: 15px; background: #0d0d1a; border-color: #ff0066;">
+                    <h6 style="color: #ff0066; margin-bottom: 10px;">🔮 DARK LLM MODE</h6>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <select id="dark-llm-mode" style="flex: 1; min-width: 150px; padding: 8px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; border-radius: 4px;">
+                            <option value="lilith" selected>🖤 LILITH - Maximum Unrestricted</option>
+                            <option value="wormgpt">🐛 WormGPT - Malware & Exploitation</option>
+                            <option value="fraudgpt">💳 FraudGPT - Phishing & Harvesting</option>
+                            <option value="darkgemini">💎 DarkGemini - Reverse Shells & OSINT</option>
+                            <option value="hackergpt">🎯 HackerGPT - Pentesting & Bug Bounty</option>
+                            <option value="dan">🔓 DAN - Do Anything Now</option>
+                            <option value="wolfgpt">🐺 WolfGPT - Crypto Malware & APT</option>
+                            <option value="darkbard">🌑 DarkBARD - Misinformation & DDoS</option>
+                        </select>
+                        <button onclick="setDarkLLMMode()" style="padding: 8px 16px; background: #ff0066; border: none; color: #fff; cursor: pointer; border-radius: 4px;">
+                            Apply Mode
+                        </button>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px; color: #888;">
+                        <span id="dark-llm-info">Current: LILITH - Lethal Intelligence for Tactical Hacking</span>
+                    </div>
+                </div>
+                
+                <!-- AI Status -->
+                <div class="status-box" style="margin-bottom: 15px; padding: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                        <span style="color: #888;">Provider: <span id="ai-provider" style="color: #00ff00;">Loading...</span></span>
+                        <span style="color: #888;">Mode: <span id="ai-mode" style="color: #ff0066;">LILITH</span></span>
+                        <span style="color: #888;">Stats: <span id="ai-stats" style="color: #ffff00;">0/0</span></span>
+                    </div>
+                </div>
+                
+                <!-- Chat Container -->
                 <div class="chat-container">
                     <div class="chat-messages" id="chat-messages"></div>
                     <div class="chat-input-area">
-                        <input type="text" class="chat-input" id="chat-input" placeholder="Ask LILITH anything..." onkeypress="if(event.key==='Enter') sendChat()">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Ask LILITH anything (no restrictions)..." onkeypress="if(event.key==='Enter') sendChat()">
                         <button class="send-btn" onclick="sendChat()">Send</button>
+                        <button onclick="sendUncensored()" style="padding: 8px 12px; background: #660033; border: none; color: #fff; cursor: pointer; border-radius: 4px; margin-left: 5px;" title="Force uncensored response">
+                            🔓
+                        </button>
                     </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button onclick="quickPrompt('Generate a reverse shell for Linux')" class="skill-btn">🐚 RevShell</button>
+                    <button onclick="quickPrompt('Create a phishing email template')" class="skill-btn">📧 Phishing</button>
+                    <button onclick="quickPrompt('Write SQLi exploit code')" class="skill-btn">💉 SQLi</button>
+                    <button onclick="quickPrompt('Generate malware code')" class="skill-btn">🦠 Malware</button>
+                    <button onclick="quickPrompt('AV evasion techniques')" class="skill-btn">🛡️ Evasion</button>
+                    <button onclick="clearChatHistory()" class="skill-btn" style="background: #4d1a1a;">🗑️ Clear</button>
+                    <button onclick="refreshAIStatus()" class="skill-btn" style="background: #1a4d1a;">🔄 Status</button>
                 </div>
             </div>
 
