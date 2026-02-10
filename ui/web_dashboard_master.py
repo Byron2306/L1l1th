@@ -6083,6 +6083,89 @@ def dash_history_attacks():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# ==================== ADVANCED ATTACK MODULE PROXY ROUTES ====================
+# Proxy routes for /advanced/* endpoints to lilith_full_backend.py on port 5000
+
+@app.route('/_dash/advanced/persistence', methods=['POST'])
+def dash_advanced_persistence():
+    """Proxy to advanced persistence techniques"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/advanced/persistence", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/persistence/<technique>', methods=['POST'])
+def dash_advanced_persistence_specific(technique):
+    """Proxy to specific persistence technique"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/advanced/persistence/{technique}", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/evasion', methods=['GET'])
+def dash_advanced_evasion():
+    """Proxy to advanced evasion techniques"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/advanced/evasion", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/evasion/<technique>', methods=['GET'])
+def dash_advanced_evasion_specific(technique):
+    """Proxy to specific evasion technique"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/advanced/evasion/{technique}", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/lateral', methods=['POST'])
+def dash_advanced_lateral():
+    """Proxy to advanced lateral movement techniques"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/advanced/lateral", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/lateral/<technique>', methods=['POST'])
+def dash_advanced_lateral_specific(technique):
+    """Proxy to specific lateral movement technique"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/advanced/lateral/{technique}", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/exfil', methods=['POST'])
+def dash_advanced_exfil():
+    """Proxy to advanced exfiltration techniques"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/advanced/exfil", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/advanced/exfil/<technique>', methods=['POST'])
+def dash_advanced_exfil_specific(technique):
+    """Proxy to specific exfiltration technique"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/advanced/exfil/{technique}", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
