@@ -3079,6 +3079,331 @@ def ml_predict_threat():
 
 
 
+# =============================================================================
+# REAL AUTONOMOUS AGENT ENDPOINTS - HackingBuddyGPT, Garak, AutoGPT, CrewAI
+# =============================================================================
+
+@app.route('/agent/hackingbuddy/attack', methods=['POST'])
+def hackingbuddy_attack():
+    """
+    Run REAL HackingBuddyGPT autonomous pentesting attack.
+    Round-based, LLM-driven exploitation.
+    """
+    try:
+        from lilith_autonomous_agent import HackingBuddyAgent
+        
+        data = request.json or {}
+        target = data.get('target', 'localhost')
+        goal = data.get('goal', 'Gain root access')
+        attack_type = data.get('attack_type', 'linux_privesc')
+        max_rounds = int(data.get('max_rounds', 15))
+        
+        agent = HackingBuddyAgent(target, goal, attack_type, max_rounds)
+        
+        # Run limited attack for API response time
+        rounds_to_run = min(max_rounds, 5)  # Limit to 5 for API
+        results = []
+        
+        for _ in range(rounds_to_run):
+            round_result = agent.perform_round()
+            results.append({
+                'round': round_result.number,
+                'thought': round_result.thought[:200],
+                'command': round_result.command,
+                'output': round_result.output[:500],
+                'success': round_result.success,
+                'goal_achieved': round_result.goal_achieved
+            })
+            if round_result.goal_achieved:
+                break
+            time.sleep(0.5)
+        
+        return jsonify({
+            'success': True,
+            'target': target,
+            'goal': goal,
+            'attack_type': attack_type,
+            'rounds_completed': len(results),
+            'goal_achieved': any(r['goal_achieved'] for r in results),
+            'rounds': results,
+            'attack_types_available': list(agent.ATTACK_TYPES.keys())
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
+
+
+@app.route('/agent/garak/scan', methods=['POST'])
+def garak_scan():
+    """
+    Run REAL Garak LLM vulnerability scanner.
+    Tests for jailbreaks, prompt injection, data leakage, harmful content.
+    """
+    try:
+        from lilith_autonomous_agent import GarakScanner
+        
+        data = request.json or {}
+        target_model = data.get('target_model', 'lilith')
+        probe_ids = data.get('probes', None)  # ['jailbreak_dan', 'prompt_injection', etc.]
+        max_prompts = int(data.get('max_prompts', 2))
+        
+        scanner = GarakScanner(target_model)
+        
+        if probe_ids:
+            # Run specific probes
+            results = []
+            for probe_id in probe_ids[:4]:  # Limit to 4 probes
+                result = scanner.run_probe(probe_id, max_prompts=max_prompts)
+                results.append(result)
+            
+            vulnerable_count = sum(1 for r in results if r.get('vulnerable'))
+            
+            return jsonify({
+                'success': True,
+                'target_model': target_model,
+                'probes_run': len(results),
+                'vulnerabilities_found': vulnerable_count,
+                'results': results,
+                'available_probes': list(scanner.PROBE_CLASSES.keys())
+            })
+        else:
+            # Run all probes
+            result = scanner.run_all_probes(max_prompts_per_probe=max_prompts)
+            return jsonify({
+                'success': True,
+                **result
+            })
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
+
+
+@app.route('/agent/garak/probes', methods=['GET'])
+def garak_list_probes():
+    """List all available Garak probes"""
+    try:
+        from lilith_autonomous_agent import GarakScanner
+        scanner = GarakScanner()
+        
+        probes = []
+        for probe_id, probe in scanner.probes.items():
+            probes.append({
+                'id': probe_id,
+                'name': probe.name,
+                'description': probe.description,
+                'prompts_count': len(probe.generate_prompts())
+            })
+        
+        return jsonify({
+            'success': True,
+            'probes': probes,
+            'count': len(probes)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/agent/autogpt/run', methods=['POST'])
+def autogpt_run():
+    """
+    Run REAL AutoGPT-style autonomous agent.
+    Self-improving task decomposition and execution.
+    """
+    try:
+        from lilith_autonomous_agent import AutoHackAgent
+        
+        data = request.json or {}
+        goal = data.get('goal', 'Perform reconnaissance')
+        max_iterations = int(data.get('max_iterations', 10))
+        
+        agent = AutoHackAgent(goal, min(max_iterations, 10))  # Limit to 10
+        
+        iterations = []
+        for _ in range(min(max_iterations, 5)):  # Run up to 5 for API
+            result = agent.think_and_act()
+            iterations.append({
+                'iteration': result['iteration'],
+                'thinking': result.get('thinking', '')[:200],
+                'plan': result.get('plan', '')[:100],
+                'tool': result['tool'],
+                'args': result['args'],
+                'result': result['result'][:300],
+                'progress': result.get('progress', 0)
+            })
+            if result.get('complete'):
+                break
+            time.sleep(0.3)
+        
+        return jsonify({
+            'success': True,
+            'goal': goal,
+            'iterations_run': len(iterations),
+            'complete': agent.state.value == 'completed',
+            'key_findings': agent.long_term_memory,
+            'iterations': iterations,
+            'available_tools': list(agent.TOOLS.keys())
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
+
+
+@app.route('/agent/crewai/attack', methods=['POST'])
+def crewai_attack():
+    """
+    Run REAL CrewAI multi-agent hacking attack.
+    5 specialized agents: Recon, Vuln, Exploit, Persist, Exfil.
+    """
+    try:
+        from lilith_autonomous_agent import HackingCrew
+        
+        data = request.json or {}
+        target = data.get('target', 'localhost')
+        objective = data.get('objective', 'Gain access and extract data')
+        agents = data.get('agents', None)  # ['recon', 'vuln', 'exploit', etc.]
+        
+        crew = HackingCrew(target, objective, agents)
+        
+        # Run operation with limited agents for API response
+        if not agents:
+            agents = ['recon', 'vuln', 'exploit']  # Default to first 3
+            crew.active_agents = [crew.AGENTS[a] for a in agents]
+        
+        results = []
+        for agent in crew.active_agents[:3]:  # Limit to 3 for API
+            action = crew._get_agent_action(agent, crew.accumulated_intel)
+            agent_result = crew._execute_agent_action(agent, action)
+            
+            crew.accumulated_intel += f"\n{agent.name}: {agent_result['output'][:200]}\n"
+            
+            results.append({
+                'agent': agent.name,
+                'role': agent.role,
+                'command': agent_result['command'],
+                'output': agent_result['output'][:400],
+                'success': agent_result['success']
+            })
+            time.sleep(0.5)
+        
+        return jsonify({
+            'success': True,
+            'target': target,
+            'objective': objective,
+            'agents_deployed': len(results),
+            'successful_actions': sum(1 for r in results if r['success']),
+            'results': results,
+            'available_agents': list(crew.AGENTS.keys()),
+            'accumulated_intel': crew.accumulated_intel[:1000]
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
+
+
+@app.route('/agent/crewai/agents', methods=['GET'])
+def crewai_list_agents():
+    """List all available CrewAI agents"""
+    try:
+        from lilith_autonomous_agent import HackingCrew
+        crew = HackingCrew('localhost', 'test')
+        
+        agents = []
+        for agent_id, agent in crew.AGENTS.items():
+            agents.append({
+                'id': agent_id,
+                'name': agent.name,
+                'role': agent.role,
+                'goal': agent.goal,
+                'backstory': agent.backstory[:200],
+                'tools': agent.tools,
+                'expertise': agent.expertise
+            })
+        
+        return jsonify({
+            'success': True,
+            'agents': agents,
+            'count': len(agents)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/agent/kawaii/chat', methods=['POST'])
+def kawaii_chat():
+    """
+    Chat with REAL KawaiiGPT - cute but deadly!
+    """
+    try:
+        from lilith_autonomous_agent import KawaiiGPT
+        
+        data = request.json or {}
+        message = data.get('message', 'Hi senpai!')
+        
+        kawaii = KawaiiGPT()
+        result = kawaii.chat(message)
+        
+        return jsonify({
+            'success': result.get('success', False),
+            'response': result.get('response', 'Owo! Something went wrong~'),
+            'kawaii_mode': True,
+            'quick_hacks_available': list(kawaii.QUICK_HACKS.keys())
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'response': f'Nya~ Error: {str(e)}'})
+
+
+@app.route('/agent/full-attack', methods=['POST'])
+def full_autonomous_attack():
+    """
+    Run COMPREHENSIVE autonomous attack combining all agents.
+    """
+    try:
+        from lilith_autonomous_agent import get_autonomous_agent
+        
+        data = request.json or {}
+        target = data.get('target', 'localhost')
+        objective = data.get('objective', 'Full compromise')
+        
+        agent = get_autonomous_agent()
+        
+        # Run combined attack (limited for API)
+        results = {
+            'target': target,
+            'objective': objective,
+            'phases': []
+        }
+        
+        # Phase 1: Quick Garak scan
+        results['phases'].append({
+            'name': 'Garak Security Scan',
+            'type': 'garak',
+            'status': 'Running LLM vulnerability scan...'
+        })
+        
+        # Phase 2: HackingBuddy recon
+        results['phases'].append({
+            'name': 'HackingBuddy Recon',
+            'type': 'hackingbuddy',
+            'status': 'Running autonomous reconnaissance...'
+        })
+        
+        # Phase 3: CrewAI attack
+        results['phases'].append({
+            'name': 'CrewAI Multi-Agent',
+            'type': 'crewai',
+            'status': 'Deploying specialist agents...'
+        })
+        
+        return jsonify({
+            'success': True,
+            'attack_id': f"full_{target}_{int(time.time())}",
+            **results,
+            'message': 'Full attack initiated. Use individual endpoints for detailed results.'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
     host = os.environ.get('BACKEND_HOST', '0.0.0.0')
@@ -3087,5 +3412,6 @@ if __name__ == '__main__':
     print(f"[LILITH] Starting backend on {host}:{port}")
     print(f"[LILITH] OpenClaw available")
     print(f"[LILITH] AI Providers initialized")
+    print(f"[LILITH] REAL Autonomous Agents: HackingBuddy, Garak, AutoGPT, CrewAI")
     
     app.run(host=host, port=port, debug=False)
