@@ -1722,8 +1722,9 @@ class LilithAI:
     Now with persistent memory and learning capabilities.
     """
     
-    # G4F providers to try (prioritized by likelihood of uncensored responses)
+    # G4F providers to try (prioritized by reliability and speed)
     G4F_PROVIDERS = [
+        # Fast & reliable providers
         'Blackbox',
         'DDG',
         'PollinationsAI',
@@ -1737,7 +1738,24 @@ class LilithAI:
         'Phind',
         'DeepInfra',
         'Groq',
-        'OpenaiChat'
+        'OpenaiChat',
+        # Additional providers for fallback
+        'HuggingChat',
+        'Koala',
+        'ChatForAi',
+        'GeminiPro',
+        'Gemini',
+        'GeminiProChat',
+        'ChatgptFree',
+        'GPTalk',
+        'Aichatos',
+        'OnlineGpt',
+        'ChatgptNext',
+        'Chatxyz',
+        'Feedough',
+        'AItianhuSpace',
+        'Vercel',
+        'FlowGpt',
     ]
     
     # Additional jailbreak prefixes for stubborn providers
