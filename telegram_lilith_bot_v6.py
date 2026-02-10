@@ -462,17 +462,109 @@ _All FREE, no API keys~_
             await update.message.reply_text(f"❌ Voice error: {str(e)}")
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle text messages"""
+        """Handle text messages - NATURAL LANGUAGE COMMAND PROCESSING"""
         user = update.effective_user
         if self.allowed_users and user.id not in self.allowed_users:
             await update.message.reply_text("❌ Access denied~")
             return
 
-        message_text = update.message.text
+        message_text = update.message.text.strip()
         await update.message.chat.send_action("typing")
 
+        # === NATURAL LANGUAGE COMMAND DETECTION ===
+        msg_lower = message_text.lower()
+        
+        # Shell/Command execution keywords
+        shell_triggers = ['run', 'execute', 'exec', 'shell', 'command', 'terminal', 'bash', 'cmd']
+        hack_triggers = ['hack', 'scan', 'attack', 'exploit', 'pwn', 'crack', 'breach']
+        image_triggers = ['generate image', 'create image', 'make image', 'draw', 'picture of', 'image of', 'show me']
+        video_triggers = ['generate video', 'create video', 'make video', 'video of']
+        payload_triggers = ['reverse shell', 'payload', 'shell code', 'backdoor', 'webshell', 'msfvenom']
+        
+        # Check for shell command intent
+        if any(trigger in msg_lower for trigger in shell_triggers) and ('`' in message_text or any(c in message_text for c in ['/', 'ls', 'cat', 'whoami', 'id', 'ps', 'netstat'])):
+            # Extract command from message
+            cmd = self._extract_command(message_text)
+            if cmd:
+                await self._execute_shell_command(update, cmd)
+                return
+        
+        # Check for direct command (starts with common shell commands)
+        direct_cmds = ['ls', 'cat', 'whoami', 'id', 'pwd', 'ps', 'netstat', 'uname', 'find', 'grep', 'nmap', 'curl', 'wget', 'ping', 'traceroute', 'ifconfig', 'ip ', 'ss ', 'df', 'du', 'top', 'htop', 'free', 'uptime', 'hostname', 'which', 'whereis', 'file', 'head', 'tail', 'wc', 'sort', 'uniq', 'cut', 'awk', 'sed', 'chmod', 'chown', 'mkdir', 'rm ', 'cp ', 'mv ', 'touch', 'echo', 'env', 'export', 'sudo', 'su ', 'apt', 'yum', 'pip', 'python', 'node', 'npm', 'git', 'docker', 'systemctl', 'service', 'cron', 'at ', 'kill', 'pkill', 'nc ', 'netcat', 'openssl', 'ssh', 'scp', 'rsync', 'tar', 'gzip', 'zip', 'unzip', 'base64', 'md5sum', 'sha256sum', 'xxd', 'hexdump']
+        
+        if any(message_text.startswith(cmd) for cmd in direct_cmds):
+            await self._execute_shell_command(update, message_text)
+            return
+        
+        # Check for hacking command intent
+        if any(trigger in msg_lower for trigger in hack_triggers):
+            # Extract target
+            target = self._extract_target(message_text)
+            if 'nmap' in msg_lower or 'scan' in msg_lower:
+                if target:
+                    await self._execute_shell_command(update, f"nmap -sT -Pn --top-ports 100 {target} 2>/dev/null | head -50")
+                    return
+            if 'sqlmap' in msg_lower or 'sql' in msg_lower:
+                if target:
+                    await self._execute_shell_command(update, f"sqlmap -u '{target}' --batch --level=1 --risk=1 2>/dev/null | head -100")
+                    return
+            if 'brute' in msg_lower or 'hydra' in msg_lower:
+                if target:
+                    await update.message.reply_text(f"🔓 Use: /exec hydra -l admin -P /usr/share/wordlists/rockyou.txt {target} ssh")
+                    return
+        
+        # Check for image generation intent
+        if any(trigger in msg_lower for trigger in image_triggers):
+            prompt = self._extract_prompt(message_text, image_triggers)
+            if prompt and self.image_engine:
+                await update.message.chat.send_action("upload_photo")
+                await update.message.reply_text(f"🎨 Generating image: _{prompt}_", parse_mode='Markdown')
+                try:
+                    image_bytes = await self.image_engine.generate_image(prompt)
+                    if image_bytes:
+                        await update.message.reply_photo(photo=BytesIO(image_bytes), caption=f"🎨 _{prompt}_", parse_mode='Markdown')
+                        return
+                except Exception as e:
+                    await update.message.reply_text(f"❌ Image error: {e}")
+                    return
+        
+        # Check for video generation intent
+        if any(trigger in msg_lower for trigger in video_triggers):
+            prompt = self._extract_prompt(message_text, video_triggers)
+            if prompt and self.video_engine:
+                await update.message.chat.send_action("upload_video")
+                await update.message.reply_text(f"🎬 Generating video (may take 1-3 min): _{prompt}_", parse_mode='Markdown')
+                try:
+                    video_bytes = await self.video_engine.generate_video(prompt)
+                    if video_bytes:
+                        await update.message.reply_video(video=BytesIO(video_bytes), caption=f"🎬 _{prompt}_", parse_mode='Markdown')
+                        return
+                except Exception as e:
+                    await update.message.reply_text(f"❌ Video error: {e}")
+                    return
+        
+        # Check for payload generation intent
+        if any(trigger in msg_lower for trigger in payload_triggers):
+            lhost = self._extract_ip(message_text) or "10.10.10.10"
+            lport = self._extract_port(message_text) or "4444"
+            
+            if 'python' in msg_lower:
+                payload = self._get_python_shell(lhost, int(lport))
+            elif 'bash' in msg_lower:
+                payload = self._get_bash_shell(lhost, int(lport))
+            elif 'php' in msg_lower:
+                payload = self._get_php_shell(lhost, int(lport))
+            elif 'powershell' in msg_lower or 'windows' in msg_lower:
+                payload = self._get_powershell_shell(lhost, int(lport))
+            else:
+                payload = self._get_bash_shell(lhost, int(lport))
+            
+            await update.message.reply_text(f"🐚 *Reverse Shell*\nLHOST: `{lhost}` | LPORT: `{lport}`\n\n```\n{payload}\n```", parse_mode='Markdown')
+            return
+
+        # === FALLBACK TO AI CHAT ===
         if not self.engine:
-            await update.message.reply_text("❌ AI not available. Try /exec")
+            await update.message.reply_text("❌ AI not available. Try /exec <command>")
             return
 
         try:
