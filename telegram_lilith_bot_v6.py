@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 
 class LilithFreeBotV7:
-    """LILITH Bot with 100% FREE voice and image generation!"""
+    """LILITH Bot with autonomous hacking agents and FREE voice/image!"""
     
     def __init__(self, token: str, allowed_users: list = None):
         self.token = token
@@ -68,10 +68,11 @@ class LilithFreeBotV7:
         self.engine = get_ai_engine() if LILITH_AVAILABLE else None
         self.voice_engine = get_free_voice_engine() if FREE_ENGINES_AVAILABLE else None
         self.image_engine = get_free_image_engine() if FREE_ENGINES_AVAILABLE else None
-        self.voice_mode = {}  # Per-user voice toggle
-        self.voice_style = {}  # Per-user voice style
+        self.autonomous = get_autonomous_agent() if AUTONOMOUS_AVAILABLE else None
+        self.voice_mode = {}
+        self.voice_style = {}
         
-        # Commands
+        # Standard commands
         self.app.add_handler(CommandHandler("start", self.start))
         self.app.add_handler(CommandHandler("help", self.help))
         self.app.add_handler(CommandHandler("status", self.status))
@@ -87,14 +88,20 @@ class LilithFreeBotV7:
         self.app.add_handler(CommandHandler("shell", self.execute_command))
         self.app.add_handler(CommandHandler("nmap", self.run_nmap))
         self.app.add_handler(CommandHandler("sqlmap", self.run_sqlmap))
-        self.app.add_handler(CommandHandler("attack", self.autonomous_attack))
         self.app.add_handler(CommandHandler("memory", self.check_memory))
         self.app.add_handler(CommandHandler("clear", self.clear_history))
         
-        # Voice message handler
-        self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice))
+        # === NEW AUTONOMOUS AGENT COMMANDS ===
+        self.app.add_handler(CommandHandler("hackbuddy", self.run_hackingbuddy))
+        self.app.add_handler(CommandHandler("autohack", self.run_hackingbuddy))  # Alias
+        self.app.add_handler(CommandHandler("garak", self.run_garak))
+        self.app.add_handler(CommandHandler("kawaii", self.run_kawaii))
+        self.app.add_handler(CommandHandler("autogpt", self.run_autogpt))
+        self.app.add_handler(CommandHandler("crew", self.run_crew))
+        self.app.add_handler(CommandHandler("attack", self.run_full_attack))
         
-        # Text message handler
+        # Voice/text handlers
+        self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
