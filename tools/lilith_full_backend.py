@@ -962,41 +962,42 @@ def run_openclaw_skill(skill_name, task, timeout=120):
             pi_check = _run_cmd('pi --version')
             if pi_check and pi_check.returncode == 0:
                 cmd = f'pi --provider groq --model {model} -p "{task}"'
-                result = _run_cmd(cmd)
-                if result is None:
-                    return {'success': False, 'error': 'pi execution timed out or failed to start', 'output': '' , 'skill': skill_name, 'task': task, 'workdir': workdir}
-                return {'success': result.returncode == 0, 'output': result.stdout + result.stderr, 'skill': skill_name, 'task': task, 'workdir': workdir}
+                result = _run_cmd(cmd, cmd_timeout=60)
+                if result and result.returncode == 0 and '401' not in result.stderr:
+                    return {'success': True, 'output': result.stdout + result.stderr, 'skill': skill_name, 'task': task, 'workdir': workdir}
+            
+            # FALLBACK: Use LILITH AI engine if Pi/Groq fails
+            try:
+                from lilith_ai_engine import get_ai_engine
+                engine = get_ai_engine()
+                
+                # Use coding-focused prompt
+                coding_prompt = f"""Write the following code. Output ONLY the code, no explanations:
+{task}"""
+                
+                result = engine.chat(coding_prompt)
+                if result.get('success') and result.get('response'):
+                    return {
+                        'success': True,
+                        'output': result['response'],
+                        'skill': skill_name,
+                        'task': task,
+                        'workdir': workdir,
+                        'provider': result.get('provider', 'lilith_fallback'),
+                        'note': 'Used LILITH AI fallback'
+                    }
+            except Exception as e:
+                pass
 
             # Try npx fallback (no global install required)
             npx_cmd = f'npx --yes @mariozechner/pi-coding-agent --provider groq --model {model} -p "{task}"'
             # npx may need to download packages; allow a longer timeout
-            npx_res = _run_cmd(npx_cmd, cmd_timeout=120)
-            if npx_res and npx_res.returncode == 0:
+            npx_res = _run_cmd(npx_cmd, cmd_timeout=60)
+            if npx_res and npx_res.returncode == 0 and '401' not in npx_res.stderr:
                 return {'success': True, 'output': npx_res.stdout + npx_res.stderr, 'skill': skill_name, 'task': task, 'workdir': workdir, 'note': 'ran via npx'}
-            if npx_res and npx_res.returncode == -1:
-                # timed out or failed - include details and fall through to npm install attempt
-                npx_err = npx_res.stderr or 'npx timed out or failed'
-            else:
-                npx_err = None
-
-            # Attempt to install globally via npm if npx failed
-            npm_check = _run_cmd('npm --version')
-            if npm_check and npm_check.returncode == 0:
-                install_cmd = 'npm install -g @mariozechner/pi-coding-agent'
-                install_res = _run_cmd(install_cmd)
-                if install_res and install_res.returncode == 0:
-                    # Retry native pi after install
-                    cmd = f'pi --provider groq --model {model} -p "{task}"'
-                    result = _run_cmd(cmd)
-                    if result:
-                        return {'success': result.returncode == 0, 'output': result.stdout + result.stderr, 'skill': skill_name, 'task': task, 'workdir': workdir, 'note': 'installed via npm'}
-                    else:
-                        return {'success': False, 'error': 'pi installed but failed to run', 'output': (install_res.stdout or '') + (install_res.stderr or ''), 'skill': skill_name, 'task': task, 'workdir': workdir}
-                else:
-                    return {'success': False, 'error': 'npm install failed; please install @mariozechner/pi-coding-agent manually', 'output': (install_res.stdout if install_res else '') + (install_res.stderr if install_res else ''), 'skill': skill_name, 'task': task, 'workdir': workdir}
-
-            # No npx/npm available - give actionable error
-            return {'success': False, 'error': 'pi not found and npx/npm not available. Install Node.js and run npm install -g @mariozechner/pi-coding-agent or ensure pi is in PATH', 'skill': skill_name, 'task': task, 'workdir': workdir}
+            
+            # Final fallback - return LILITH AI result if we got one
+            return {'success': False, 'error': 'Groq API key invalid and LILITH fallback unavailable. Add a valid Groq key or use LILITH AI directly.', 'skill': skill_name, 'task': task, 'workdir': workdir}
         
         # Handle github skill
         elif skill_name == 'github':
