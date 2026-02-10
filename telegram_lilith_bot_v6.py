@@ -965,8 +965,9 @@ Provide EXACT commands for each phase."""
             await update.message.reply_text("🗑️ History cleared~")
 
     def run(self):
-        print("😈 Starting LILITH FREE EDITION v6...")
+        print("😈 Starting LILITH AUTONOMOUS v7...")
         print(f"🖤 AI Engine: {'✅' if LILITH_AVAILABLE else '❌'}")
+        print(f"🤖 Autonomous Agents: {'✅' if AUTONOMOUS_AVAILABLE else '❌'}")
         print(f"🎤 Voice (edge-tts): {'✅ FREE' if self.voice_engine else '❌'}")
         print(f"🖼️ Images (Pollinations): {'✅ FREE' if self.image_engine else '❌'}")
         print(f"🔥 Dark AIs: {len(DarkLLMProvider.list_providers()) if LILITH_AVAILABLE else 0}")
@@ -983,7 +984,7 @@ def main():
     allowed = os.environ.get('ALLOWED_USERS', '')
     allowed_users = [int(x.strip()) for x in allowed.split(',') if x.strip().isdigit()] if allowed else []
 
-    bot = LilithFreeBotV6(token, allowed_users)
+    bot = LilithFreeBotV7(token, allowed_users)
     bot.run()
 
 
