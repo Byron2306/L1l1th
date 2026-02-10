@@ -22,18 +22,18 @@
   },
   {
     "provider": "groq",
-    "key": "gsk_M81xporf8niNH26x8ep3ewl58Hc1YMoVS02qewqLRltmI2fJ",
+    "key": "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",
     "email": "manual_entry",
-    "harvested_at": "2026-02-09 22:03:33",
+    "harvested_at": "2026-02-10 03:28:25",
     "method": "manual",
     "is_real": true,
     "status": "verified"
   },
   {
     "provider": "openrouter",
-    "key": "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",
+    "key": "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",
     "email": "manual_entry",
-    "harvested_at": "2026-02-09 22:14:08",
+    "harvested_at": "2026-02-10 03:28:43",
     "method": "manual",
     "is_real": true,
     "status": "verified"
