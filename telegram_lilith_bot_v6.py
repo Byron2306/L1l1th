@@ -111,24 +111,24 @@ class LilithFreeBotV7:
             return
 
         welcome = """
-😈💋 *LILITH FREE EDITION* - 100% FREE AI Succubus
+😈💋 *LILITH AUTONOMOUS v7* - FREE Hacking AI
 ═══════════════════════════════════════════════════
 
 *Hey there, darling~* 💋
 
-I'm LILITH, and I'm *completely FREE* now!
-No API keys needed for my voice or images~
+I'm LILITH with *autonomous hacking agents*!
 
-*My FREE capabilities:* 😈
-🔥 *50+ Dark AIs* - All uncensored modes
-🎤 *Voice* - Sexy female voice (edge-tts FREE!)
-🖼️ *Images* - Unlimited generation (Pollinations FREE!)
-👂 *Listen* - Send voice, I'll transcribe (Whisper FREE!)
-⚔️ *Hacking* - All tools work
+*🤖 AUTONOMOUS AGENTS:*
+• /hackbuddy <target> - HackingBuddyGPT pentesting
+• /garak - LLM vulnerability scanner
+• /kawaii <msg> - KawaiiGPT (cute but deadly OwO)
+• /autogpt <goal> - AutoGPT self-improving agent
+• /crew <target> <obj> - CrewAI multi-agent attack
+• /attack <target> - Full autonomous attack
 
-*Everything is FREE, darling~* 🖤
+*55+ Dark AIs* | *FREE Voice* | *FREE Images*
 
-Type /help to see my talents~
+Type /help for all commands~
         """
         await update.message.reply_text(welcome, parse_mode='Markdown')
 
