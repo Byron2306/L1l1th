@@ -3683,6 +3683,141 @@ MASTER_TEMPLATE = """
                 output.innerHTML += '<div style="color: red;">Error: ' + e.message + '</div>';
             }
         }
+        
+        // ==================== SHREK PAYLOAD GENERATOR FUNCTIONS ====================
+        
+        async function generateShrekShells() {
+            const lhost = document.getElementById('shrek-lhost').value || '10.10.10.10';
+            const lport = parseInt(document.getElementById('shrek-lport').value) || 4444;
+            const output = document.getElementById('shrek-output');
+            
+            output.value = '🐸 Generating all shells for ' + lhost + ':' + lport + '...\\n';
+            
+            try {
+                const response = await fetch('/_dash/shrek/shells', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({lhost: lhost, lport: lport})
+                });
+                const data = await response.json();
+                
+                if (data.success && data.shells) {
+                    let result = '🐸 SHREK PAYLOAD GENERATOR\\n';
+                    result += '================================\\n';
+                    result += 'LHOST: ' + lhost + '\\n';
+                    result += 'LPORT: ' + lport + '\\n';
+                    result += 'Total Shells: ' + data.count + '\\n\\n';
+                    
+                    for (const [name, payload] of Object.entries(data.shells)) {
+                        result += '=== ' + name.toUpperCase() + ' ===\\n';
+                        result += payload + '\\n\\n';
+                    }
+                    
+                    output.value = result;
+                } else {
+                    output.value = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (e) {
+                output.value = 'Error: ' + e.message;
+            }
+        }
+        
+        async function generateShrekShell(shellType) {
+            const lhost = document.getElementById('shrek-lhost').value || '10.10.10.10';
+            const lport = parseInt(document.getElementById('shrek-lport').value) || 4444;
+            const output = document.getElementById('shrek-output');
+            
+            output.value = '🐸 Generating ' + shellType + '...\\n';
+            
+            try {
+                const response = await fetch('/_dash/shrek/shell/' + shellType, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({lhost: lhost, lport: lport})
+                });
+                const data = await response.json();
+                
+                if (data.success && data.payload) {
+                    output.value = '🐸 ' + shellType.toUpperCase() + ' SHELL\\n';
+                    output.value += 'LHOST: ' + lhost + ' | LPORT: ' + lport + '\\n';
+                    output.value += '================================\\n\\n';
+                    output.value += data.payload;
+                } else {
+                    output.value = 'Error: ' + (data.error || 'Unknown error');
+                    if (data.available_types) {
+                        output.value += '\\n\\nAvailable types: ' + data.available_types.join(', ');
+                    }
+                }
+            } catch (e) {
+                output.value = 'Error: ' + e.message;
+            }
+        }
+        
+        function copyShrekPayload() {
+            const output = document.getElementById('shrek-output');
+            output.select();
+            document.execCommand('copy');
+            alert('Payload copied to clipboard!');
+        }
+        
+        // ==================== ATTACK HISTORY FUNCTIONS ====================
+        
+        async function refreshAttackHistory() {
+            try {
+                // Get statistics
+                const statsResponse = await fetch('/_dash/history/statistics');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success && statsData.statistics) {
+                    const stats = statsData.statistics;
+                    document.getElementById('stat-total').textContent = stats.total_attacks;
+                    document.getElementById('stat-success').textContent = stats.successful_attacks;
+                    document.getElementById('stat-failed').textContent = stats.failed_attacks;
+                    document.getElementById('stat-targets').textContent = stats.unique_targets;
+                    document.getElementById('stat-rounds').textContent = stats.total_rounds;
+                    document.getElementById('stat-avg').textContent = stats.avg_success_rate + '%';
+                }
+                
+                // Get recent attacks
+                const filter = document.getElementById('history-filter').value;
+                let url = '/_dash/history/attacks?limit=50';
+                if (filter !== 'all') {
+                    url += '&type=' + filter;
+                }
+                
+                const attacksResponse = await fetch(url);
+                const attacksData = await attacksResponse.json();
+                
+                const list = document.getElementById('attack-list');
+                
+                if (attacksData.success && attacksData.attacks && attacksData.attacks.length > 0) {
+                    list.innerHTML = '';
+                    attacksData.attacks.forEach(attack => {
+                        const statusColor = attack.status === 'completed' ? '#00ff00' : 
+                                           attack.status === 'failed' ? '#ff3333' : '#ffff00';
+                        const statusIcon = attack.status === 'completed' ? '✅' : 
+                                          attack.status === 'failed' ? '❌' : '⏳';
+                        
+                        list.innerHTML += '<div style="background: #1a1a1a; padding: 10px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid ' + statusColor + ';">' +
+                            '<div style="display: flex; justify-content: space-between;">' +
+                            '<span style="color: #fff; font-weight: bold;">' + statusIcon + ' ' + attack.attack_type + '</span>' +
+                            '<span style="color: #666; font-size: 11px;">' + (attack.started_at || 'N/A').substring(0, 19) + '</span>' +
+                            '</div>' +
+                            '<div style="color: #888; font-size: 12px; margin-top: 5px;">Target: ' + attack.target + '</div>' +
+                            '<div style="color: #666; font-size: 11px; margin-top: 3px;">Rounds: ' + (attack.rounds ? attack.rounds.length : 0) + ' | Success: ' + ((attack.success_rate || 0) * 100).toFixed(0) + '%</div>' +
+                            '</div>';
+                    });
+                } else {
+                    list.innerHTML = '<div style="color: #666; text-align: center; padding: 50px;">No attacks found</div>';
+                }
+            } catch (e) {
+                console.error('Error refreshing history:', e);
+            }
+        }
+        
+        function filterHistory() {
+            refreshAttackHistory();
+        }
     </script>
 </body>
 </html>
