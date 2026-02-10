@@ -12,6 +12,8 @@ Integrates with popular security testing tools:
 - Nuclei (vulnerability scanner)
 - Subfinder (subdomain enumeration)
 - Amass (attack surface mapping)
+
+Now with proxy rotation support for anonymity!
 """
 
 import os
@@ -20,11 +22,73 @@ import json
 import subprocess
 import asyncio
 import shutil
+import requests
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
 import threading
 import queue
+
+# Proxy rotation integration
+try:
+    from proxy_rotator import get_proxy_rotator
+    PROXY_AVAILABLE = True
+except ImportError:
+    PROXY_AVAILABLE = False
+
+# Memory integration
+try:
+    from lilith_memory import get_lilith_memory
+    MEMORY_AVAILABLE = True
+except ImportError:
+    MEMORY_AVAILABLE = False
+
+
+class ProxyMixin:
+    """Mixin for proxy-aware tools"""
+    
+    def get_proxy_for_requests(self) -> Optional[Dict]:
+        """Get proxy dict for requests library"""
+        if not PROXY_AVAILABLE:
+            return None
+        try:
+            rotator = get_proxy_rotator()
+            return rotator.get_request_proxies()
+        except:
+            return None
+    
+    def get_proxy_string(self) -> Optional[str]:
+        """Get proxy string for command line tools"""
+        if not PROXY_AVAILABLE:
+            return None
+        try:
+            rotator = get_proxy_rotator()
+            proxy_info = rotator.get_proxy()
+            if proxy_info:
+                return proxy_info['proxy']
+        except:
+            pass
+        return None
+    
+    def save_to_memory(self, category: str, name: str, data: str, 
+                       target: str = None, description: str = None):
+        """Save findings to LILITH memory"""
+        if not MEMORY_AVAILABLE:
+            return
+        try:
+            memory = get_lilith_memory()
+            if category == 'exploit':
+                memory.save_exploit(name=name, code=data, category='tool_finding',
+                                   description=description, source='offensive_tools')
+            elif category == 'target':
+                memory.save_target(target=target, target_type='host', notes=data)
+            elif category == 'credential':
+                parts = data.split(':')
+                if len(parts) >= 2:
+                    memory.save_credential(username=parts[0], password=parts[1],
+                                          source='offensive_tools', target=target)
+        except:
+            pass
 
 
 class ToolManager:
