@@ -1096,6 +1096,43 @@ MASTER_TEMPLATE = """
                         <button onclick="generateReverseShell()" style="width: 100%; padding: 8px; background: #4d1a4d; border: none; color: #fff; cursor: pointer;">Generate Reverse Shells</button>
                     </div>
                     
+                    <!-- COMMAND INJECTOR - NEW -->
+                    <div class="capability-card" style="background: #0d0d1a; border: 2px solid #00ff00; border-radius: 8px; padding: 15px; grid-column: span 2;">
+                        <h3 style="color: #00ff00; margin: 0 0 10px 0; font-size: 16px;">⚡ COMMAND INJECTOR</h3>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select id="inject-type" style="flex: 1; padding: 8px; background: #1a1a2e; border: 1px solid #00ff00; color: #fff;">
+                                <option value="bash">Bash/Shell</option>
+                                <option value="python">Python</option>
+                                <option value="powershell">PowerShell</option>
+                                <option value="sql">SQL Injection</option>
+                                <option value="xss">XSS Payload</option>
+                                <option value="cmd">Windows CMD</option>
+                            </select>
+                            <button onclick="clearInjector()" style="padding: 8px 16px; background: #4d1a1a; border: none; color: #fff; cursor: pointer;">Clear</button>
+                            <button onclick="copyInjectorCode()" style="padding: 8px 16px; background: #1a4d1a; border: none; color: #fff; cursor: pointer;">📋 Copy</button>
+                        </div>
+                        <textarea id="inject-code" placeholder="Paste your script/command here for execution or modification..." style="width: 100%; height: 150px; padding: 10px; background: #000; border: 1px solid #333; color: #00ff00; font-family: 'Courier New', monospace; font-size: 13px; resize: vertical;"></textarea>
+                        <div style="display: flex; gap: 5px; margin-top: 10px;">
+                            <button onclick="executeInjection()" style="flex: 2; padding: 10px; background: #003300; border: none; color: #00ff00; cursor: pointer; font-weight: bold;">▶ EXECUTE</button>
+                            <button onclick="testInjection()" style="flex: 1; padding: 10px; background: #333300; border: none; color: #ffff00; cursor: pointer;">Test</button>
+                            <button onclick="encodePayload()" style="flex: 1; padding: 10px; background: #330033; border: none; color: #ff00ff; cursor: pointer;">Encode</button>
+                            <button onclick="saveToMemory()" style="flex: 1; padding: 10px; background: #003333; border: none; color: #00ffff; cursor: pointer;">Save</button>
+                        </div>
+                        <div id="inject-output" style="margin-top: 10px; padding: 10px; background: #000; border: 1px solid #333; color: #0f0; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; display: none;"></div>
+                        
+                        <!-- Quick Injection Templates -->
+                        <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;">
+                            <button onclick="loadTemplate('revshell')" class="skill-btn" style="font-size: 10px;">🐚 RevShell</button>
+                            <button onclick="loadTemplate('sqli')" class="skill-btn" style="font-size: 10px;">💉 SQLi</button>
+                            <button onclick="loadTemplate('xss')" class="skill-btn" style="font-size: 10px;">📜 XSS</button>
+                            <button onclick="loadTemplate('lfi')" class="skill-btn" style="font-size: 10px;">📁 LFI</button>
+                            <button onclick="loadTemplate('rce')" class="skill-btn" style="font-size: 10px;">💀 RCE</button>
+                            <button onclick="loadTemplate('webshell')" class="skill-btn" style="font-size: 10px;">🕸️ WebShell</button>
+                            <button onclick="loadTemplate('privesc')" class="skill-btn" style="font-size: 10px;">⬆️ PrivEsc</button>
+                            <button onclick="loadTemplate('enumeration')" class="skill-btn" style="font-size: 10px;">🔍 Enum</button>
+                        </div>
+                    </div>
+                    
                     <!-- Metasploit-lite -->
                     <div class="capability-card" style="background: #1a1a2e; border: 1px solid #ff0000; border-radius: 8px; padding: 15px;">
                         <h3 style="color: #ff0000; margin: 0 0 10px 0; font-size: 14px;">🔥 Metasploit-Lite</h3>
