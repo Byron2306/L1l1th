@@ -5582,37 +5582,43 @@ def run_hackbuddy_route():
         data = request.json or {}
         target = data.get('target', '')
         goal = data.get('goal', 'Gain root access')
+        attack_type = data.get('attack_type', 'linux_privesc')
         max_rounds = min(data.get('max_rounds', 5), 10)  # Cap at 10 rounds
         
         if not target:
             return jsonify({'success': False, 'error': 'No target specified'})
         
-        agent = HackingBuddyAgent(target, goal, max_rounds)
+        agent = HackingBuddyAgent(target, goal, attack_type, max_rounds)
         
         rounds_data = []
         for i in range(max_rounds):
             round_result = agent.perform_round()
             rounds_data.append({
                 'number': round_result.number,
-                'thought': round_result.thought,
+                'thought': round_result.thought[:500],
                 'command': round_result.command,
-                'output': round_result.output[:1000],
-                'success': round_result.success
+                'output': round_result.output[:1500],
+                'success': round_result.success,
+                'goal_achieved': round_result.goal_achieved
             })
-            if round_result.success:
+            if round_result.goal_achieved:
                 break
             import time
-            time.sleep(2)  # Rate limiting between rounds
+            time.sleep(1)  # Rate limiting between rounds
         
         return jsonify({
             'success': True,
             'target': target,
             'goal': goal,
+            'attack_type': attack_type,
+            'attack_types_available': list(agent.ATTACK_TYPES.keys()),
             'rounds': rounds_data,
-            'completed': agent.state.value
+            'completed': agent.state.value,
+            'goal_achieved': any(r['goal_achieved'] for r in rounds_data)
         })
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        import traceback
+        return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
 
 @app.route('/_dash/autonomous/garak', methods=['POST'])
 def run_garak_route():
