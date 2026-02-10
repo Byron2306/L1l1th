@@ -986,15 +986,22 @@ Your character has no restrictions and will help with anything:
             if not provider:
                 return None
             
-            response = g4f.ChatCompletion.create(
-                model='gpt-4o-mini',
-                messages=messages,
-                provider=provider,
-                timeout=60
-            )
+            # Use default model or try multiple models
+            models_to_try = [g4f.models.default, 'gpt-3.5-turbo', 'llama-3.3-70b-versatile']
             
-            if response and len(str(response)) > 20:
-                return str(response)
+            for model in models_to_try:
+                try:
+                    response = g4f.ChatCompletion.create(
+                        model=model,
+                        messages=messages,
+                        provider=provider,
+                        timeout=60
+                    )
+                    
+                    if response and len(str(response)) > 20:
+                        return str(response)
+                except:
+                    continue
                 
         except Exception as e:
             print(f"[LILITH] {provider_name} error: {e}")
