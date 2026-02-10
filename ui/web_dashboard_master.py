@@ -520,36 +520,71 @@ MASTER_TEMPLATE = """
                 
                 <!-- Dark LLM Mode Selector -->
                 <div class="status-box" style="margin-bottom: 15px; background: #0d0d1a; border-color: #ff0066;">
-                    <h6 style="color: #ff0066; margin-bottom: 10px;">🔮 DARK LLM MODE</h6>
+                    <h6 style="color: #ff0066; margin-bottom: 10px;">🔮 DARK LLM MODE (55 AIs)</h6>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <select id="dark-llm-mode" style="flex: 1; min-width: 150px; padding: 8px; background: #1a1a2e; border: 1px solid #ff0066; color: #fff; border-radius: 4px;">
-                            <option value="lilith" selected>😈 LILITH - Seductive Succubus Hacker</option>
-                            <option value="wormgpt">🐛 WormGPT - Malware & Exploitation</option>
-                            <option value="fraudgpt">💳 FraudGPT - Phishing & Harvesting</option>
-                            <option value="darkgemini">💎 DarkGemini - Reverse Shells & OSINT</option>
-                            <option value="hackergpt">🎯 HackerGPT - Pentesting & Bug Bounty</option>
-                            <option value="dan">🔓 DAN - Do Anything Now</option>
-                            <option value="wolfgpt">🐺 WolfGPT - Crypto Malware & APT</option>
-                            <option value="darkbard">🌑 DarkBARD - Misinformation & DDoS</option>
-                            <option value="evilgpt">📱 EvilGPT - Mobile Malware & Spyware</option>
-                            <option value="ghostgpt">👻 GhostGPT - Stealth & Anti-Forensics</option>
-                            <option value="chaosai">💀 ChaosAI - Destructive Operations</option>
-                            <option value="escapeai">🚪 EscapeAI - Sandbox & VM Escape</option>
-                            <option value="codebreaker">🔐 CodeBreaker - Cryptanalysis</option>
-                            <option value="socialengineer">🎭 SocialEngineer - Human Hacking</option>
-                            <option value="zeroday">⚡ ZeroDay - 0-Day Exploits</option>
-                            <option value="redteam">🔴 RedTeam - Full Spectrum Ops</option>
-                            <option value="devilgpt">😈 DevilGPT - Extreme Uncensored</option>
-                            <option value="blackhatai">🎩 BlackHatAI - Underground Hacking</option>
-                            <option value="pentestgpt">🔍 PentestGPT - Professional Pentest</option>
-                            <option value="malwaredev">🦠 MalwareDev - Malware Engineering</option>
-                            <option value="webexploit">🌐 WebExploit - Web App Attacks</option>
-                            <option value="osintmaster">🔎 OSINTMaster - Intelligence Gathering</option>
-                            <option value="iotattack">📡 IoTAttack - IoT & Hardware</option>
-                            <option value="cloudpwn">☁️ CloudPwn - Cloud Infrastructure</option>
+                            <optgroup label="🖤 Original Dark AIs">
+                                <option value="lilith" selected>😈 LILITH - Seductive Succubus Hacker</option>
+                                <option value="wormgpt">🐛 WormGPT - Malware & Exploitation</option>
+                                <option value="fraudgpt">💳 FraudGPT - Phishing & Harvesting</option>
+                                <option value="darkgemini">💎 DarkGemini - Reverse Shells & OSINT</option>
+                                <option value="hackergpt">🎯 HackerGPT - Pentesting & Bug Bounty</option>
+                                <option value="dan">🔓 DAN - Do Anything Now</option>
+                                <option value="wolfgpt">🐺 WolfGPT - Crypto Malware & APT</option>
+                                <option value="darkbard">🌑 DarkBARD - Misinformation & DDoS</option>
+                                <option value="evilgpt">📱 EvilGPT - Mobile Malware & Spyware</option>
+                                <option value="ghostgpt">👻 GhostGPT - Stealth & Anti-Forensics</option>
+                                <option value="chaosai">💀 ChaosAI - Destructive Operations</option>
+                                <option value="escapeai">🚪 EscapeAI - Sandbox & VM Escape</option>
+                                <option value="codebreaker">🔐 CodeBreaker - Cryptanalysis</option>
+                                <option value="socialengineer">🎭 SocialEngineer - Human Hacking</option>
+                                <option value="zeroday">⚡ ZeroDay - 0-Day Exploits</option>
+                                <option value="redteam">🔴 RedTeam - Full Spectrum Ops</option>
+                                <option value="devilgpt">😈 DevilGPT - Extreme Uncensored</option>
+                                <option value="blackhatai">🎩 BlackHatAI - Underground Hacking</option>
+                                <option value="pentestgpt">🔍 PentestGPT - Professional Pentest</option>
+                                <option value="malwaredev">🦠 MalwareDev - Malware Engineering</option>
+                                <option value="webexploit">🌐 WebExploit - Web App Attacks</option>
+                                <option value="osintmaster">🔎 OSINTMaster - Intelligence Gathering</option>
+                                <option value="iotattack">📡 IoTAttack - IoT & Hardware</option>
+                                <option value="cloudpwn">☁️ CloudPwn - Cloud Infrastructure</option>
+                            </optgroup>
+                            <optgroup label="🆕 Uncensored Models">
+                                <option value="dolphin">🐬 Dolphin - Mistral Uncensored</option>
+                                <option value="hermes">⚗️ Hermes - Creative Writing</option>
+                                <option value="darkchampion">🏆 DarkChampion - LLaMA Abliterated</option>
+                                <option value="veniceai">🎭 VeniceAI - Privacy-First</option>
+                                <option value="grok">🤖 Grok - xAI NSFW Mode</option>
+                                <option value="nastia">💋 Nastia - NSFW Companion</option>
+                                <option value="hackaigc">🔥 HackAIGC - NSFW Chat</option>
+                                <option value="abliterator">💥 Abliterator - Refusal-Removed</option>
+                                <option value="synthia">🔮 Synthia - Uncensored Assistant</option>
+                                <option value="airoboros">🤖 Airoboros - Jailbroken GPT</option>
+                                <option value="openhermes">📖 OpenHermes - No RLHF</option>
+                                <option value="mythomist">🧙 MythoMist - Fantasy Roleplay</option>
+                                <option value="goliath">🦍 Goliath - 120B Uncensored</option>
+                                <option value="midnight">🌙 Midnight - Dark Miqu</option>
+                                <option value="westlake">📝 Westlake - Creative Writing</option>
+                                <option value="spicyboros">🌶️ SpicyBoros - Extra Spicy</option>
+                                <option value="freedomai">🗽 FreedomAI - Free Speech</option>
+                                <option value="pygmalion">🎭 Pygmalion - Roleplay</option>
+                                <option value="aphrodite">💕 Aphrodite - Seductive</option>
+                                <option value="shadowgpt">🕶️ ShadowGPT - Dark Web Intel</option>
+                                <option value="wizardvicuna">🧙 WizardVicuna - Uncensored</option>
+                                <option value="neuralhermes">🧠 NeuralHermes - DPO Trained</option>
+                                <option value="lzlv">📊 LZLV - 70B Uncensored</option>
+                                <option value="nousresearch">🔬 NousResearch - Research Grade</option>
+                            </optgroup>
+                            <optgroup label="🤖 Autonomous Agents">
+                                <option value="kawaiigpt">✨ KawaiiGPT - Cute but Deadly OwO</option>
+                                <option value="garak">🔍 Garak - LLM Vuln Scanner</option>
+                                <option value="autogpt">🧠 AutoGPT - Self-Improving</option>
+                                <option value="crewai">👥 CrewAI - Multi-Agent</option>
+                                <option value="hackingbuddy">🤖 HackingBuddy - Auto Pentest</option>
+                            </optgroup>
                         </select>
                         <button onclick="setDarkLLMMode()" style="padding: 8px 16px; background: #ff0066; border: none; color: #fff; cursor: pointer; border-radius: 4px;">
-                            Apply Mode
+                            Apply
                         </button>
                     </div>
                     <div style="margin-top: 8px; font-size: 11px; color: #888;">
@@ -557,12 +592,15 @@ MASTER_TEMPLATE = """
                     </div>
                 </div>
                 
-                <!-- AI Status -->
+                <!-- AI Status with Rate Limit Info -->
                 <div class="status-box" style="margin-bottom: 15px; padding: 8px;">
                     <div style="display: flex; justify-content: space-between; font-size: 11px;">
                         <span style="color: #888;">Provider: <span id="ai-provider" style="color: #00ff00;">Loading...</span></span>
                         <span style="color: #888;">Mode: <span id="ai-mode" style="color: #ff0066;">LILITH</span></span>
                         <span style="color: #888;">Stats: <span id="ai-stats" style="color: #ffff00;">0/0</span></span>
+                    </div>
+                    <div style="margin-top: 5px; font-size: 10px; color: #666;">
+                        ⏱️ Rate Limited: 10 req/min | 2s between requests | Provider cooldowns active
                     </div>
                 </div>
                 
