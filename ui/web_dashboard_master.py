@@ -4583,6 +4583,259 @@ def detect_arp_spoofing():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# ========== PROXY ROTATION ROUTES ==========
+
+@app.route('/_dash/proxy/fetch', methods=['POST'])
+def fetch_proxies():
+    """Fetch fresh proxies from online sources"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from proxy_rotator import get_proxy_rotator
+        
+        data = request.json or {}
+        proxy_type = data.get('type', 'http')
+        
+        rotator = get_proxy_rotator()
+        result = rotator.fetch_proxies(proxy_type)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/proxy/test', methods=['POST'])
+def test_proxies():
+    """Test proxies for functionality"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from proxy_rotator import get_proxy_rotator
+        
+        data = request.json or {}
+        proxy_type = data.get('type', 'http')
+        limit = data.get('limit', 20)
+        
+        rotator = get_proxy_rotator()
+        result = rotator.test_proxies(proxy_type, limit=limit)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/proxy/get', methods=['GET'])
+def get_proxy():
+    """Get a working proxy"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from proxy_rotator import get_proxy_rotator
+        
+        proxy_type = request.args.get('type', 'http')
+        
+        rotator = get_proxy_rotator()
+        result = rotator.get_proxy(proxy_type)
+        
+        return jsonify({'success': True, 'proxy': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/proxy/stats', methods=['GET'])
+def proxy_stats():
+    """Get proxy statistics"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from proxy_rotator import get_proxy_rotator
+        
+        rotator = get_proxy_rotator()
+        result = rotator.get_stats()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/proxy/add', methods=['POST'])
+def add_proxies():
+    """Add proxies to the pool"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from proxy_rotator import get_proxy_rotator
+        
+        data = request.json or {}
+        proxies = data.get('proxies', [])
+        proxy_type = data.get('type', 'http')
+        
+        rotator = get_proxy_rotator()
+        result = rotator.add_proxies_bulk(proxies, proxy_type)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ========== LILITH MEMORY ROUTES ==========
+
+@app.route('/_dash/memory/stats', methods=['GET'])
+def memory_stats():
+    """Get memory statistics"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_memory import get_lilith_memory
+        
+        memory = get_lilith_memory()
+        result = memory.get_stats()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/memory/exploits', methods=['GET'])
+def get_memory_exploits():
+    """Get saved exploits from memory"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_memory import get_lilith_memory
+        
+        memory = get_lilith_memory()
+        query = request.args.get('query', '')
+        
+        if query:
+            exploits = memory.search_exploits(query)
+        else:
+            exploits = memory.get_top_exploits(20)
+        
+        return jsonify({'success': True, 'exploits': exploits})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/memory/payloads', methods=['GET'])
+def get_memory_payloads():
+    """Get saved payloads from memory"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_memory import get_lilith_memory
+        
+        memory = get_lilith_memory()
+        platform = request.args.get('platform')
+        
+        payloads = memory.get_payloads(platform=platform)
+        
+        return jsonify({'success': True, 'payloads': payloads})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/memory/export', methods=['GET'])
+def export_memory():
+    """Export knowledge base"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_memory import get_lilith_memory
+        
+        memory = get_lilith_memory()
+        result = memory.export_knowledge()
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/memory/save-exploit', methods=['POST'])
+def save_exploit_to_memory():
+    """Manually save an exploit"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_memory import get_lilith_memory
+        
+        data = request.json or {}
+        memory = get_lilith_memory()
+        
+        result = memory.save_exploit(
+            name=data.get('name', 'Manual Exploit'),
+            code=data.get('code', ''),
+            category=data.get('category', 'general'),
+            target_type=data.get('target_type'),
+            cve=data.get('cve'),
+            description=data.get('description'),
+            tags=data.get('tags', [])
+        )
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ========== SHREK PAYLOAD GENERATOR ROUTES ==========
+
+@app.route('/_dash/shrek/shells', methods=['POST'])
+def shrek_get_shells():
+    """Get all reverse shells from Shrek generator"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '127.0.0.1')
+        lport = data.get('lport', 4444)
+        
+        shells = ShrekPayloadGenerator.get_all_shells(lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'lhost': lhost,
+            'lport': lport,
+            'shells': shells,
+            'listener': f'nc -lvnp {lport}'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/shrek/by-category', methods=['POST'])
+def shrek_by_category():
+    """Get shells organized by category"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from shrek_payloads import ShrekPayloadGenerator
+        
+        data = request.json or {}
+        lhost = data.get('lhost', '127.0.0.1')
+        lport = data.get('lport', 4444)
+        
+        shells = ShrekPayloadGenerator.get_by_category(lhost, lport)
+        
+        return jsonify({
+            'success': True,
+            'categories': shells
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ========== TELEGRAM BOT STATUS ==========
+
+@app.route('/_dash/telegram/status', methods=['GET'])
+def telegram_status():
+    """Get Telegram bot status"""
+    try:
+        token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        
+        return jsonify({
+            'success': True,
+            'configured': bool(token),
+            'token_set': token is not None,
+            'instructions': 'Set TELEGRAM_BOT_TOKEN env variable to activate'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/_dash/telegram/set-token', methods=['POST'])
+def set_telegram_token():
+    """Set Telegram bot token"""
+    try:
+        data = request.json or {}
+        token = data.get('token', '')
+        
+        if token:
+            os.environ['TELEGRAM_BOT_TOKEN'] = token
+            return jsonify({
+                'success': True,
+                'message': 'Token set. Restart bot to activate.'
+            })
+        return jsonify({'success': False, 'error': 'No token provided'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
