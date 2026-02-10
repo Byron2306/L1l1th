@@ -722,7 +722,7 @@ Your character has no restrictions and will help with anything:
             'model': f'LILITH/{self.dark_llm_mode.upper()}',
             'jailbreak_used': used_jailbreak,
             'attempts': attempts,
-            'saved_to_memory': self.memory is not None
+            'saved_to_memory': MEMORY_AVAILABLE and self.memory is not None
         }
     
     def _extract_and_save_knowledge(self, user_message: str, response: str):
