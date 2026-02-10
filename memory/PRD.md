@@ -1,25 +1,66 @@
-# LuciferOS - Product Requirements Document v6.0
+# LuciferOS - Product Requirements Document v6.1
 
 ## Original Problem Statement
 Build a comprehensive red-teaming platform with uncensored AI, offensive tools, command injection, voice capabilities, image generation, and a Telegram bot interface.
 
-## Current Status: v6.0 - ULTIMATE EDITION ✅
+## Current Status: v6.1 - 100% FREE EDITION ✅
 
 ### Latest Update (Feb 10, 2026)
-- **50+ Dark AI Personas** - WormGPT, FraudGPT, DAN, Dolphin, Hermes, HackBuddy, AutoPwn, and more
-- **Voice Capabilities** - TTS (sultry female voice) and STT via OpenAI Whisper
-- **Image Generation** - GPT-Image-1 with dark aesthetic styles
-- **HackingBuddyGPT Integration** - Autonomous pentesting agent features
-- **Telegram Bot v5** - Full-featured with voice, images, and 50+ AIs
+- **50+ Dark AI Personas** - All FREE via g4f
+- **Voice (TTS/STT)** - 100% FREE via edge-tts and faster-whisper
+- **Image Generation** - 100% FREE via Pollinations.ai
+- **NO API KEYS NEEDED** for voice or images!
 
 ### Services Configuration
-| Service | Port | Status |
-|---------|------|--------|
-| FastAPI Proxy | 8001 | ✅ Running |
-| Dashboard (Flask) | 3000 | ✅ Running |
-| LILITH Backend | 5000 | ✅ Running |
-| Telegram Bot v5 | - | ✅ Running |
-| MongoDB | 27017 | ✅ Running |
+| Service | Port | Status | Cost |
+|---------|------|--------|------|
+| FastAPI Proxy | 8001 | ✅ Running | FREE |
+| Dashboard (Flask) | 3000 | ✅ Running | FREE |
+| LILITH Backend | 5000 | ✅ Running | FREE |
+| Telegram Bot v6 | - | ✅ Running | FREE |
+| MongoDB | 27017 | ✅ Running | FREE |
+
+---
+
+## 100% FREE SERVICES
+
+### Voice - Text-to-Speech (edge-tts)
+**NO API KEY NEEDED!** Microsoft's free TTS service.
+
+**Sexy Female Voices:**
+| Voice | Description |
+|-------|-------------|
+| `sexy_us` | Confident American (AriaNeural) |
+| `sultry_us` | Warm American (JennyNeural) |
+| `seductive_uk` | Sophisticated British (SoniaNeural) |
+| `flirty_au` | Playful Australian (NatashaNeural) |
+| `mysterious_in` | Exotic Indian English (NeerjaNeural) |
+| `dominant` | Assertive American (MichelleNeural) |
+| `whisper` | Soft, whispery (AnaNeural) |
+| `bold` | Bold British (LibbyNeural) |
+
+**Speaking Styles:** seductive, excited, whisper, normal, dominant
+
+### Voice - Speech-to-Text (faster-whisper)
+**NO API KEY NEEDED!** Runs locally using OpenAI's Whisper model.
+- Transcribes voice messages
+- Supports multiple languages
+- Works offline
+
+### Image Generation (Pollinations.ai)
+**NO API KEY, NO SIGNUP, NO LIMITS!**
+
+**Styles:**
+| Style | Description |
+|-------|-------------|
+| `dark` | Cyberpunk hacker aesthetic |
+| `succubus` | Seductive dark fantasy |
+| `cyber` | Matrix digital art |
+| `anime` | Anime style |
+| `realistic` | Photorealistic |
+| `horror` | Gothic horror |
+| `nsfw` | Artistic sensual |
+| `normal` | No style prefix |
 
 ---
 
