@@ -17,7 +17,7 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferos.preview.emergentagent.com').rstrip('/')
 
 # Backend runs on port 5000 internally, but we access via the public URL
-# The backend is at /api prefix for some routes, but /advanced/* is direct
+# The advanced/* endpoints are proxied through /_dash/advanced/*
 BACKEND_URL = BASE_URL
 
 
