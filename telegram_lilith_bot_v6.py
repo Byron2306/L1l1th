@@ -164,33 +164,16 @@ Type /help for all commands~
 • /voices - List voices
 • /setvoice <name> - Change voice
 
-*FREE Images:* 🖼️
+*FREE Images:*
 • /image <prompt> - Generate
 • /styles - List styles
 
-*Hacking:* ⚔️
+*Hacking:*
 • /exec <cmd> - Shell
 • /nmap <target> - Scan
 • /sqlmap <url> - SQLi
 
-_All FREE, no API keys~_ 💋
-        """
-
-*FREE Images:* 🖼️
-• /image <prompt> - Generate art
-• /styles - List image styles
-
-*Available Styles:*
-`dark` `succubus` `cyber` `anime`
-`realistic` `horror` `nsfw` `normal`
-
-*Hacking Tools:* ⚔️
-• /exec <cmd> - Run command
-• /nmap <target> - Port scan
-• /sqlmap <url> - SQLi test
-• /attack <target> - Auto attack plan
-
-_All FREE, no API keys~_ 💋🖤
+_All FREE, no API keys~_
         """
         await update.message.reply_text(help_text, parse_mode='Markdown')
 
