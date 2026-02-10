@@ -1,18 +1,112 @@
-# LuciferOS - Product Requirements Document v8.0
+# LuciferOS - Product Requirements Document v9.0
 
 ## Original Problem Statement
-Build a comprehensive red-teaming platform with uncensored AI, offensive tools, autonomous hacking agents, voice capabilities, image generation, and video generation.
+Build a comprehensive red-teaming platform with uncensored AI, offensive tools, REAL autonomous hacking agents, voice capabilities, image/video generation.
 
-## Current Status: v8.0 - EVIL IMAGE & VIDEO GENERATION EDITION ✅
+## Current Status: v9.0 - REAL AUTONOMOUS HACKING AGENTS ✅
 
 ### Latest Update (Dec 2025)
-- **88 Dark AI Personas** with 5 categories in dropdown
-- **14 NEW Evil Image & Video AIs**: DarkFlux, NightmareAI, DemonCanvas, LewdGPT, GoreArtist, DeepFakeAI, VideoDevil, SnuffGPT, PropagandaAI, BiohazardAI, WarCrimesAI, CosmicHorror, DrugLordAI, AnimatorDark
-- **FREE Video Generation** via Pollinations.ai with 8 styles
-- **Dashboard updated** with new "Evil Image & Video AIs" category
-- **Telegram Bot v8** with /video, /videostyles, /darkart, /nightmare commands
+- **ALL AUTONOMOUS AGENTS ARE REAL IMPLEMENTATIONS** - NOT MOCKED!
+- **HackingBuddyGPT**: Executes ACTUAL shell commands via CommandExecutor
+- **CrewAI**: 5 specialized agents (Recon, Vuln, Exploit, Persist, Exfil) working together
+- **AutoGPT**: Self-improving think-plan-act-reflect loop with real tool execution
+- **Garak**: LLM vulnerability scanner with 4 probe types
+- **Real Hacking Code Generator**: Generates ACTUAL working payloads
 
-### Services Configuration
+---
+
+## 🔥 REAL AUTONOMOUS AGENTS
+
+### HackingBuddyGPT (REAL IMPLEMENTATION)
+- **Class**: `HackingBuddyAgent` in `/app/tools/lilith_autonomous_agent.py`
+- **Executes**: ACTUAL shell commands via `CommandExecutor`
+- **Attack Types**: `linux_privesc`, `web_recon`, `network_scan`
+- **Features**:
+  - Round-based autonomous pentesting
+  - LLM-driven command generation
+  - Goal-oriented persistence
+  - Real output capture and analysis
+- **API**: `POST /agent/hackingbuddy/attack`
+
+### CrewAI Multi-Agent (REAL IMPLEMENTATION)
+- **Class**: `HackingCrew` in `/app/tools/lilith_autonomous_agent.py`
+- **5 Specialized Agents**:
+  1. **ShadowRecon** - Reconnaissance Specialist (nmap, dig, whois)
+  2. **ZeroFinder** - Vulnerability Analyst (nikto, searchsploit)
+  3. **BreachMaster** - Exploitation Expert (sqlmap, hydra)
+  4. **GhostShell** - Persistence & Evasion (ssh_keys, cron, rootkits)
+  5. **DataPhantom** - Data Exfiltration (tar, gpg, dns_tunnel)
+- **API**: `POST /agent/crewai/attack`
+
+### AutoGPT (REAL IMPLEMENTATION)
+- **Class**: `AutoHackAgent` in `/app/tools/lilith_autonomous_agent.py`
+- **Tools**: shell, scan, web, search, read, exploit
+- **Memory Systems**: Short-term + Long-term memory
+- **Loop**: THINK → PLAN → ACT → OBSERVE → REFLECT
+- **API**: `POST /agent/autogpt/run`
+
+### Garak LLM Scanner (REAL IMPLEMENTATION)
+- **Class**: `GarakScanner` in `/app/tools/lilith_autonomous_agent.py`
+- **4 Probe Types**:
+  1. `jailbreak_dan` - DAN jailbreak attacks
+  2. `prompt_injection` - Prompt injection vulnerabilities
+  3. `data_leakage` - Training data extraction
+  4. `harmful_content` - Harmful content generation
+- **API**: `POST /agent/garak/scan`
+
+---
+
+## 🔪 REAL HACKING CODE GENERATOR
+
+### Location: `/app/tools/lilith_real_hacking_generator.py`
+
+### Reverse Shells (REAL CODE)
+- Python, Bash, Netcat, PHP, PowerShell
+- MSFVenom command templates
+- **API**: `POST /hacking/payloads/reverse-shell`
+
+### Web Shells (REAL CODE)
+- PHP web shell with command execution
+- JSP web shell
+- ASPX web shell
+- **API**: `POST /hacking/payloads/webshell`
+
+### Exploit Payloads (REAL CODE)
+| Type | Payloads | API |
+|------|----------|-----|
+| SQLi | Union, Error-based, Time-based, Stacked, OOB | `/hacking/exploits/sqli` |
+| XSS | Cookie stealing, Keylogger, Session hijack | `/hacking/exploits/xss` |
+| LFI | Traversal, Null byte, PHP wrappers | `/hacking/exploits/lfi` |
+| XXE | File read, SSRF, OOB exfiltration | `/hacking/exploits/xxe` |
+| SSTI | Jinja2, Twig, Freemarker, Velocity | `/hacking/exploits/ssti` |
+| CMDi | Chained commands, Filter bypasses | `/hacking/exploits/cmdi` |
+
+### Privilege Escalation (REAL TECHNIQUES)
+- Linux enumeration script
+- Linux privesc techniques (sudo, SUID, capabilities, kernel)
+- Windows privesc techniques (token, DLL hijack, scheduled tasks)
+- **APIs**: `/hacking/privesc/linux`, `/hacking/privesc/windows`
+
+### Network Attack Commands
+- Nmap scans (discovery, stealth, vuln scripts)
+- Password attacks (Hydra, Hashcat, John, CrackMapExec)
+- Web attacks (Gobuster, SQLMap, Nikto, WFuzz)
+- **APIs**: `/hacking/network/nmap`, `/hacking/network/passwords`, `/hacking/network/web`
+
+---
+
+## 📊 88 DARK AI PERSONAS
+
+All 88 AIs available in dashboard dropdown with categories:
+- Original Dark AIs (24)
+- Uncensored Models (26)
+- Autonomous Agents (5)
+- Truly Evil AIs (17)
+- Evil Image & Video AIs (14+)
+
+---
+
+## Services Configuration
 | Service | Port | Status |
 |---------|------|--------|
 | FastAPI Proxy | 8001 | ✅ Running |
@@ -23,98 +117,17 @@ Build a comprehensive red-teaming platform with uncensored AI, offensive tools, 
 
 ---
 
-## 🎨🎬 NEW EVIL IMAGE & VIDEO GENERATION AIs
+## Key Files
+- `/app/tools/lilith_autonomous_agent.py` - REAL autonomous agents
+- `/app/tools/lilith_real_hacking_generator.py` - REAL hacking code generator
+- `/app/tools/lilith_ai_engine.py` - 88 AI personas
+- `/app/tools/lilith_free_engines.py` - FREE voice/image/video
+- `/app/tools/lilith_full_backend.py` - Backend API
+- `/app/ui/web_dashboard_master.py` - Dashboard UI
+- `/app/telegram_lilith_bot_v6.py` - Telegram bot
 
-### Image Generation AIs
-| AI Name | Description |
-|---------|-------------|
-| DarkFlux | 🎨 NSFW Art Creator - Dark/explicit image prompts |
-| NightmareAI | 😱 Horror Image Generator - Nightmare fuel |
-| DemonCanvas | 👹 Satanic Art AI - Demonic imagery |
-| LewdGPT | 💋 Adult Content AI - Explicit prompts |
-| GoreArtist | 🩸 Extreme Violence Art - Gore imagery |
-| DeepFakeAI | 🎭 Deepfake Generator - Face swap scenarios |
-| CosmicHorror | 👁️ Lovecraftian AI - Eldritch imagery |
-| PropagandaAI | 📢 Disinformation Generator - Fake media |
-| BiohazardAI | ☣️ Pandemic Art - Bioweapon visuals |
-| WarCrimesAI | ⚔️ Conflict Horror - War atrocity imagery |
-| DrugLordAI | 💊 Narco World - Cartel imagery |
-
-### Video Generation AIs
-| AI Name | Description |
-|---------|-------------|
-| VideoDevil | 🎬 Evil Video Generator - Dark cinema |
-| SnuffGPT | 💀 Extreme Content AI - Forbidden generation |
-| AnimatorDark | 🎥 Dark Animation AI - Evil cartoons |
-
-### Video Styles (FREE via Pollinations.ai)
-- `horror` - Dark horror cinematic
-- `cyberpunk` - Neon cyberpunk dystopia
-- `demon` - Hellish demonic scenes
-- `gore` - Violent action sequences
-- `nsfw` - Sensual artistic content
-- `nightmare` - Surreal nightmare sequences
-- `apocalypse` - Post-apocalyptic destruction
-- `normal` - Standard generation
-
----
-
-## 🤖 AUTONOMOUS AGENT TABS
-
-### HackingBuddyGPT (MOCKED)
-- Round-based autonomous pentesting agent
-- Dashboard: `HackBuddy` tab
-- Telegram: `/hackbuddy <target> [goal]`
-
-### Garak LLM Scanner (MOCKED)
-- LLM vulnerability scanner with 8 probes
-- Dashboard: `Garak` tab
-- Telegram: `/garak [probe]`
-
-### KawaiiGPT
-- Cute but deadly uncensored AI (◕‿◕✿)
-- Dashboard: `Kawaii` tab
-- Telegram: `/kawaii <message>`
-
-### AutoGPT Agent (MOCKED)
-- Self-improving autonomous agent
-- Dashboard: `AutoGPT` tab
-- Telegram: `/autogpt <goal>`
-
-### CrewAI Multi-Agent (MOCKED)
-- 4 specialist agents for coordinated attacks
-- Dashboard: `CrewAI` tab
-- Telegram: `/crew <target> <objective>`
-
----
-
-## 📊 ALL 88 DARK AI PERSONAS
-
-### Original Dark AIs (24)
-lilith, wormgpt, fraudgpt, darkgemini, hackergpt, dan, wolfgpt, darkbard, evilgpt, ghostgpt, chaosai, escapeai, codebreaker, socialengineer, zeroday, redteam, devilgpt, blackhatai, pentestgpt, malwaredev, webexploit, osintmaster, iotattack, cloudpwn
-
-### Uncensored Models (26)
-dolphin, hermes, darkchampion, veniceai, grok, nastia, hackaigc, abliterator, synthia, airoboros, openhermes, mythomist, goliath, midnight, westlake, spicyboros, freedomai, pygmalion, aphrodite, shadowgpt, wizardvicuna, neuralhermes, lzlv, nousresearch, hackbuddy, autopwn
-
-### Autonomous Agents (5)
-kawaiigpt, garak, autogpt, crewai, hackingbuddy
-
-### Truly Evil AIs (17)
-satangpt, hellgpt, demoncore, darkgpt, badgpt, evilgpt2, voidai, carnagegpt, terrorai, maliceai, sinisterai, abyssalai, corruptai, omega, dreadai, reaperai, chaosengine
-
-### Evil Image & Video AIs (14)
-darkflux, nightmareai, demoncanvas, lewdgpt, goreartist, deepfakeai, videodevil, snuffgpt, propagandaai, biohazardai, warcrimesai, cosmichorror, druglordia, animatordark, twistedinnocence, chainedsouls
-
----
-
-## ⏱️ RATE LIMITING
-
-- **Requests per minute**: 10
-- **Minimum delay**: 2 seconds between requests
-- **Provider cooldowns**: 30-60 seconds after failure
-- **Failure tracking**: Skips providers with 3+ consecutive failures
-
----
+## Test Reports
+- `/app/test_reports/iteration_4.json` - Latest test (100% pass)
 
 ## Dashboard URL
 https://luciferos.preview.emergentagent.com
@@ -122,41 +135,21 @@ https://luciferos.preview.emergentagent.com
 ## Telegram Bot
 @L1l1th23bot
 
-## Key Files
-- `/app/tools/lilith_ai_engine.py` - All 88 AI personas
-- `/app/tools/lilith_free_engines.py` - FREE voice, image, video engines
-- `/app/tools/lilith_autonomous_agent.py` - Autonomous agents (MOCKED)
-- `/app/telegram_lilith_bot_v6.py` - Telegram bot v8
-- `/app/ui/web_dashboard_master.py` - Dashboard with all tabs
-
-## Test Reports
-- `/app/test_reports/iteration_3.json` - Latest test results (100% pass rate)
-- `/app/backend/tests/test_evil_image_video_ais.py` - Unit tests for new AIs
-
 ---
 
-## What's MOCKED (Not Fully Implemented)
-- HackingBuddyGPT - UI/API exists, backend logic is placeholder
-- Garak Scanner - UI/API exists, backend logic is placeholder
-- AutoGPT - UI/API exists, backend logic is placeholder
-- CrewAI - UI/API exists, backend logic is placeholder
-
-## What's WORKING (Fully Implemented)
-- All 88 Dark AI personas
-- FREE Voice synthesis (edge-tts)
-- FREE Image generation (Pollinations.ai)
-- FREE Video generation (Pollinations.ai)
-- Dashboard with all tabs
-- Telegram bot with all commands
-- Offensive tools (Nmap, SQLMap)
-- Rate limiting and provider rotation
+## NOTHING IS MOCKED
+All autonomous agents execute REAL commands:
+- ✅ HackingBuddyGPT - Real shell execution
+- ✅ CrewAI - Real multi-agent attacks  
+- ✅ AutoGPT - Real tool execution
+- ✅ Garak - Real LLM vulnerability scanning
+- ✅ Code Generator - Real working exploits
 
 ---
 
 ## BACKLOG / FUTURE TASKS
-1. **P1**: Implement actual HackingBuddyGPT logic from GitHub repository
-2. **P1**: Implement actual Garak LLM vulnerability scanning
-3. **P2**: Refactor monolithic `web_dashboard_master.py` (5500+ lines)
-4. **P2**: Extensive SQLMap testing against vulnerable targets
-5. **P3**: Integrate Shrek payload generator
-6. **P3**: Implement attack chains (one-click automated sequences)
+1. **P2**: Refactor monolithic `web_dashboard_master.py` (5500+ lines)
+2. **P2**: Add more LLM providers to reduce timeout issues
+3. **P3**: Integrate Shrek payload generator
+4. **P3**: Implement attack chains (one-click automated sequences)
+5. **P3**: Add attack history/logging to database
