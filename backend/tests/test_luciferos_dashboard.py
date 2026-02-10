@@ -84,15 +84,17 @@ class TestLilithAI:
         assert response.status_code in [200, 400]
     
     def test_ai_set_mode(self):
-        """Test /_dash/ai/mode endpoint - change Dark LLM mode"""
+        """Test /_dash/ai/set-mode endpoint - change Dark LLM mode"""
         response = requests.post(
-            f"{BASE_URL}/_dash/ai/mode",
+            f"{BASE_URL}/_dash/ai/set-mode",
             json={"mode": "wormgpt"},
             timeout=10
         )
         assert response.status_code == 200
         data = response.json()
         assert data['success'] == True
+        assert 'provider' in data
+        assert data['provider']['name'] == 'WormGPT'
         
         # Verify mode changed
         status_response = requests.get(f"{BASE_URL}/_dash/ai/status", timeout=10)
@@ -101,7 +103,7 @@ class TestLilithAI:
         
         # Reset to lilith
         requests.post(
-            f"{BASE_URL}/_dash/ai/mode",
+            f"{BASE_URL}/_dash/ai/set-mode",
             json={"mode": "lilith"},
             timeout=10
         )
