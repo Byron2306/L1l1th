@@ -306,3 +306,7 @@ luciferos/src/openJdk-25/lib/modules
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
