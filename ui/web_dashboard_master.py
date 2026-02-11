@@ -6347,6 +6347,196 @@ def dash_advanced_exfil_specific(technique):
         return jsonify({'success': False, 'error': str(e)})
 
 
+# ==================== LOOT STORAGE ROUTES ====================
+
+@app.route('/_dash/loot/credentials', methods=['GET'])
+def dash_loot_credentials():
+    """Get harvested credentials from LILITH's memory"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/credentials", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/cookies', methods=['GET'])
+def dash_loot_cookies():
+    """Get harvested cookies"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/cookies", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/hashes', methods=['GET'])
+def dash_loot_hashes():
+    """Get password hashes"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/hashes", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/keys', methods=['GET'])
+def dash_loot_keys():
+    """Get API keys and secrets"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/keys", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/stats', methods=['GET'])
+def dash_loot_stats():
+    """Get loot statistics"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/stats", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/summary', methods=['GET'])
+def dash_loot_summary():
+    """Get full loot summary"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/summary", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== SCRIPT STORAGE ROUTES ====================
+
+@app.route('/_dash/scripts', methods=['GET'])
+def dash_get_scripts():
+    """Get saved scripts from LILITH's memory"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/scripts", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/scripts', methods=['POST'])
+def dash_store_script():
+    """Store a script in LILITH's memory"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/scripts", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/scripts/<name>', methods=['GET'])
+def dash_get_script(name):
+    """Get a specific script"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/scripts/{name}", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/scripts/<name>', methods=['DELETE'])
+def dash_delete_script(name):
+    """Delete a script from memory"""
+    try:
+        resp = requests.delete(f"{BACKEND_URL}/scripts/{name}", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== REAL AUTONOMOUS AGENTS ====================
+
+@app.route('/_dash/agents/hackbuddy/real', methods=['POST'])
+def dash_real_hackbuddy():
+    """Run REAL HackingBuddy attack"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/agents/hackbuddy/real", json=request.json, timeout=300)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/agents/autogpt/real', methods=['POST'])
+def dash_real_autogpt():
+    """Run REAL AutoGPT attack"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/agents/autogpt/real", json=request.json, timeout=300)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== DARK CODE GENERATOR ====================
+
+@app.route('/_dash/codegen/generate', methods=['POST'])
+def dash_codegen():
+    """Generate code using dark AI"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/generate", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/codegen/reverse-shell', methods=['POST'])
+def dash_codegen_revshell():
+    """Generate reverse shell"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/reverse-shell", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/codegen/exploit', methods=['POST'])
+def dash_codegen_exploit():
+    """Generate exploit"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/exploit", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/codegen/hypothesize', methods=['POST'])
+def dash_codegen_hypothesize():
+    """Hypothesize attack vectors"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/hypothesize", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== TELEMETRY ====================
+
+@app.route('/_dash/telemetry', methods=['GET'])
+def dash_telemetry():
+    """Get attack telemetry"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/telemetry", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/attack-results', methods=['GET'])
+def dash_attack_results():
+    """Get attack results"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/attack-results", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("WEB_DASHBOARD_PORT", "3000"))
     host = os.environ.get("WEB_DASHBOARD_HOST", "0.0.0.0")
