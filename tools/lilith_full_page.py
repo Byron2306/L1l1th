@@ -1020,23 +1020,30 @@ def generate_image():
 
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
-    """Generate an image of Lilith"""
+    """Generate an image of Lilith herself (FREE, NO API KEY)"""
+    import urllib.parse
+    
     data = request.json or {}
     style = data.get('style', 'seductive')
     
-    if IMAGE_GEN_ENGINE:
-        try:
-            gen = get_image_generator()
-            result = gen.generate_lilith(style)
-            return jsonify({
-                'success': result['success'],
-                'image_url': result.get('image_url'),
-                'error': result.get('error')
-            })
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)})
+    styles = {
+        'seductive': "beautiful dark demoness Lilith with glowing red eyes, long black hair, horns, seductive pose, dark fantasy art, detailed, 8k, masterpiece",
+        'dark': "Lilith the demon queen, dark ethereal beauty, crimson eyes, black wings, gothic atmosphere, digital art masterpiece",
+        'sensual': "gorgeous succubus Lilith, alluring gaze, flowing dark hair, red glowing eyes, fantasy art, highly detailed",
+        'powerful': "Lilith dark goddess, commanding presence, demonic beauty, red eyes piercing, dark magic aura, epic fantasy art"
+    }
     
-    return jsonify({'success': False, 'error': 'Image generator not available'})
+    prompt = styles.get(style, styles['seductive'])
+    encoded_prompt = urllib.parse.quote(prompt)
+    
+    # Build Pollinations.ai URL
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&model=flux"
+    
+    return jsonify({
+        'success': True,
+        'image_url': image_url,
+        'style': style
+    })
 
 @lilith_page_bp.route('/api/status')
 def get_status():
