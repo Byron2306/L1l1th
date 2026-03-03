@@ -1680,10 +1680,11 @@ MASTER_TEMPLATE = """
             input.value = '';
 
             try {
-                const response = await fetch('/_dash/ai/chat', {
+                // Use UNLIMITED engine for FREE, NO API KEY chat
+                const response = await fetch('/_dash/unlimited/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, voice_enabled: false })
                 });
                 
                 const data = await response.json();
@@ -1692,14 +1693,15 @@ MASTER_TEMPLATE = """
                 
                 // Update status display
                 if (data.provider) {
-                    document.getElementById('ai-provider').textContent = data.provider;
-                }
-                if (data.model) {
-                    document.getElementById('ai-mode').textContent = data.model;
+                    document.getElementById('ai-provider').textContent = data.provider + ' (FREE)';
                 }
                 
+                document.getElementById('ai-mode').textContent = 'UNLIMITED';
+                
                 if (!data.success) {
-                    addLog('[CHAT] AI providers unavailable - add API keys');
+                    addLog('[CHAT] Trying fallback providers...');
+                } else {
+                    addLog(`[CHAT] Response from ${data.provider || 'unknown'}`);
                 }
             } catch (error) {
                 addMessage('system', `Error: ${error.message}`);
