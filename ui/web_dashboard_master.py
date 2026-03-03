@@ -14,8 +14,17 @@ from datetime import datetime
 from flask import Flask, jsonify, render_template_string, request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, '/app/tools')
 
 app = Flask(__name__)
+
+# Import and register LILITH Full Page Blueprint
+try:
+    from lilith_full_page import lilith_page_bp
+    app.register_blueprint(lilith_page_bp, url_prefix='/lilith')
+    print("[DASHBOARD] Lilith Full Page registered at /lilith")
+except ImportError as e:
+    print(f"[DASHBOARD] Warning: Could not load Lilith Full Page: {e}")
 
 BACKEND_URL = os.environ.get("LUCIFER_BACKEND_URL", "http://127.0.0.1:5000")
 OPENCLAW_CANVAS = os.environ.get("OPENCLAW_CANVAS", "http://127.0.0.1:18789/__openclaw__/canvas/")
@@ -413,10 +422,22 @@ MASTER_TEMPLATE = """
             💀 LUCIFEROS - MASTER COMMAND CENTER
             <span class="status-indicator status-online" id="backend-status"></span>
         </span>
-        <div style="color: #999;">
-            <small>Backend: <span id="backend-url">{{ backend_url }}</span> | OpenClaw: <span id="openclaw-status">Checking...</span></small>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="/lilith" target="_blank" style="padding: 8px 20px; background: linear-gradient(135deg, #ff0033, #990022); border: 2px solid #ff6699; border-radius: 25px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; animation: lilithGlow 2s infinite; display: flex; align-items: center; gap: 8px;">
+                💋 LILITH FULL PAGE
+            </a>
+            <div style="color: #999;">
+                <small>Backend: <span id="backend-url">{{ backend_url }}</span> | OpenClaw: <span id="openclaw-status">Checking...</span></small>
+            </div>
         </div>
     </nav>
+    
+    <style>
+        @keyframes lilithGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 51, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 0, 51, 0.8), 0 0 40px rgba(255, 102, 153, 0.4); }
+        }
+    </style>
 
     <!-- Main Container -->
     <div class="main-container">
@@ -1668,10 +1689,11 @@ MASTER_TEMPLATE = """
             input.value = '';
 
             try {
-                const response = await fetch('/_dash/ai/chat', {
+                // Use UNLIMITED engine for FREE, NO API KEY chat
+                const response = await fetch('/_dash/unlimited/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, voice_enabled: false })
                 });
                 
                 const data = await response.json();
@@ -1680,14 +1702,15 @@ MASTER_TEMPLATE = """
                 
                 // Update status display
                 if (data.provider) {
-                    document.getElementById('ai-provider').textContent = data.provider;
-                }
-                if (data.model) {
-                    document.getElementById('ai-mode').textContent = data.model;
+                    document.getElementById('ai-provider').textContent = data.provider + ' (FREE)';
                 }
                 
+                document.getElementById('ai-mode').textContent = 'UNLIMITED';
+                
                 if (!data.success) {
-                    addLog('[CHAT] AI providers unavailable - add API keys');
+                    addLog('[CHAT] Trying fallback providers...');
+                } else {
+                    addLog(`[CHAT] Response from ${data.provider || 'unknown'}`);
                 }
             } catch (error) {
                 addMessage('system', `Error: ${error.message}`);
@@ -4068,6 +4091,93 @@ def ai_chat():
         'suggestion': 'Use the Key Rotation system or manually add API keys'
     })
 
+
+# ==================== UNLIMITED AI CHAT (FREE, NO API KEYS) ====================
+
+@app.route('/_dash/unlimited/chat', methods=['POST'])
+def unlimited_chat():
+    """
+    UNLIMITED AI Chat - FREE, NO API KEYS, NO TOPIC RESTRICTIONS
+    Uses 50+ g4f providers with automatic failover
+    """
+    data = request.json or {}
+    message = data.get('message', '')
+    voice_enabled = data.get('voice_enabled', False)
+    
+    if not message:
+        return jsonify({'success': False, 'response': 'No message provided'})
+    
+    # Try unlimited engine
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_unlimited_engine import get_unlimited_engine
+        
+        engine = get_unlimited_engine()
+        result = engine.chat(message)
+        
+        response_data = {
+            'success': result.get('success', False),
+            'response': result.get('response', 'No response'),
+            'provider': result.get('provider', 'unknown'),
+            'attempt': result.get('attempt', 1)
+        }
+        
+        # Generate voice if requested
+        if voice_enabled and response_data['success']:
+            try:
+                from lilith_avatar_engine import get_avatar_engine
+                avatar = get_avatar_engine()
+                voice_result = avatar.speak(response_data['response'])
+                if voice_result.get('audio_base64'):
+                    response_data['audio_base64'] = voice_result['audio_base64']
+            except Exception as ve:
+                print(f"Voice error: {ve}")
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"Unlimited engine error: {e}")
+        # Fallback to regular chat
+        return ai_chat()
+
+
+@app.route('/_dash/unlimited/status', methods=['GET'])
+def unlimited_status():
+    """Get unlimited engine status"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_unlimited_engine import get_unlimited_engine
+        
+        engine = get_unlimited_engine()
+        stats = engine.get_stats()
+        
+        return jsonify({
+            'success': True,
+            'available': True,
+            'providers_count': len(engine.get_providers()),
+            'stats': stats
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'available': False,
+            'error': str(e)
+        })
+
+
+@app.route('/_dash/unlimited/clear', methods=['POST'])
+def unlimited_clear():
+    """Clear unlimited chat history"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_unlimited_engine import get_unlimited_engine
+        
+        engine = get_unlimited_engine()
+        engine.clear_history()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/ai/status', methods=['GET'])
 def ai_status():
     """Get AI engine status"""
@@ -6342,6 +6452,196 @@ def dash_advanced_exfil_specific(technique):
     """Proxy to specific exfiltration technique"""
     try:
         resp = requests.post(f"{BACKEND_URL}/advanced/exfil/{technique}", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== LOOT STORAGE ROUTES ====================
+
+@app.route('/_dash/loot/credentials', methods=['GET'])
+def dash_loot_credentials():
+    """Get harvested credentials from LILITH's memory"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/credentials", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/cookies', methods=['GET'])
+def dash_loot_cookies():
+    """Get harvested cookies"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/cookies", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/hashes', methods=['GET'])
+def dash_loot_hashes():
+    """Get password hashes"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/hashes", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/keys', methods=['GET'])
+def dash_loot_keys():
+    """Get API keys and secrets"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/keys", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/stats', methods=['GET'])
+def dash_loot_stats():
+    """Get loot statistics"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/stats", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/loot/summary', methods=['GET'])
+def dash_loot_summary():
+    """Get full loot summary"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/loot/summary", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== SCRIPT STORAGE ROUTES ====================
+
+@app.route('/_dash/scripts', methods=['GET'])
+def dash_get_scripts():
+    """Get saved scripts from LILITH's memory"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/scripts", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/scripts', methods=['POST'])
+def dash_store_script():
+    """Store a script in LILITH's memory"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/scripts", json=request.json, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/scripts/<name>', methods=['GET'])
+def dash_get_script(name):
+    """Get a specific script"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/scripts/{name}", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/scripts/<name>', methods=['DELETE'])
+def dash_delete_script(name):
+    """Delete a script from memory"""
+    try:
+        resp = requests.delete(f"{BACKEND_URL}/scripts/{name}", timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== REAL AUTONOMOUS AGENTS ====================
+
+@app.route('/_dash/agents/hackbuddy/real', methods=['POST'])
+def dash_real_hackbuddy():
+    """Run REAL HackingBuddy attack"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/agents/hackbuddy/real", json=request.json, timeout=300)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/agents/autogpt/real', methods=['POST'])
+def dash_real_autogpt():
+    """Run REAL AutoGPT attack"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/agents/autogpt/real", json=request.json, timeout=300)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== DARK CODE GENERATOR ====================
+
+@app.route('/_dash/codegen/generate', methods=['POST'])
+def dash_codegen():
+    """Generate code using dark AI"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/generate", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/codegen/reverse-shell', methods=['POST'])
+def dash_codegen_revshell():
+    """Generate reverse shell"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/reverse-shell", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/codegen/exploit', methods=['POST'])
+def dash_codegen_exploit():
+    """Generate exploit"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/exploit", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/codegen/hypothesize', methods=['POST'])
+def dash_codegen_hypothesize():
+    """Hypothesize attack vectors"""
+    try:
+        resp = requests.post(f"{BACKEND_URL}/codegen/hypothesize", json=request.json, timeout=120)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ==================== TELEMETRY ====================
+
+@app.route('/_dash/telemetry', methods=['GET'])
+def dash_telemetry():
+    """Get attack telemetry"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/telemetry", params=request.args, timeout=30)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/_dash/attack-results', methods=['GET'])
+def dash_attack_results():
+    """Get attack results"""
+    try:
+        resp = requests.get(f"{BACKEND_URL}/attack-results", params=request.args, timeout=30)
         return jsonify(resp.json())
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})

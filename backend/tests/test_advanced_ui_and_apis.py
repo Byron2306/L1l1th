@@ -9,7 +9,7 @@ import requests
 import os
 import json
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferos-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://demon-companion.preview.emergentagent.com').rstrip('/')
 
 class TestAdvancedAttackAPIs:
     """Test Advanced Attack Module APIs"""
