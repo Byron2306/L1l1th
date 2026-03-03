@@ -146,7 +146,7 @@ FastAPI Proxy (Port 8001)
 
 ## 🔗 Access Points
 
-- **Dashboard**: https://luciferos-1.preview.emergentagent.com
+- **Dashboard**: https://luciferops.preview.emergentagent.com
 - **Telegram**: @L1l1th23bot
 
 ---

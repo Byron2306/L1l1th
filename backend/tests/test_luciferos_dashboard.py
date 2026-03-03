@@ -9,7 +9,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferos-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://luciferops.preview.emergentagent.com')
 
 
 class TestDashboardStatus:

@@ -603,7 +603,7 @@ Review: Regular activity monitoring
 
 ## 📞 Support
 
-**Dashboard URL**: https://luciferos-1.preview.emergentagent.com
+**Dashboard URL**: https://luciferops.preview.emergentagent.com
 
 **Telegram Bot**: @L1l1th23bot
 
