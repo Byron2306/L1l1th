@@ -413,10 +413,22 @@ MASTER_TEMPLATE = """
             💀 LUCIFEROS - MASTER COMMAND CENTER
             <span class="status-indicator status-online" id="backend-status"></span>
         </span>
-        <div style="color: #999;">
-            <small>Backend: <span id="backend-url">{{ backend_url }}</span> | OpenClaw: <span id="openclaw-status">Checking...</span></small>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="/lilith" target="_blank" style="padding: 8px 20px; background: linear-gradient(135deg, #ff0033, #990022); border: 2px solid #ff6699; border-radius: 25px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; animation: lilithGlow 2s infinite; display: flex; align-items: center; gap: 8px;">
+                💋 LILITH FULL PAGE
+            </a>
+            <div style="color: #999;">
+                <small>Backend: <span id="backend-url">{{ backend_url }}</span> | OpenClaw: <span id="openclaw-status">Checking...</span></small>
+            </div>
         </div>
     </nav>
+    
+    <style>
+        @keyframes lilithGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 51, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 0, 51, 0.8), 0 0 40px rgba(255, 102, 153, 0.4); }
+        }
+    </style>
 
     <!-- Main Container -->
     <div class="main-container">
