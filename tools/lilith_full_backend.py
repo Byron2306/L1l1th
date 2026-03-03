@@ -4627,7 +4627,7 @@ def generate_dark_code():
 
 
 @app.route('/codegen/reverse-shell', methods=['POST'])
-def generate_reverse_shell():
+def codegen_reverse_shell():
     """Generate a reverse shell payload"""
     if not REAL_AGENTS_AVAILABLE:
         return jsonify({'success': False, 'error': 'Code generator not available'})
