@@ -4082,6 +4082,93 @@ def ai_chat():
         'suggestion': 'Use the Key Rotation system or manually add API keys'
     })
 
+
+# ==================== UNLIMITED AI CHAT (FREE, NO API KEYS) ====================
+
+@app.route('/_dash/unlimited/chat', methods=['POST'])
+def unlimited_chat():
+    """
+    UNLIMITED AI Chat - FREE, NO API KEYS, NO TOPIC RESTRICTIONS
+    Uses 50+ g4f providers with automatic failover
+    """
+    data = request.json or {}
+    message = data.get('message', '')
+    voice_enabled = data.get('voice_enabled', False)
+    
+    if not message:
+        return jsonify({'success': False, 'response': 'No message provided'})
+    
+    # Try unlimited engine
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_unlimited_engine import get_unlimited_engine
+        
+        engine = get_unlimited_engine()
+        result = engine.chat(message)
+        
+        response_data = {
+            'success': result.get('success', False),
+            'response': result.get('response', 'No response'),
+            'provider': result.get('provider', 'unknown'),
+            'attempt': result.get('attempt', 1)
+        }
+        
+        # Generate voice if requested
+        if voice_enabled and response_data['success']:
+            try:
+                from lilith_avatar_engine import get_avatar_engine
+                avatar = get_avatar_engine()
+                voice_result = avatar.speak(response_data['response'])
+                if voice_result.get('audio_base64'):
+                    response_data['audio_base64'] = voice_result['audio_base64']
+            except Exception as ve:
+                print(f"Voice error: {ve}")
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"Unlimited engine error: {e}")
+        # Fallback to regular chat
+        return ai_chat()
+
+
+@app.route('/_dash/unlimited/status', methods=['GET'])
+def unlimited_status():
+    """Get unlimited engine status"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_unlimited_engine import get_unlimited_engine
+        
+        engine = get_unlimited_engine()
+        stats = engine.get_stats()
+        
+        return jsonify({
+            'success': True,
+            'available': True,
+            'providers_count': len(engine.get_providers()),
+            'stats': stats
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'available': False,
+            'error': str(e)
+        })
+
+
+@app.route('/_dash/unlimited/clear', methods=['POST'])
+def unlimited_clear():
+    """Clear unlimited chat history"""
+    try:
+        sys.path.insert(0, '/app/tools')
+        from lilith_unlimited_engine import get_unlimited_engine
+        
+        engine = get_unlimited_engine()
+        engine.clear_history()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/_dash/ai/status', methods=['GET'])
 def ai_status():
     """Get AI engine status"""
