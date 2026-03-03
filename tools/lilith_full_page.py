@@ -993,26 +993,30 @@ def speak_text():
 
 @lilith_page_bp.route('/api/image/generate', methods=['POST'])
 def generate_image():
-    """Generate an image from prompt"""
+    """Generate an image from prompt using Pollinations.ai (FREE, NO API KEY)"""
+    import urllib.parse
+    
     data = request.json or {}
     prompt = data.get('prompt', '')
     
     if not prompt:
         return jsonify({'success': False, 'error': 'No prompt'})
     
-    if IMAGE_GEN_ENGINE:
-        try:
-            gen = get_image_generator()
-            result = gen.generate(prompt, nsfw=True)
-            return jsonify({
-                'success': result['success'],
-                'image_url': result.get('image_url'),
-                'error': result.get('error')
-            })
-        except Exception as e:
-            return jsonify({'success': False, 'error': str(e)})
+    # Clean and enhance the prompt
+    clean_prompt = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('make', '').replace('an image of', '').strip()
+    enhanced_prompt = f"{clean_prompt}, high quality, detailed, 8k, masterpiece"
     
-    return jsonify({'success': False, 'error': 'Image generator not available'})
+    # URL encode the prompt
+    encoded_prompt = urllib.parse.quote(enhanced_prompt)
+    
+    # Build Pollinations.ai URL (FREE, no API key needed!)
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&model=flux"
+    
+    return jsonify({
+        'success': True,
+        'image_url': image_url,
+        'prompt': clean_prompt
+    })
 
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
