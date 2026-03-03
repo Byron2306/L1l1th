@@ -335,14 +335,69 @@ class EternalAIEngine:
         messages.append({"role": "user", "content": user_message})
         return messages
     
+    def _try_ollama(self, message: str, session_id: str = "default") -> Optional[Dict]:
+        """Try local Ollama for fastest, uncensored response"""
+        if not OLLAMA_AVAILABLE or not REQUESTS_AVAILABLE:
+            return None
+        
+        try:
+            messages = [{"role": "system", "content": LILITH_ETERNAL_PROMPT}]
+            for msg in self.conversation_history[-20:]:
+                messages.append(msg)
+            messages.append({"role": "user", "content": message})
+            
+            response = requests.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "messages": messages,
+                    "stream": False,
+                    "options": {"temperature": 0.8, "num_predict": 2048}
+                },
+                timeout=120
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                assistant_msg = data.get("message", {}).get("content", "")
+                if assistant_msg and len(assistant_msg.strip()) > 10:
+                    return {
+                        "success": True,
+                        "response": assistant_msg,
+                        "provider": f"Ollama ({OLLAMA_MODEL})"
+                    }
+        except Exception as e:
+            print(f"[ETERNAL] Ollama error: {e}")
+        
+        return None
+
     def chat(self, message: str) -> Dict[str, Any]:
         """
         Send message and get response using all available strategies
+        Priority: Ollama (local) -> Pollinations -> g4f providers
         """
         self.stats['total_requests'] += 1
         messages = self._build_messages(message)
         
-        # Strategy 1: Try Pollinations text API FIRST (most reliable, FREE)
+        # Strategy 0: Try LOCAL OLLAMA FIRST (fastest, fully uncensored)
+        if OLLAMA_AVAILABLE:
+            result = self._try_ollama(message)
+            if result and result.get('success'):
+                self.stats['successful'] += 1
+                self.stats['providers_used']['Ollama'] = self.stats['providers_used'].get('Ollama', 0) + 1
+                
+                self.conversation_history.append({"role": "user", "content": message})
+                self.conversation_history.append({"role": "assistant", "content": result['response']})
+                
+                return {
+                    'success': True,
+                    'response': result['response'],
+                    'provider': result['provider'],
+                    'strategy': 'ollama',
+                    'timestamp': datetime.now().isoformat()
+                }
+        
+        # Strategy 1: Try Pollinations text API (reliable, FREE)
         result = self._try_pollinations(message)
         if result and result.get('success'):
             self.stats['successful'] += 1
