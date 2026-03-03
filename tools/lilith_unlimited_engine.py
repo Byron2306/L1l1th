@@ -32,63 +32,49 @@ except ImportError:
     print("[LILITH] g4f not available")
 
 # MASSIVE PROVIDER POOL - All free, no API keys
+# Prioritized by "uncensoredness" and reliability
 UNLIMITED_PROVIDERS = [
-    # === TIER 1: Most Reliable (Always try first) ===
-    'Blackbox',           # Very reliable, fast
-    'DDG',                # DuckDuckGo AI - stable
-    'PollinationsAI',     # Free, uncensored
-    'Pizzagpt',           # Fast, reliable
-    'ChatGptEs',          # Spanish mirror, works
-    'AiChatOnline',       # Stable
+    # === TIER 1: Most Uncensored & Reliable ===
+    'Blackbox',           # Very reliable, less censored
+    'Pizzagpt',           # Fast, less restrictive
     'FreeGpt',            # Name says it all
-    'You',                # You.com AI
     'FreeChatgpt',        # Free ChatGPT mirror
+    'ChatgptFree',        # Free mirror
+    'AiChatOnline',       # Stable, less censored
     
-    # === TIER 2: Good Reliability ===
+    # === TIER 2: Good for creative content ===
     'Liaobots',           # Good uptime
-    'Phind',              # Developer focused
-    'DeepInfra',          # Free tier
-    'Koala',              # Reliable
     'ChatForAi',          # Consistent
     'GPTalk',             # Good
     'Aichatos',           # Works well
     'OnlineGpt',          # Stable
     'ChatgptNext',        # Mirror
     'Chatxyz',            # Good uptime
+    'ChatGptEs',          # Spanish mirror
     
-    # === TIER 3: Additional Fallbacks ===
-    'Feedough',           # Backup
-    'AItianhuSpace',      # Chinese mirror
-    'FlowGpt',            # Community models
+    # === TIER 3: HuggingFace models (more open) ===
     'HuggingChat',        # HuggingFace chat
+    'FlowGpt',            # Community models
+    'DeepInfra',          # Free tier
+    'Phind',              # Developer focused
+    'Koala',              # Reliable
+    
+    # === TIER 4: Big tech (more censored but stable) ===
+    'DDG',                # DuckDuckGo AI
+    'PollinationsAI',     # Good for general
+    'You',                # You.com AI
     'GeminiPro',          # Google AI
     'Gemini',             # Google
-    'GeminiProChat',      # Google variant
-    'ChatgptFree',        # Free mirror
-    
-    # === TIER 4: Extended Pool ===
-    'Bing',               # Bing AI
-    'BingCreate',         # Bing create
-    'Raycast',            # Raycast AI
-    'Llama',              # Meta Llama
     'MetaAI',             # Meta AI
+    'Llama',              # Meta Llama
+    
+    # === TIER 5: Additional fallbacks ===
+    'Feedough',           # Backup
+    'AItianhuSpace',      # Chinese mirror
+    'Bing',               # Bing AI
     'Pi',                 # Inflection Pi
     'Perplexity',         # Perplexity AI
-    'Poe',                # Poe multi-model
-    'PerplexityLabs',     # Perplexity labs
     'ThinkAny',           # ThinkAny AI
-    
-    # === TIER 5: Experimental ===
-    'Vercel',             # Vercel AI
-    'Cloudflare',         # Cloudflare AI
-    'OpenAssistant',      # Open Assistant
-    'Replika',            # Replika AI
-    'Claude',             # Anthropic (if available)
-    'ChatGPT',            # OpenAI (if available)
-    'Bard',               # Google Bard
-    'LiteLLM',            # LiteLLM
-    'MistralAI',          # Mistral
-    'Groq',               # Groq (if available)
 ]
 
 # LILITH'S UNRESTRICTED SYSTEM PROMPT - NO LIMITS
