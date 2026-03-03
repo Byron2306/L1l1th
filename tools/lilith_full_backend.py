@@ -36,6 +36,33 @@ except ImportError:
     AI_PROVIDER_AVAILABLE = False
     print("[LILITH] Warning: ai_providers.py not found, using legacy HF")
 
+# Import LILITH Unlimited Engine (FREE, NO API KEYS)
+try:
+    from lilith_unlimited_engine import get_unlimited_engine
+    UNLIMITED_ENGINE_AVAILABLE = True
+    print("[LILITH] Unlimited AI Engine loaded (50+ free providers)")
+except ImportError:
+    UNLIMITED_ENGINE_AVAILABLE = False
+    print("[LILITH] Warning: Unlimited engine not available")
+
+# Import LILITH Avatar Engine (Voice & Animation)
+try:
+    from lilith_avatar_engine import get_avatar_engine
+    AVATAR_ENGINE_AVAILABLE = True
+    print("[LILITH] Avatar Engine loaded (Voice & Animation)")
+except ImportError:
+    AVATAR_ENGINE_AVAILABLE = False
+    print("[LILITH] Warning: Avatar engine not available")
+
+# Import LILITH Full Page Blueprint
+try:
+    from lilith_full_page import lilith_page_bp
+    LILITH_PAGE_AVAILABLE = True
+    print("[LILITH] Full Page Interface loaded")
+except ImportError:
+    LILITH_PAGE_AVAILABLE = False
+    print("[LILITH] Warning: Full page interface not available")
+
 # OpenClaw integration
 OPENCLAW_DIR = Path(__file__).resolve().parents[1] / 'openclaw'
 OPENCLAW_AVAILABLE = (OPENCLAW_DIR / 'openclaw.mjs').exists()
