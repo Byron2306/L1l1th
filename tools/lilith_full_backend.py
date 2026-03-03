@@ -4542,6 +4542,11 @@ def get_attack_results():
 
 
 if __name__ == '__main__':
+    # Register LILITH Full Page Blueprint
+    if LILITH_PAGE_AVAILABLE:
+        app.register_blueprint(lilith_page_bp, url_prefix='/lilith')
+        print("[LILITH] Full page interface available at /lilith")
+    
     # Get host from environment or use 0.0.0.0 to be accessible externally
     host = os.environ.get('BACKEND_HOST', '0.0.0.0')
     port = int(os.environ.get('BACKEND_PORT', '5000'))
@@ -4549,6 +4554,8 @@ if __name__ == '__main__':
     print(f"[LILITH] Starting backend on {host}:{port}")
     print(f"[LILITH] OpenClaw available")
     print(f"[LILITH] AI Providers initialized")
+    print(f"[LILITH] UNLIMITED AI Engine: 50+ FREE providers, NO API KEYS")
+    print(f"[LILITH] Avatar Engine: Voice & Animation (Edge TTS)")
     print(f"[LILITH] REAL Autonomous Agents: HackingBuddy, Garak, AutoGPT, CrewAI")
     print(f"[LILITH] REAL Hacking Code Generator: Reverse Shells, Web Shells, Exploits")
     print(f"[LILITH] Shrek Payload Generator: 35+ reverse shell types")
