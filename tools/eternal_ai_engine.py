@@ -3,12 +3,10 @@
 ETERNAL AI ENGINE - Persistent, Free, Unlimited, Uncensored
 ============================================================
 A comprehensive AI system using:
-- 100+ g4f providers
+- LOCAL OLLAMA (primary - fastest, uncensored)
+- 100+ g4f providers (fallback)
 - Free HuggingFace models
-- Open-source AI (LLaMA, WizardLM, BLOOM, Mistral)
 - Proxy rotation and session spoofing
-- Cloudflare CDN bypass
-- Tor-style anonymization
 
 NO API KEYS. NO TOKENS. NO LIMITS. FOREVER FREE.
 """
@@ -28,6 +26,13 @@ from concurrent.futures import ThreadPoolExecutor
 import urllib.parse
 import urllib.request
 
+# Requests for API calls
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
 # G4F imports
 try:
     import g4f
@@ -36,72 +41,52 @@ try:
 except ImportError:
     G4F_AVAILABLE = False
 
-# Requests for API calls
+# ============================================================
+# OLLAMA CONFIGURATION (LOCAL AI - FASTEST, UNCENSORED)
+# ============================================================
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "dolphin-mistral:7b")
+
+# Check if Ollama is available
+OLLAMA_AVAILABLE = False
 try:
-    import requests
-    REQUESTS_AVAILABLE = True
-except ImportError:
-    REQUESTS_AVAILABLE = False
+    r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+    if r.status_code == 200:
+        OLLAMA_AVAILABLE = True
+        print(f"[ETERNAL] Ollama available at {OLLAMA_URL}")
+except:
+    print(f"[ETERNAL] Ollama not available at {OLLAMA_URL}")
 
 # ============================================================
-# MEGA PROVIDER LIST - 100+ FREE AI PROVIDERS (UPDATED)
+# MEGA PROVIDER LIST - 50+ FREE AI PROVIDERS (FALLBACK)
 # ============================================================
 G4F_PROVIDERS = [
     # === TIER 1: FREE, NO AUTH REQUIRED ===
-    'DDGS',               # DuckDuckGo Search AI
-    'Chatai',             # Chat AI
-    'EasyChat',           # Easy Chat
-    'ItalyGPT',           # Italy GPT
-    'FenayAI',            # Fenay AI
-    'CablyAI',            # Cably AI
-    'BlackboxPro',        # Blackbox Pro
-    'Antigravity',        # Antigravity
-    'AIBadgr',            # AI Badgr
+    'Chatai', 'EasyChat', 'ItalyGPT', 'FenayAI', 'CablyAI',
+    'BlackboxPro', 'Antigravity', 'AIBadgr',
     
     # === TIER 2: HUGGINGFACE & OPEN SOURCE ===
-    'HuggingChat',        # HuggingFace Chat
-    'HuggingFace',        # HuggingFace
-    'HuggingFaceInference', # HuggingFace Inference
-    'HuggingSpace',       # HuggingFace Spaces
+    'HuggingChat', 'HuggingFace', 'HuggingFaceInference', 'HuggingSpace',
     
-    # === TIER 3: BIG TECH (may need auth) ===
-    'GeminiPro',          # Google Gemini Pro
-    'Gemini',             # Google Gemini
-    'MetaAI',             # Meta AI (Llama)
-    'Cloudflare',         # Cloudflare AI
-    'DeepInfra',          # DeepInfra
-    'DeepSeek',           # DeepSeek
-    'Cerebras',           # Cerebras
-    'Groq',               # Groq
-    'Grok',               # Grok (xAI)
+    # === TIER 3: BIG TECH ===
+    'GeminiPro', 'Gemini', 'MetaAI', 'Cloudflare', 'DeepInfra',
+    'DeepSeek', 'Cerebras', 'Groq', 'Grok',
     
     # === TIER 4: ROUTERS ===
-    'OpenRouterFree',     # OpenRouter Free tier
-    'ApiAirforce',        # API Airforce
-    'GlhfChat',           # GLHF Chat
-    'LambdaChat',         # Lambda Chat
-    'LMArena',            # LM Arena
-    'Mintlify',           # Mintlify
+    'OpenRouterFree', 'ApiAirforce', 'GlhfChat', 'LambdaChat',
+    'LMArena', 'Mintlify',
     
     # === TIER 5: CODE & SPECIALIZED ===
-    'GithubCopilot',      # Github Copilot
-    'Copilot',            # Microsoft Copilot
-    'OIVSCodeSer',        # VS Code Server
-    'OIVSCodeSer2',       # VS Code Server 2
+    'GithubCopilot', 'Copilot', 'OIVSCodeSer', 'OIVSCodeSer2',
     
     # === TIER 6: CHINESE & INTERNATIONAL ===
-    'BAAI_Ling',          # BAAI Ling
-    'GLM',                # GLM
-    'GigaChat',           # GigaChat
-    'MiniMax',            # MiniMax
+    'BAAI_Ling', 'GLM', 'GigaChat', 'MiniMax',
     
     # === TIER 7: COHERE ===
-    'Cohere',             # Cohere
-    'CohereForAI_C4AI_Command', # Cohere Command
+    'Cohere', 'CohereForAI_C4AI_Command',
     
     # === TIER 8: NVIDIA & GRADIENT ===
-    'Nvidia',             # Nvidia AI
-    'GradientNetwork',    # Gradient Network
+    'Nvidia', 'GradientNetwork',
 ]
 
 # HuggingFace Free Inference Endpoints (no API key for public models)
