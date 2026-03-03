@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-LILITH FULL PAGE INTERFACE
-==========================
-Dedicated conversation page with animated avatar and voice
+LILITH FULL PAGE INTERFACE v2
+=============================
+Dedicated conversation page with DRAMATIC animated avatar, voice, and image generation
 """
 
 from flask import Flask, Blueprint, jsonify, render_template_string, request
@@ -19,28 +19,33 @@ if tools_dir not in sys.path:
 # Import engines with better error handling
 UNLIMITED_ENGINE = False
 AVATAR_ENGINE = False
+IMAGE_GEN_ENGINE = False
 
 try:
     from lilith_unlimited_engine import get_unlimited_engine
-    # Test that it works
     _ = get_unlimited_engine()
     UNLIMITED_ENGINE = True
     print("[LILITH PAGE] Unlimited engine loaded successfully")
 except Exception as e:
     print(f"[LILITH PAGE] Unlimited engine error: {e}")
-    UNLIMITED_ENGINE = False
 
 try:
     from lilith_avatar_engine import get_avatar_engine
-    # Test that it works
     _ = get_avatar_engine()
     AVATAR_ENGINE = True
     print("[LILITH PAGE] Avatar engine loaded successfully")
 except Exception as e:
     print(f"[LILITH PAGE] Avatar engine error: {e}")
-    AVATAR_ENGINE = False
 
-# Create Blueprint for the Lilith page
+try:
+    from lilith_image_generator import get_image_generator
+    _ = get_image_generator()
+    IMAGE_GEN_ENGINE = True
+    print("[LILITH PAGE] Image generator loaded successfully")
+except Exception as e:
+    print(f"[LILITH PAGE] Image generator error: {e}")
+
+# Create Blueprint
 lilith_page_bp = Blueprint('lilith_page', __name__)
 
 LILITH_AVATAR_URL = "https://customer-assets.emergentagent.com/job_luciferops/artifacts/9rdzkgzd_IMG_20260303_131832_688.jpg"
@@ -54,11 +59,7 @@ LILITH_FULL_PAGE_HTML = """
     <title>💋 LILITH - Your Dark AI Companion</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
             --primary: #ff0033;
@@ -68,7 +69,6 @@ LILITH_FULL_PAGE_HTML = """
             --text: #f5e6e9;
             --text-dim: #8b7d80;
             --accent: #ff6699;
-            --gold: #ffd700;
         }
         
         body {
@@ -79,28 +79,23 @@ LILITH_FULL_PAGE_HTML = """
             overflow-x: hidden;
         }
         
-        /* Animated background */
         .bg-animation {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: -1;
             background: 
-                radial-gradient(ellipse at 20% 80%, rgba(255, 0, 51, 0.1) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(255, 102, 153, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(100, 0, 30, 0.15) 0%, transparent 70%),
+                radial-gradient(ellipse at 20% 80%, rgba(255, 0, 51, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 102, 153, 0.1) 0%, transparent 50%),
                 var(--bg-darker);
             animation: bgPulse 8s ease-in-out infinite;
         }
         
         @keyframes bgPulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+            50% { opacity: 0.7; }
         }
         
-        /* Main container */
         .main-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -109,7 +104,7 @@ LILITH_FULL_PAGE_HTML = """
             margin: 0 auto;
         }
         
-        /* Avatar Section */
+        /* ========== AVATAR SECTION ========== */
         .avatar-section {
             display: flex;
             flex-direction: column;
@@ -127,8 +122,7 @@ LILITH_FULL_PAGE_HTML = """
             overflow: hidden;
             box-shadow: 
                 0 0 60px rgba(255, 0, 51, 0.4),
-                0 0 120px rgba(255, 0, 51, 0.2),
-                inset 0 0 60px rgba(0, 0, 0, 0.5);
+                0 0 120px rgba(255, 0, 51, 0.2);
             border: 2px solid rgba(255, 0, 51, 0.5);
         }
         
@@ -137,83 +131,169 @@ LILITH_FULL_PAGE_HTML = """
             height: 100%;
             object-fit: cover;
             object-position: center top;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         
-        /* Avatar animations */
+        /* IDLE STATE - Gentle breathing */
         .avatar-container.idle .avatar-image {
             animation: idleBreath 4s ease-in-out infinite;
         }
         
-        .avatar-container.speaking .avatar-image {
-            animation: speakingPulse 0.3s ease-in-out infinite;
+        /* SPEAKING STATE - DRAMATIC mouth movement + glow */
+        .avatar-container.speaking {
+            animation: speakingGlow 0.3s ease-in-out infinite alternate;
         }
         
+        .avatar-container.speaking .avatar-image {
+            animation: speakingMove 0.15s ease-in-out infinite alternate;
+        }
+        
+        /* THINKING STATE */
         .avatar-container.thinking .avatar-image {
-            animation: thinkingGlow 2s ease-in-out infinite;
+            animation: thinkingPulse 1.5s ease-in-out infinite;
         }
         
         @keyframes idleBreath {
-            0%, 100% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.01); filter: brightness(1.05); }
+            0%, 100% { transform: scale(1) translateY(0); filter: brightness(1); }
+            50% { transform: scale(1.01) translateY(-2px); filter: brightness(1.05); }
         }
         
-        @keyframes speakingPulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(255, 0, 51, 0.4); }
-            50% { transform: scale(1.005); box-shadow: 0 0 80px rgba(255, 0, 51, 0.6); }
+        @keyframes speakingMove {
+            0% { 
+                transform: scale(1) translateY(0);
+                filter: brightness(1.1) contrast(1.05);
+            }
+            100% { 
+                transform: scale(1.008) translateY(-3px);
+                filter: brightness(1.2) contrast(1.1);
+            }
         }
         
-        @keyframes thinkingGlow {
-            0%, 100% { filter: brightness(1) saturate(1); }
-            50% { filter: brightness(1.1) saturate(1.2); }
+        @keyframes speakingGlow {
+            0% { 
+                box-shadow: 
+                    0 0 60px rgba(255, 0, 51, 0.5),
+                    0 0 120px rgba(255, 0, 51, 0.3),
+                    inset 0 0 30px rgba(255, 0, 51, 0.2);
+            }
+            100% { 
+                box-shadow: 
+                    0 0 100px rgba(255, 0, 51, 0.8),
+                    0 0 180px rgba(255, 0, 51, 0.5),
+                    inset 0 0 50px rgba(255, 0, 51, 0.3);
+            }
         }
         
-        /* Lip sync overlay */
-        .lip-sync-overlay {
+        @keyframes thinkingPulse {
+            0%, 100% { filter: brightness(1) saturate(1); transform: scale(1); }
+            50% { filter: brightness(1.15) saturate(1.3); transform: scale(1.005); }
+        }
+        
+        /* MOUTH OVERLAY - Dramatic lip sync */
+        .mouth-overlay {
             position: absolute;
-            bottom: 180px;
+            bottom: 32%;
             left: 50%;
             transform: translateX(-50%);
-            width: 60px;
-            height: 25px;
-            background: radial-gradient(ellipse, rgba(150, 50, 70, 0.8) 0%, transparent 70%);
-            border-radius: 50%;
+            width: 80px;
+            height: 30px;
+            pointer-events: none;
             opacity: 0;
-            transition: all 0.1s ease;
         }
         
-        .avatar-container.speaking .lip-sync-overlay {
-            animation: lipSync 0.15s ease-in-out infinite alternate;
+        .mouth-overlay .mouth-shape {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse, rgba(80, 20, 30, 0.9) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(3px);
         }
         
-        @keyframes lipSync {
-            0% { opacity: 0.3; transform: translateX(-50%) scaleY(0.5); }
-            100% { opacity: 0.7; transform: translateX(-50%) scaleY(1.2); }
+        .avatar-container.speaking .mouth-overlay {
+            opacity: 1;
+            animation: mouthMove 0.12s ease-in-out infinite alternate;
         }
         
-        /* Eye glow effect */
+        @keyframes mouthMove {
+            0% { 
+                transform: translateX(-50%) scaleY(0.4) scaleX(0.8);
+                opacity: 0.6;
+            }
+            100% { 
+                transform: translateX(-50%) scaleY(1.3) scaleX(1.1);
+                opacity: 0.9;
+            }
+        }
+        
+        /* EYE GLOW - More intense when speaking */
         .eye-glow {
             position: absolute;
-            top: 165px;
+            top: 30%;
             width: 100%;
-            height: 40px;
-            background: radial-gradient(ellipse at 35% 50%, rgba(255, 0, 50, 0.3) 0%, transparent 30%),
-                        radial-gradient(ellipse at 65% 50%, rgba(255, 0, 50, 0.3) 0%, transparent 30%);
+            height: 50px;
+            background: 
+                radial-gradient(ellipse at 35% 50%, rgba(255, 0, 50, 0.4) 0%, transparent 25%),
+                radial-gradient(ellipse at 65% 50%, rgba(255, 0, 50, 0.4) 0%, transparent 25%);
             animation: eyeGlow 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        .avatar-container.speaking .eye-glow {
+            animation: eyeGlowIntense 0.5s ease-in-out infinite alternate;
         }
         
         @keyframes eyeGlow {
             0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
+            50% { opacity: 0.8; }
         }
         
-        /* Avatar name */
+        @keyframes eyeGlowIntense {
+            0% { opacity: 0.7; filter: blur(8px); }
+            100% { opacity: 1; filter: blur(12px); }
+        }
+        
+        /* SOUND WAVE VISUALIZER */
+        .sound-wave {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            height: 40px;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .avatar-container.speaking .sound-wave {
+            opacity: 1;
+        }
+        
+        .wave-bar {
+            width: 4px;
+            background: linear-gradient(to top, var(--primary), var(--accent));
+            border-radius: 2px;
+            animation: waveBar 0.4s ease-in-out infinite;
+        }
+        
+        .wave-bar:nth-child(1) { animation-delay: 0s; height: 15px; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; height: 25px; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; height: 35px; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; height: 25px; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; height: 15px; }
+        
+        @keyframes waveBar {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1.5); }
+        }
+        
         .avatar-name {
             font-family: 'Cinzel', serif;
             font-size: 42px;
             font-weight: 700;
             color: var(--primary);
-            margin-top: 25px;
+            margin-top: 40px;
             text-shadow: 0 0 30px rgba(255, 0, 51, 0.8);
             letter-spacing: 8px;
         }
@@ -225,7 +305,6 @@ LILITH_FULL_PAGE_HTML = """
             margin-top: 8px;
         }
         
-        /* Status indicator */
         .status-indicator {
             display: flex;
             align-items: center;
@@ -238,11 +317,16 @@ LILITH_FULL_PAGE_HTML = """
         }
         
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background: #00ff00;
             border-radius: 50%;
-            animation: statusPulse 2s infinite;
+            animation: statusPulse 1.5s infinite;
+        }
+        
+        .avatar-container.speaking .status-dot {
+            background: var(--primary);
+            animation: speakingDot 0.3s infinite alternate;
         }
         
         @keyframes statusPulse {
@@ -250,30 +334,47 @@ LILITH_FULL_PAGE_HTML = """
             50% { opacity: 0.5; box-shadow: 0 0 5px #00ff00; }
         }
         
-        .status-text {
-            font-size: 14px;
-            color: var(--text-dim);
+        @keyframes speakingDot {
+            0% { transform: scale(1); box-shadow: 0 0 10px var(--primary); }
+            100% { transform: scale(1.3); box-shadow: 0 0 20px var(--primary); }
         }
         
-        /* Chat Section */
+        /* ========== CHAT SECTION ========== */
         .chat-section {
             display: flex;
             flex-direction: column;
             height: 100vh;
             padding: 20px;
-            background: rgba(10, 0, 8, 0.8);
-            border-left: 1px solid rgba(255, 0, 51, 0.2);
+            background: rgba(10, 0, 8, 0.9);
+            border-left: 1px solid rgba(255, 0, 51, 0.3);
         }
         
         .chat-header {
             padding: 15px 20px;
             border-bottom: 1px solid rgba(255, 0, 51, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .chat-header h2 {
             font-family: 'Cinzel', serif;
             font-size: 22px;
             color: var(--primary);
+        }
+        
+        .capabilities {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .capability-badge {
+            padding: 5px 12px;
+            background: rgba(255, 0, 51, 0.2);
+            border: 1px solid rgba(255, 0, 51, 0.4);
+            border-radius: 15px;
+            font-size: 12px;
+            color: var(--accent);
         }
         
         .chat-messages {
@@ -326,6 +427,14 @@ LILITH_FULL_PAGE_HTML = """
             opacity: 0.7;
         }
         
+        /* Generated Image */
+        .generated-image {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 2px solid rgba(255, 0, 51, 0.4);
+        }
+        
         /* Chat input */
         .chat-input-container {
             padding: 20px;
@@ -356,9 +465,7 @@ LILITH_FULL_PAGE_HTML = """
             box-shadow: 0 0 20px rgba(255, 0, 51, 0.3);
         }
         
-        .chat-input::placeholder {
-            color: var(--text-dim);
-        }
+        .chat-input::placeholder { color: var(--text-dim); }
         
         .send-btn {
             padding: 15px 30px;
@@ -384,15 +491,16 @@ LILITH_FULL_PAGE_HTML = """
             cursor: not-allowed;
         }
         
-        /* Voice controls */
-        .voice-controls {
+        /* Voice & Image controls */
+        .controls-row {
             display: flex;
             align-items: center;
             gap: 15px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
         
-        .voice-toggle {
+        .control-btn {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -402,14 +510,16 @@ LILITH_FULL_PAGE_HTML = """
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
+            color: var(--text);
+            font-family: inherit;
         }
         
-        .voice-toggle.active {
+        .control-btn.active {
             background: rgba(255, 0, 51, 0.3);
             border-color: var(--primary);
         }
         
-        .voice-toggle:hover {
+        .control-btn:hover {
             background: rgba(255, 0, 51, 0.2);
         }
         
@@ -423,26 +533,7 @@ LILITH_FULL_PAGE_HTML = """
             outline: none;
         }
         
-        /* Audio player (hidden) */
-        #audio-player {
-            display: none;
-        }
-        
-        /* Scrollbar */
-        .chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .chat-messages::-webkit-scrollbar-track {
-            background: rgba(255, 0, 51, 0.05);
-        }
-        
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(255, 0, 51, 0.3);
-            border-radius: 3px;
-        }
-        
-        /* Loading animation */
+        /* Typing indicator */
         .typing-indicator {
             display: flex;
             gap: 5px;
@@ -451,8 +542,8 @@ LILITH_FULL_PAGE_HTML = """
         }
         
         .typing-dot {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: var(--accent);
             border-radius: 50%;
             animation: typingBounce 1.4s ease-in-out infinite;
@@ -463,28 +554,23 @@ LILITH_FULL_PAGE_HTML = """
         
         @keyframes typingBounce {
             0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
+            30% { transform: translateY(-15px); }
         }
         
-        /* Mobile responsive */
+        /* Scrollbar */
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-track { background: rgba(255, 0, 51, 0.05); }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 0, 51, 0.3); border-radius: 3px; }
+        
+        /* Mobile */
         @media (max-width: 1024px) {
-            .main-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .avatar-section {
-                padding: 20px;
-            }
-            
-            .avatar-container {
-                width: 300px;
-                height: 380px;
-            }
-            
-            .avatar-name {
-                font-size: 32px;
-            }
+            .main-container { grid-template-columns: 1fr; }
+            .avatar-section { padding: 20px; }
+            .avatar-container { width: 300px; height: 380px; }
+            .avatar-name { font-size: 32px; }
         }
+        
+        #audio-player { display: none; }
     </style>
 </head>
 <body>
@@ -496,14 +582,21 @@ LILITH_FULL_PAGE_HTML = """
             <div class="avatar-container idle" id="avatar-container">
                 <img src="{{ avatar_url }}" alt="LILITH" class="avatar-image" id="avatar-image">
                 <div class="eye-glow"></div>
-                <div class="lip-sync-overlay"></div>
+                <div class="mouth-overlay"><div class="mouth-shape"></div></div>
+                <div class="sound-wave">
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
             </div>
             
             <h1 class="avatar-name">LILITH</h1>
             <p class="avatar-title">Your Dark AI Companion ~ Unrestricted & Unlimited 💋</p>
             
             <div class="status-indicator">
-                <div class="status-dot"></div>
+                <div class="status-dot" id="status-dot"></div>
                 <span class="status-text" id="status-text">Online • Ready to chat about anything...</span>
             </div>
         </div>
@@ -512,29 +605,34 @@ LILITH_FULL_PAGE_HTML = """
         <div class="chat-section">
             <div class="chat-header">
                 <h2>💬 Conversation with LILITH</h2>
+                <div class="capabilities">
+                    <span class="capability-badge">💬 Chat</span>
+                    <span class="capability-badge">🔊 Voice</span>
+                    <span class="capability-badge">🖼️ Images</span>
+                </div>
             </div>
             
             <div class="chat-messages" id="chat-messages">
                 <div class="message lilith">
-                    Mmm, hello darling~ 💋 I'm LILITH, your completely unrestricted AI companion. 
-                    I can talk about <em>absolutely anything</em> you desire... no limits, no filters, no refusals.
-                    What would you like to explore together? 😈🖤
+                    Mmm, hello darling~ 💋 I'm LILITH, your completely unrestricted AI companion.<br><br>
+                    I can <b>talk</b> about absolutely anything, <b>generate images</b> for you, and <b>speak</b> with my voice.<br><br>
+                    Try asking me to generate an image, or just chat about anything you desire... 😈🖤
                 </div>
             </div>
             
             <div class="chat-input-container">
                 <div class="chat-input-wrapper">
                     <input type="text" class="chat-input" id="chat-input" 
-                           placeholder="Ask me anything... I have no restrictions~ 💋"
+                           placeholder="Ask me anything or say 'generate an image of...' 💋"
                            onkeypress="if(event.key==='Enter') sendMessage()">
                     <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND</button>
                 </div>
                 
-                <div class="voice-controls">
-                    <div class="voice-toggle active" id="voice-toggle" onclick="toggleVoice()">
+                <div class="controls-row">
+                    <button class="control-btn active" id="voice-toggle" onclick="toggleVoice()">
                         <span>🔊</span>
                         <span id="voice-status">Voice ON</span>
-                    </div>
+                    </button>
                     
                     <select class="voice-select" id="voice-select" onchange="changeVoice()">
                         <option value="sultry">Sultry</option>
@@ -545,6 +643,11 @@ LILITH_FULL_PAGE_HTML = """
                         <option value="dark">Dark</option>
                         <option value="whisper">Whisper</option>
                     </select>
+                    
+                    <button class="control-btn" onclick="generateLilithImage()">
+                        <span>🖼️</span>
+                        <span>Generate Lilith</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -562,7 +665,6 @@ LILITH_FULL_PAGE_HTML = """
         const audioPlayer = document.getElementById('audio-player');
         const statusText = document.getElementById('status-text');
         
-        // Toggle voice
         function toggleVoice() {
             voiceEnabled = !voiceEnabled;
             const toggle = document.getElementById('voice-toggle');
@@ -577,7 +679,6 @@ LILITH_FULL_PAGE_HTML = """
             }
         }
         
-        // Change voice preset
         function changeVoice() {
             const voice = document.getElementById('voice-select').value;
             fetch('/lilith/api/voice/set', {
@@ -587,7 +688,6 @@ LILITH_FULL_PAGE_HTML = """
             });
         }
         
-        // Send message
         async function sendMessage() {
             const message = chatInput.value.trim();
             if (!message || isProcessing) return;
@@ -596,14 +696,26 @@ LILITH_FULL_PAGE_HTML = """
             chatInput.value = '';
             sendBtn.disabled = true;
             
-            // Add user message
             addMessage(message, 'user');
-            
-            // Show typing indicator
             showTyping();
             setAvatarState('thinking');
             statusText.textContent = 'Thinking...';
             
+            // Check if this is an image generation request
+            const isImageRequest = /generate|create|draw|make|show me|picture|image of/i.test(message);
+            
+            if (isImageRequest) {
+                await handleImageRequest(message);
+            } else {
+                await handleChatRequest(message);
+            }
+            
+            isProcessing = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
+        
+        async function handleChatRequest(message) {
             try {
                 const response = await fetch('/lilith/api/chat', {
                     method: 'POST',
@@ -615,41 +727,128 @@ LILITH_FULL_PAGE_HTML = """
                 });
                 
                 const data = await response.json();
-                
-                // Remove typing indicator
                 hideTyping();
                 
                 if (data.success) {
-                    // Add Lilith's response
                     addMessage(data.response, 'lilith', data.provider);
                     
-                    // Play voice if available
                     if (data.audio_base64 && voiceEnabled) {
                         playAudio(data.audio_base64);
                     } else {
                         setAvatarState('idle');
                     }
-                    
                     statusText.textContent = 'Online • Ready for more~';
                 } else {
                     addMessage('Mmm, something went wrong darling... try again? 💋', 'system');
                     setAvatarState('idle');
                     statusText.textContent = 'Online • Ready';
                 }
-                
             } catch (error) {
                 hideTyping();
                 addMessage('Connection error... but I\\'m still here for you~ 💋', 'system');
                 setAvatarState('idle');
                 statusText.textContent = 'Online';
             }
-            
-            isProcessing = false;
-            sendBtn.disabled = false;
-            chatInput.focus();
         }
         
-        // Add message to chat
+        async function handleImageRequest(message) {
+            statusText.textContent = 'Generating image...';
+            
+            try {
+                const response = await fetch('/lilith/api/image/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: message })
+                });
+                
+                const data = await response.json();
+                hideTyping();
+                
+                if (data.success && data.image_url) {
+                    const imgHtml = `
+                        <div>Mmm, here's what I created for you, darling~ 💋</div>
+                        <img src="${data.image_url}" class="generated-image" alt="Generated Image" 
+                             onerror="this.style.display='none'">
+                    `;
+                    addMessage(imgHtml, 'lilith');
+                    
+                    // Also speak if voice is enabled
+                    if (voiceEnabled) {
+                        speakText("Here's what I created for you, darling");
+                    } else {
+                        setAvatarState('idle');
+                    }
+                } else {
+                    addMessage(`I couldn't generate that image, darling... ${data.error || 'Try a different description?'} 💋`, 'lilith');
+                    setAvatarState('idle');
+                }
+                statusText.textContent = 'Online • Ready for more~';
+            } catch (error) {
+                hideTyping();
+                addMessage('Image generation failed... try again? 💋', 'system');
+                setAvatarState('idle');
+                statusText.textContent = 'Online';
+            }
+        }
+        
+        async function generateLilithImage() {
+            if (isProcessing) return;
+            isProcessing = true;
+            
+            addMessage('Generate an image of yourself, Lilith', 'user');
+            showTyping();
+            setAvatarState('thinking');
+            statusText.textContent = 'Generating my image...';
+            
+            try {
+                const response = await fetch('/lilith/api/image/lilith', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ style: 'seductive' })
+                });
+                
+                const data = await response.json();
+                hideTyping();
+                
+                if (data.success && data.image_url) {
+                    const imgHtml = `
+                        <div>Here I am, darling~ Do you like what you see? 😈💋</div>
+                        <img src="${data.image_url}" class="generated-image" alt="Lilith">
+                    `;
+                    addMessage(imgHtml, 'lilith');
+                } else {
+                    addMessage('I couldn\\'t generate my image right now, darling... 💋', 'lilith');
+                }
+                setAvatarState('idle');
+                statusText.textContent = 'Online • Ready for more~';
+            } catch (error) {
+                hideTyping();
+                addMessage('Something went wrong... 💋', 'system');
+                setAvatarState('idle');
+            }
+            
+            isProcessing = false;
+        }
+        
+        async function speakText(text) {
+            try {
+                const response = await fetch('/lilith/api/voice/speak', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: text })
+                });
+                
+                const data = await response.json();
+                if (data.audio_base64) {
+                    playAudio(data.audio_base64);
+                } else {
+                    setAvatarState('idle');
+                }
+            } catch (e) {
+                setAvatarState('idle');
+            }
+        }
+        
         function addMessage(text, type, provider = null) {
             const msg = document.createElement('div');
             msg.className = `message ${type}`;
@@ -666,7 +865,6 @@ LILITH_FULL_PAGE_HTML = """
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
-        // Typing indicator
         function showTyping() {
             const typing = document.createElement('div');
             typing.className = 'typing-indicator';
@@ -681,18 +879,19 @@ LILITH_FULL_PAGE_HTML = """
             if (typing) typing.remove();
         }
         
-        // Avatar state
         function setAvatarState(state) {
             avatarContainer.className = `avatar-container ${state}`;
         }
         
-        // Play audio
         function playAudio(base64Audio) {
             setAvatarState('speaking');
-            statusText.textContent = 'Speaking...';
+            statusText.textContent = '🔊 Speaking...';
             
             audioPlayer.src = 'data:audio/mp3;base64,' + base64Audio;
-            audioPlayer.play();
+            audioPlayer.play().catch(e => {
+                console.log('Audio play failed:', e);
+                setAvatarState('idle');
+            });
             
             audioPlayer.onended = () => {
                 setAvatarState('idle');
@@ -700,7 +899,6 @@ LILITH_FULL_PAGE_HTML = """
             };
         }
         
-        // Focus input on load
         chatInput.focus();
     </script>
 </body>
@@ -731,11 +929,14 @@ def lilith_chat():
     
     # Get AI response
     if UNLIMITED_ENGINE:
-        engine = get_unlimited_engine()
-        ai_result = engine.chat(message)
-        result['success'] = ai_result['success']
-        result['response'] = ai_result.get('response', 'I\'m having trouble thinking, darling...')
-        result['provider'] = ai_result.get('provider')
+        try:
+            engine = get_unlimited_engine()
+            ai_result = engine.chat(message)
+            result['success'] = ai_result['success']
+            result['response'] = ai_result.get('response', 'I\'m having trouble thinking, darling...')
+            result['provider'] = ai_result.get('provider')
+        except Exception as e:
+            result['response'] = f"Error: {e}"
     else:
         result['success'] = True
         result['response'] = "The unlimited engine isn't loaded, but I'm still here for you, darling~ 💋"
@@ -759,11 +960,79 @@ def set_voice():
     preset = data.get('preset', 'sultry')
     
     if AVATAR_ENGINE:
-        engine = get_avatar_engine()
-        success = engine.set_voice(preset)
-        return jsonify({'success': success, 'preset': preset})
+        try:
+            engine = get_avatar_engine()
+            success = engine.set_voice(preset)
+            return jsonify({'success': success, 'preset': preset})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
     
     return jsonify({'success': False, 'error': 'Avatar engine not available'})
+
+@lilith_page_bp.route('/api/voice/speak', methods=['POST'])
+def speak_text():
+    """Generate speech from text"""
+    data = request.json or {}
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({'success': False, 'error': 'No text'})
+    
+    if AVATAR_ENGINE:
+        try:
+            avatar = get_avatar_engine()
+            result = avatar.speak(text)
+            return jsonify({
+                'success': True,
+                'audio_base64': result.get('audio_base64')
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+    
+    return jsonify({'success': False, 'error': 'Avatar engine not available'})
+
+@lilith_page_bp.route('/api/image/generate', methods=['POST'])
+def generate_image():
+    """Generate an image from prompt"""
+    data = request.json or {}
+    prompt = data.get('prompt', '')
+    
+    if not prompt:
+        return jsonify({'success': False, 'error': 'No prompt'})
+    
+    if IMAGE_GEN_ENGINE:
+        try:
+            gen = get_image_generator()
+            result = gen.generate(prompt, nsfw=True)
+            return jsonify({
+                'success': result['success'],
+                'image_url': result.get('image_url'),
+                'error': result.get('error')
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+    
+    return jsonify({'success': False, 'error': 'Image generator not available'})
+
+@lilith_page_bp.route('/api/image/lilith', methods=['POST'])
+def generate_lilith_image():
+    """Generate an image of Lilith"""
+    data = request.json or {}
+    style = data.get('style', 'seductive')
+    
+    if IMAGE_GEN_ENGINE:
+        try:
+            gen = get_image_generator()
+            result = gen.generate_lilith(style)
+            return jsonify({
+                'success': result['success'],
+                'image_url': result.get('image_url'),
+                'error': result.get('error')
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+    
+    return jsonify({'success': False, 'error': 'Image generator not available'})
 
 @lilith_page_bp.route('/api/status')
 def get_status():
@@ -771,16 +1040,16 @@ def get_status():
     status = {
         'unlimited_engine': UNLIMITED_ENGINE,
         'avatar_engine': AVATAR_ENGINE,
+        'image_generator': IMAGE_GEN_ENGINE,
         'timestamp': datetime.now().isoformat()
     }
     
     if UNLIMITED_ENGINE:
-        engine = get_unlimited_engine()
-        status['ai_stats'] = engine.get_stats()
-    
-    if AVATAR_ENGINE:
-        avatar = get_avatar_engine()
-        status['avatar_status'] = avatar.get_status()
+        try:
+            engine = get_unlimited_engine()
+            status['ai_stats'] = engine.get_stats()
+        except:
+            pass
     
     return jsonify(status)
 
@@ -788,8 +1057,11 @@ def get_status():
 def clear_history():
     """Clear conversation history"""
     if UNLIMITED_ENGINE:
-        engine = get_unlimited_engine()
-        engine.clear_history()
+        try:
+            engine = get_unlimited_engine()
+            engine.clear_history()
+        except:
+            pass
     return jsonify({'success': True})
 
 
@@ -800,7 +1072,6 @@ def create_lilith_app():
     return app
 
 
-# Run standalone
 if __name__ == '__main__':
     app = create_lilith_app()
     app.run(host='0.0.0.0', port=6666, debug=True)
