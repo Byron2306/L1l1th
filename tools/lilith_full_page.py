@@ -11,19 +11,33 @@ import sys
 import json
 from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(__file__))
+# Ensure tools directory is in path
+tools_dir = os.path.dirname(os.path.abspath(__file__))
+if tools_dir not in sys.path:
+    sys.path.insert(0, tools_dir)
 
-# Import engines
+# Import engines with better error handling
+UNLIMITED_ENGINE = False
+AVATAR_ENGINE = False
+
 try:
     from lilith_unlimited_engine import get_unlimited_engine
+    # Test that it works
+    _ = get_unlimited_engine()
     UNLIMITED_ENGINE = True
-except ImportError:
+    print("[LILITH PAGE] Unlimited engine loaded successfully")
+except Exception as e:
+    print(f"[LILITH PAGE] Unlimited engine error: {e}")
     UNLIMITED_ENGINE = False
 
 try:
     from lilith_avatar_engine import get_avatar_engine
+    # Test that it works
+    _ = get_avatar_engine()
     AVATAR_ENGINE = True
-except ImportError:
+    print("[LILITH PAGE] Avatar engine loaded successfully")
+except Exception as e:
+    print(f"[LILITH PAGE] Avatar engine error: {e}")
     AVATAR_ENGINE = False
 
 # Create Blueprint for the Lilith page
