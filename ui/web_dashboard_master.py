@@ -14,8 +14,17 @@ from datetime import datetime
 from flask import Flask, jsonify, render_template_string, request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, '/app/tools')
 
 app = Flask(__name__)
+
+# Import and register LILITH Full Page Blueprint
+try:
+    from lilith_full_page import lilith_page_bp
+    app.register_blueprint(lilith_page_bp, url_prefix='/lilith')
+    print("[DASHBOARD] Lilith Full Page registered at /lilith")
+except ImportError as e:
+    print(f"[DASHBOARD] Warning: Could not load Lilith Full Page: {e}")
 
 BACKEND_URL = os.environ.get("LUCIFER_BACKEND_URL", "http://127.0.0.1:5000")
 OPENCLAW_CANVAS = os.environ.get("OPENCLAW_CANVAS", "http://127.0.0.1:18789/__openclaw__/canvas/")
