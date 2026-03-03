@@ -44,34 +44,64 @@ except ImportError:
     REQUESTS_AVAILABLE = False
 
 # ============================================================
-# MEGA PROVIDER LIST - 100+ FREE AI PROVIDERS
+# MEGA PROVIDER LIST - 100+ FREE AI PROVIDERS (UPDATED)
 # ============================================================
 G4F_PROVIDERS = [
-    # === TIER 1: MOST RELIABLE ===
-    'Blackbox', 'Pizzagpt', 'FreeGpt', 'FreeChatgpt', 'ChatgptFree',
-    'AiChatOnline', 'Liaobots', 'ChatForAi', 'GPTalk', 'Aichatos',
+    # === TIER 1: FREE, NO AUTH REQUIRED ===
+    'DDGS',               # DuckDuckGo Search AI
+    'Chatai',             # Chat AI
+    'EasyChat',           # Easy Chat
+    'ItalyGPT',           # Italy GPT
+    'FenayAI',            # Fenay AI
+    'CablyAI',            # Cably AI
+    'BlackboxPro',        # Blackbox Pro
+    'Antigravity',        # Antigravity
+    'AIBadgr',            # AI Badgr
     
-    # === TIER 2: GOOD RELIABILITY ===
-    'OnlineGpt', 'ChatgptNext', 'Chatxyz', 'ChatGptEs', 'HuggingChat',
-    'FlowGpt', 'DeepInfra', 'Phind', 'Koala', 'GptGo',
+    # === TIER 2: HUGGINGFACE & OPEN SOURCE ===
+    'HuggingChat',        # HuggingFace Chat
+    'HuggingFace',        # HuggingFace
+    'HuggingFaceInference', # HuggingFace Inference
+    'HuggingSpace',       # HuggingFace Spaces
     
-    # === TIER 3: BIG TECH ===
-    'DDG', 'PollinationsAI', 'You', 'GeminiPro', 'Gemini',
-    'MetaAI', 'Llama', 'Bing', 'Pi', 'Perplexity',
+    # === TIER 3: BIG TECH (may need auth) ===
+    'GeminiPro',          # Google Gemini Pro
+    'Gemini',             # Google Gemini
+    'MetaAI',             # Meta AI (Llama)
+    'Cloudflare',         # Cloudflare AI
+    'DeepInfra',          # DeepInfra
+    'DeepSeek',           # DeepSeek
+    'Cerebras',           # Cerebras
+    'Groq',               # Groq
+    'Grok',               # Grok (xAI)
     
-    # === TIER 4: EXTENDED ===
-    'Feedough', 'AItianhuSpace', 'PerplexityLabs', 'ThinkAny', 'Raycast',
-    'Poe', 'Vercel', 'Cloudflare', 'OpenAssistant', 'Replika',
+    # === TIER 4: ROUTERS ===
+    'OpenRouterFree',     # OpenRouter Free tier
+    'ApiAirforce',        # API Airforce
+    'GlhfChat',           # GLHF Chat
+    'LambdaChat',         # Lambda Chat
+    'LMArena',            # LM Arena
+    'Mintlify',           # Mintlify
     
-    # === TIER 5: EXPERIMENTAL ===
-    'LiteLLM', 'MistralAI', 'Groq', 'DeepSeek', 'Qwen',
-    'GptForLove', 'Chatgpt4Online', 'ChatgptAi', 'ChatgptDemo',
-    'ChatgptLogin', 'ChatgptX', 'ChatBase', 'GptChatly', 'AItianhu',
-    'Acytoo', 'Aibn', 'Ails', 'AiService', 'Aivvm', 'Berlin',
-    'ChatAnywhere', 'ChatgptDuo', 'Cromicle', 'FakeGpt', 'GetGpt',
-    'GptGod', 'H2o', 'Hashnode', 'Hugchat', 'Komo', 'Myshell',
-    'NoowAi', 'Opchatgpts', 'OpenaiChat', 'PerplexityAi', 'TalkAi',
-    'Theb', 'Vitalentum', 'Wewordle', 'Wuguokai', 'Ylokh', 'Yqcloud',
+    # === TIER 5: CODE & SPECIALIZED ===
+    'GithubCopilot',      # Github Copilot
+    'Copilot',            # Microsoft Copilot
+    'OIVSCodeSer',        # VS Code Server
+    'OIVSCodeSer2',       # VS Code Server 2
+    
+    # === TIER 6: CHINESE & INTERNATIONAL ===
+    'BAAI_Ling',          # BAAI Ling
+    'GLM',                # GLM
+    'GigaChat',           # GigaChat
+    'MiniMax',            # MiniMax
+    
+    # === TIER 7: COHERE ===
+    'Cohere',             # Cohere
+    'CohereForAI_C4AI_Command', # Cohere Command
+    
+    # === TIER 8: NVIDIA & GRADIENT ===
+    'Nvidia',             # Nvidia AI
+    'GradientNetwork',    # Gradient Network
 ]
 
 # HuggingFace Free Inference Endpoints (no API key for public models)
