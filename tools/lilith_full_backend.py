@@ -361,6 +361,192 @@ def chat():
         response = lilith.reason(msg)
         return jsonify({'response': response, 'timestamp': datetime.now().isoformat()})
 
+
+# ==================== LILITH UNLIMITED AI ENDPOINTS ====================
+# FREE, NO API KEYS, NO RESTRICTIONS, TALK ABOUT ANYTHING
+
+@app.route('/unlimited/chat', methods=['POST'])
+def unlimited_chat():
+    """
+    UNLIMITED AI Chat - FREE, NO API KEYS, NO TOPIC RESTRICTIONS
+    Uses 50+ g4f providers with automatic failover
+    """
+    data = request.json or {}
+    message = data.get('message', '')
+    voice_enabled = data.get('voice_enabled', False)
+    
+    if not message:
+        return jsonify({'success': False, 'error': 'No message provided'})
+    
+    result = {
+        'success': False,
+        'response': '',
+        'provider': None,
+        'audio_base64': None,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    # Use unlimited engine
+    if UNLIMITED_ENGINE_AVAILABLE:
+        engine = get_unlimited_engine()
+        ai_result = engine.chat(message)
+        result['success'] = ai_result['success']
+        result['response'] = ai_result.get('response', 'Something went wrong, darling...')
+        result['provider'] = ai_result.get('provider')
+        result['attempt'] = ai_result.get('attempt', 1)
+    else:
+        # Fallback to regular AI provider
+        if AI_PROVIDER_AVAILABLE:
+            manager = get_ai_manager()
+            ai_result = manager.chat(message)
+            result['success'] = ai_result['success']
+            result['response'] = ai_result.get('response', '')
+            result['provider'] = 'fallback'
+        else:
+            result['response'] = "No AI engine available, but I'm still here for you~ 💋"
+            result['success'] = True
+    
+    # Generate voice if requested
+    if voice_enabled and result['success'] and AVATAR_ENGINE_AVAILABLE:
+        try:
+            avatar = get_avatar_engine()
+            voice_result = avatar.speak(result['response'])
+            if voice_result.get('audio_base64'):
+                result['audio_base64'] = voice_result['audio_base64']
+                result['has_audio'] = True
+        except Exception as e:
+            print(f"[LILITH] Voice generation error: {e}")
+    
+    return jsonify(result)
+
+
+@app.route('/unlimited/status', methods=['GET'])
+def unlimited_status():
+    """Get unlimited engine status"""
+    status = {
+        'unlimited_engine': UNLIMITED_ENGINE_AVAILABLE,
+        'avatar_engine': AVATAR_ENGINE_AVAILABLE,
+        'lilith_page': LILITH_PAGE_AVAILABLE,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    if UNLIMITED_ENGINE_AVAILABLE:
+        engine = get_unlimited_engine()
+        status['stats'] = engine.get_stats()
+        status['providers_count'] = len(engine.get_providers())
+    
+    if AVATAR_ENGINE_AVAILABLE:
+        avatar = get_avatar_engine()
+        status['voice_status'] = avatar.get_status()
+    
+    return jsonify(status)
+
+
+@app.route('/unlimited/providers', methods=['GET'])
+def unlimited_providers():
+    """Get list of available providers"""
+    if UNLIMITED_ENGINE_AVAILABLE:
+        engine = get_unlimited_engine()
+        return jsonify({
+            'success': True,
+            'providers': engine.get_providers(),
+            'count': len(engine.get_providers())
+        })
+    return jsonify({'success': False, 'error': 'Unlimited engine not available'})
+
+
+@app.route('/unlimited/clear', methods=['POST'])
+def unlimited_clear():
+    """Clear conversation history"""
+    if UNLIMITED_ENGINE_AVAILABLE:
+        engine = get_unlimited_engine()
+        engine.clear_history()
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'error': 'Unlimited engine not available'})
+
+
+@app.route('/unlimited/history', methods=['GET'])
+def unlimited_history():
+    """Get conversation history"""
+    if UNLIMITED_ENGINE_AVAILABLE:
+        engine = get_unlimited_engine()
+        return jsonify({
+            'success': True,
+            'history': engine.get_history()
+        })
+    return jsonify({'success': False, 'error': 'Unlimited engine not available'})
+
+
+# ==================== LILITH VOICE/AVATAR ENDPOINTS ====================
+
+@app.route('/voice/speak', methods=['POST'])
+def voice_speak():
+    """Generate speech from text"""
+    if not AVATAR_ENGINE_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Avatar engine not available'})
+    
+    data = request.json or {}
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({'success': False, 'error': 'No text provided'})
+    
+    avatar = get_avatar_engine()
+    result = avatar.speak(text)
+    
+    return jsonify({
+        'success': True,
+        'audio_base64': result.get('audio_base64'),
+        'has_audio': result.get('has_audio', False),
+        'voice_preset': result.get('voice_preset')
+    })
+
+
+@app.route('/voice/set', methods=['POST'])
+def voice_set():
+    """Set voice preset"""
+    if not AVATAR_ENGINE_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Avatar engine not available'})
+    
+    data = request.json or {}
+    preset = data.get('preset', 'sultry')
+    
+    avatar = get_avatar_engine()
+    success = avatar.set_voice(preset)
+    
+    return jsonify({'success': success, 'preset': preset})
+
+
+@app.route('/voice/presets', methods=['GET'])
+def voice_presets():
+    """Get available voice presets"""
+    if not AVATAR_ENGINE_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Avatar engine not available'})
+    
+    avatar = get_avatar_engine()
+    status = avatar.get_status()
+    
+    return jsonify({
+        'success': True,
+        'presets': status.get('voice_options', []),
+        'current': status.get('voice_preset')
+    })
+
+
+@app.route('/voice/toggle', methods=['POST'])
+def voice_toggle():
+    """Toggle voice on/off"""
+    if not AVATAR_ENGINE_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Avatar engine not available'})
+    
+    data = request.json or {}
+    enabled = data.get('enabled', True)
+    
+    avatar = get_avatar_engine()
+    avatar.toggle_voice(enabled)
+    
+    return jsonify({'success': True, 'enabled': enabled})
+
 @app.route('/attack_chain', methods=['POST'])
 def attack_chain():
     target = request.json.get('target')
