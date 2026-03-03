@@ -44,7 +44,7 @@
   "main_agent_can_self_test": true,
   "context_for_next_testing_agent": "All Evil Image & Video AIs are working: darkflux, nightmareai, demoncanvas, lewdgpt, goreartist, deepfakeai, videodevil, snuffgpt, propagandaai, biohazardai, warcrimesai, cosmichorror, druglordia, animatordark. Total AI count is 88. Video engine has 8 styles. Telegram bot (pid 2906) is running with video commands.",
   "tested_features": {
-    "Dashboard loads correctly at https://luciferops.preview.emergentagent.com": "PASS",
+    "Dashboard loads correctly at https://demon-companion.preview.emergentagent.com": "PASS",
     "AI dropdown shows 88 AIs with new 'Evil Image & Video AIs' category": "PASS",
     "Can select DarkFlux from dropdown": "PASS",
     "Can select NightmareAI from dropdown": "PASS",

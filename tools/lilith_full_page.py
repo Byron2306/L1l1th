@@ -798,7 +798,7 @@ LILITH_ETERNAL_HTML = """
                         setAvatarState('idle');
                     }
                 } else {
-                    addMessage('Couldn\'t generate that... 💋', 'lilith');
+                    addMessage('Couldn\\'t generate that... 💋', 'lilith');
                     setAvatarState('idle');
                 }
                 statusText.textContent = 'Online • Ready~';
@@ -941,7 +941,7 @@ LILITH_ETERNAL_HTML = """
         }
         
         function clearChat() {
-            chatMessages.innerHTML = '<div class="message lilith">Chat cleared~ Let\'s start fresh, darling! 💋😈</div>';
+            chatMessages.innerHTML = '<div class="message lilith">Chat cleared~ Let\\'s start fresh, darling! 💋😈</div>';
             fetch('/lilith/api/clear', { method: 'POST' });
         }
         
