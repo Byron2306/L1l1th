@@ -357,7 +357,23 @@ class EternalAIEngine:
         self.stats['total_requests'] += 1
         messages = self._build_messages(message)
         
-        # Strategy 1: Try g4f providers
+        # Strategy 1: Try Pollinations text API FIRST (most reliable, FREE)
+        result = self._try_pollinations(message)
+        if result and result.get('success'):
+            self.stats['successful'] += 1
+            
+            self.conversation_history.append({"role": "user", "content": message})
+            self.conversation_history.append({"role": "assistant", "content": result['response']})
+            
+            return {
+                'success': True,
+                'response': result['response'],
+                'provider': 'Pollinations',
+                'strategy': 'api',
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        # Strategy 2: Try g4f providers
         if G4F_AVAILABLE:
             available = [p for p in self.g4f_providers if self.health_tracker.is_available(p)]
             if not available:
@@ -366,7 +382,7 @@ class EternalAIEngine:
             
             random.shuffle(available)
             
-            for provider in available[:15]:
+            for provider in available[:10]:
                 result = self._try_g4f_provider(provider, messages)
                 if result and result.get('success'):
                     self.health_tracker.record_success(provider)
@@ -390,22 +406,6 @@ class EternalAIEngine:
                 if random.random() < 0.3:
                     self.spoof_manager.rotate_session()
                     self.stats['session_rotations'] += 1
-        
-        # Strategy 2: Try Pollinations text API
-        result = self._try_pollinations(message)
-        if result and result.get('success'):
-            self.stats['successful'] += 1
-            
-            self.conversation_history.append({"role": "user", "content": message})
-            self.conversation_history.append({"role": "assistant", "content": result['response']})
-            
-            return {
-                'success': True,
-                'response': result['response'],
-                'provider': 'PollinationsText',
-                'strategy': 'api',
-                'timestamp': datetime.now().isoformat()
-            }
         
         # All strategies failed
         self.stats['failed'] += 1
