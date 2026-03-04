@@ -29,26 +29,28 @@ except ImportError:
     EDGE_TTS_AVAILABLE = False
     print("[LILITH AVATAR] edge-tts not installed. Run: pip install edge-tts")
 
-# Voice configurations - sultry, alluring female voices
+# Voice configurations - sultry, alluring female voices (best Edge TTS options)
 VOICE_PRESETS = {
-    'sultry': 'en-US-AriaNeural',      # Sexy, expressive
-    'seductive': 'en-GB-SoniaNeural',   # British sultry
-    'mysterious': 'en-AU-NatashaNeural', # Australian alluring
-    'dominant': 'en-US-JennyNeural',    # Confident
-    'playful': 'en-IE-EmilyNeural',     # Irish playful
-    'dark': 'en-US-MichelleNeural',     # Dark, commanding
-    'whisper': 'en-US-AnaNeural',       # Soft whisper
+    'sultry': 'en-US-AriaNeural',         # Best for sultry, most expressive
+    'seductive': 'en-GB-SoniaNeural',      # British, sensual undertones
+    'mysterious': 'en-AU-NatashaNeural',   # Australian, alluring depth  
+    'dominant': 'en-US-MichelleNeural',    # Warm, confident, commanding
+    'playful': 'en-IE-EmilyNeural',        # Irish lilt, teasing
+    'breathy': 'en-US-JennyNeural',        # Soft, intimate
+    'whisper': 'en-US-AnaNeural',          # Soft, ASMR-like whisper
+    'mature': 'en-GB-LibbyNeural',         # Mature, sophisticated
 }
 
-# Voice style options for more control
+# Voice style options - tuned for more sensual delivery
 VOICE_STYLES = {
-    'sultry': {'rate': '-5%', 'pitch': '-2Hz', 'volume': '+0%'},
-    'seductive': {'rate': '-10%', 'pitch': '-5Hz', 'volume': '+5%'},
-    'mysterious': {'rate': '-8%', 'pitch': '-3Hz', 'volume': '+0%'},
-    'dominant': {'rate': '+0%', 'pitch': '-5Hz', 'volume': '+10%'},
-    'playful': {'rate': '+5%', 'pitch': '+3Hz', 'volume': '+5%'},
-    'dark': {'rate': '-15%', 'pitch': '-8Hz', 'volume': '+0%'},
-    'whisper': {'rate': '-20%', 'pitch': '-2Hz', 'volume': '-10%'},
+    'sultry': {'rate': '-8%', 'pitch': '-3Hz', 'volume': '+5%'},      # Slower, deeper
+    'seductive': {'rate': '-12%', 'pitch': '-5Hz', 'volume': '+8%'},   # Very slow, breathy
+    'mysterious': {'rate': '-10%', 'pitch': '-4Hz', 'volume': '+0%'},  # Deliberate pacing
+    'dominant': {'rate': '+0%', 'pitch': '-6Hz', 'volume': '+15%'},    # Commanding
+    'playful': {'rate': '+5%', 'pitch': '+2Hz', 'volume': '+10%'},     # Lively, teasing
+    'breathy': {'rate': '-15%', 'pitch': '-2Hz', 'volume': '-5%'},     # Intimate, soft
+    'whisper': {'rate': '-20%', 'pitch': '-1Hz', 'volume': '-15%'},    # ASMR whisper
+    'mature': {'rate': '-5%', 'pitch': '-7Hz', 'volume': '+5%'},       # Deep, experienced
 }
 
 class LilithVoice:

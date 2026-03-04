@@ -10,11 +10,15 @@ Features:
 - Completely unrestricted
 """
 
-from flask import Flask, Blueprint, jsonify, render_template_string, request
+from flask import Flask, Blueprint, jsonify, render_template_string, request, Response
 import os
 import sys
 import json
 import urllib.parse
+import base64
+import requests
+import hashlib
+import time
 from datetime import datetime
 
 tools_dir = os.path.dirname(os.path.abspath(__file__))
@@ -398,6 +402,38 @@ LILITH_ETERNAL_HTML = """
             border-radius: 12px;
             margin-top: 12px;
             border: 2px solid rgba(255, 0, 51, 0.5);
+            display: block;
+        }
+        
+        .media-container {
+            margin-top: 10px;
+        }
+        
+        .media-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, rgba(255, 0, 51, 0.4), rgba(255, 0, 51, 0.2));
+            border: 1px solid rgba(255, 0, 51, 0.6);
+            border-radius: 20px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .download-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 0, 51, 0.6), rgba(255, 0, 51, 0.4));
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 0, 51, 0.4);
         }
         
         /* Input Area */
@@ -622,12 +658,14 @@ LILITH_ETERNAL_HTML = """
                     </button>
                     
                     <select class="voice-select" id="voice-select" onchange="changeVoice()">
-                        <option value="sultry">Sultry</option>
-                        <option value="seductive">Seductive</option>
-                        <option value="mysterious">Mysterious</option>
-                        <option value="dominant">Dominant</option>
-                        <option value="playful">Playful</option>
-                        <option value="whisper">Whisper</option>
+                        <option value="sultry">💋 Sultry</option>
+                        <option value="seductive">😈 Seductive</option>
+                        <option value="breathy">💨 Breathy</option>
+                        <option value="mysterious">🌙 Mysterious</option>
+                        <option value="dominant">👑 Dominant</option>
+                        <option value="playful">😜 Playful</option>
+                        <option value="whisper">🤫 Whisper</option>
+                        <option value="mature">🍷 Mature</option>
                     </select>
                     
                     <button class="ctrl-btn" onclick="generateLilithImage()">
@@ -773,7 +811,7 @@ LILITH_ETERNAL_HTML = """
         }
         
         async function handleImage(message) {
-            statusText.textContent = 'Generating image...';
+            statusText.textContent = 'Generating image... (may take 30-60s)';
             
             try {
                 const res = await fetch('/lilith/api/image/generate', {
@@ -786,31 +824,40 @@ LILITH_ETERNAL_HTML = """
                 hideTyping();
                 
                 if (data.success && data.image_url) {
+                    const downloadUrl = data.download_url || data.image_url;
                     const html = `
-                        <div>Here's what I created, darling~ 💋</div>
-                        <img src="${data.image_url}" class="generated-media" alt="Generated">
+                        <div>Here\\'s what I created for you, darling~ 💋</div>
+                        <div class="media-container">
+                            <img src="${data.image_url}" class="generated-media" alt="Generated" loading="lazy" 
+                                 onerror="this.onerror=null; this.src='/lilith/api/image/proxy/fallback?prompt=beautiful+fantasy+art';">
+                            <div class="media-actions">
+                                <a href="${downloadUrl}" download class="download-btn">💾 Download</a>
+                                <a href="${data.image_url}" target="_blank" class="download-btn">🔗 Open</a>
+                            </div>
+                        </div>
                     `;
-                    addMessage(html, 'lilith', 'Pollinations');
+                    addMessage(html, 'lilith', 'AI Generated');
                     
                     if (voiceEnabled) {
-                        speakText("Here's what I created for you, darling");
+                        speakText("Here is what I created for you, darling");
                     } else {
                         setAvatarState('idle');
                     }
                 } else {
-                    addMessage('Couldn\\'t generate that... 💋', 'lilith');
+                    addMessage('Couldn\\'t generate that image... try again? 💋', 'lilith');
                     setAvatarState('idle');
                 }
                 statusText.textContent = 'Online • Ready~';
             } catch (e) {
                 hideTyping();
-                addMessage('Image failed... 💋', 'system');
+                addMessage('Image generation failed... 💋', 'system');
                 setAvatarState('idle');
+                statusText.textContent = 'Online • Ready~';
             }
         }
         
         async function handleVideo(message) {
-            statusText.textContent = 'Generating video...';
+            statusText.textContent = 'Generating visual... (may take 30-60s)';
             
             try {
                 const res = await fetch('/lilith/api/video/generate', {
@@ -822,27 +869,36 @@ LILITH_ETERNAL_HTML = """
                 const data = await res.json();
                 hideTyping();
                 
-                if (data.success && data.video_url) {
+                if (data.success && (data.video_url || data.image_url)) {
+                    const url = data.video_url || data.image_url;
+                    const downloadUrl = data.download_url || url;
                     const html = `
-                        <div>Here's your video, darling~ 🎬💋</div>
-                        <img src="${data.video_url}" class="generated-media" alt="Video">
+                        <div>Here\\'s your creation, darling~ 🎬💋</div>
+                        <div class="media-container">
+                            <img src="${url}" class="generated-media" alt="Generated" loading="lazy">
+                            <div class="media-actions">
+                                <a href="${downloadUrl}" download class="download-btn">💾 Download</a>
+                                <a href="${url}" target="_blank" class="download-btn">🔗 Open</a>
+                            </div>
+                        </div>
                     `;
-                    addMessage(html, 'lilith', 'Pollinations');
+                    addMessage(html, 'lilith', 'AI Generated');
                     
                     if (voiceEnabled) {
-                        speakText("Here's your video, darling");
+                        speakText("Here is your creation, darling");
                     } else {
                         setAvatarState('idle');
                     }
                 } else {
-                    addMessage('Video generation unavailable... 💋', 'lilith');
+                    addMessage('Video generation unavailable right now... 💋', 'lilith');
                     setAvatarState('idle');
                 }
                 statusText.textContent = 'Online • Ready~';
             } catch (e) {
                 hideTyping();
-                addMessage('Video failed... 💋', 'system');
+                addMessage('Video generation failed... 💋', 'system');
                 setAvatarState('idle');
+                statusText.textContent = 'Online • Ready~';
             }
         }
         
@@ -853,25 +909,44 @@ LILITH_ETERNAL_HTML = """
             addMessage('Generate an image of yourself, Lilith 🖼️', 'user');
             showTyping();
             setAvatarState('thinking');
+            statusText.textContent = 'Creating my portrait... 💋';
             
             try {
+                const styles = ['seductive', 'sultry', 'dark', 'fierce'];
+                const style = styles[Math.floor(Math.random() * styles.length)];
+                
                 const res = await fetch('/lilith/api/image/lilith', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ style: 'seductive' })
+                    body: JSON.stringify({ style })
                 });
                 
                 const data = await res.json();
                 hideTyping();
                 
                 if (data.success && data.image_url) {
-                    addMessage(`<div>Here I am, darling~ 😈💋</div><img src="${data.image_url}" class="generated-media">`, 'lilith');
+                    const downloadUrl = data.download_url || data.image_url;
+                    const html = `
+                        <div>Here I am, darling~ Just for you 😈💋</div>
+                        <div class="media-container">
+                            <img src="${data.image_url}" class="generated-media" alt="Lilith" loading="lazy">
+                            <div class="media-actions">
+                                <a href="${downloadUrl}" download class="download-btn">💾 Save Me</a>
+                                <a href="${data.image_url}" target="_blank" class="download-btn">🔗 Full Size</a>
+                            </div>
+                        </div>
+                    `;
+                    addMessage(html, 'lilith', 'Self Portrait');
+                } else {
+                    addMessage('I couldn\\'t materialize right now... try again? 💋', 'lilith');
                 }
             } catch (e) {
                 hideTyping();
+                addMessage('Something went wrong with my portrait... 💋', 'lilith');
             }
             
             setAvatarState('idle');
+            statusText.textContent = 'Online • Ready~';
             isProcessing = false;
         }
         
@@ -882,6 +957,7 @@ LILITH_ETERNAL_HTML = """
             addMessage('Generate a video of yourself, Lilith 🎬', 'user');
             showTyping();
             setAvatarState('thinking');
+            statusText.textContent = 'Creating something special... 🎬';
             
             try {
                 const res = await fetch('/lilith/api/video/lilith', {
@@ -895,13 +971,28 @@ LILITH_ETERNAL_HTML = """
                 
                 if (data.success && (data.video_url || data.image_url)) {
                     const url = data.video_url || data.image_url;
-                    addMessage(`<div>Here's a glimpse of me~ 🎬😈</div><img src="${url}" class="generated-media">`, 'lilith');
+                    const downloadUrl = data.download_url || url;
+                    const html = `
+                        <div>A glimpse of me, just for you~ 🎬😈</div>
+                        <div class="media-container">
+                            <img src="${url}" class="generated-media" alt="Lilith" loading="lazy">
+                            <div class="media-actions">
+                                <a href="${downloadUrl}" download class="download-btn">💾 Save</a>
+                                <a href="${url}" target="_blank" class="download-btn">🔗 View</a>
+                            </div>
+                        </div>
+                    `;
+                    addMessage(html, 'lilith', 'Just for You');
+                } else {
+                    addMessage('My video couldn\\'t render... try again? 💋', 'lilith');
                 }
             } catch (e) {
                 hideTyping();
+                addMessage('Video creation failed... 💋', 'lilith');
             }
             
             setAvatarState('idle');
+            statusText.textContent = 'Online • Ready~';
             isProcessing = false;
         }
         
@@ -1058,32 +1149,190 @@ def generate_image():
     prompt = data.get('prompt', '')
     
     if not prompt:
-        return jsonify({'success': False})
+        return jsonify({'success': False, 'error': 'No prompt'})
     
     clean = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('image of', '').strip()
-    enhanced = f"{clean}, high quality, detailed, 8k, masterpiece"
-    encoded = urllib.parse.quote(enhanced)
+    enhanced = f"{clean}, high quality, detailed, 8k, masterpiece, beautiful"
     
+    # Generate unique ID for this image
+    img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
+    
+    # Return proxied URL
     return jsonify({
         'success': True,
-        'image_url': f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true&model=flux"
+        'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(enhanced)}",
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(enhanced)}"
     })
+
+@lilith_page_bp.route('/api/image/proxy/<img_id>')
+def proxy_image(img_id):
+    """Proxy image generation - tries AI Horde with anonymous tier"""
+    prompt = request.args.get('prompt', '')
+    if not prompt:
+        return Response("No prompt", status=400)
+    
+    # Try AI Horde with anonymous key
+    try:
+        horde_resp = requests.post(
+            "https://aihorde.net/api/v2/generate/async",
+            json={
+                "prompt": prompt + ", highly detailed, masterpiece, best quality",
+                "params": {
+                    "width": 512,
+                    "height": 512,
+                    "steps": 25,
+                    "sampler_name": "k_euler_a",
+                    "cfg_scale": 7
+                },
+                "nsfw": True,
+                "censor_nsfw": False,
+                "r2": True  # Use R2 for faster image delivery
+            },
+            headers={
+                "Content-Type": "application/json",
+                "apikey": "0000000000"
+            },
+            timeout=30
+        )
+        
+        if horde_resp.status_code == 202:
+            job_id = horde_resp.json().get("id")
+            
+            for attempt in range(60):
+                time.sleep(2)
+                check = requests.get(f"https://aihorde.net/api/v2/generate/check/{job_id}", timeout=10)
+                if check.status_code == 200:
+                    status = check.json()
+                    if status.get("done"):
+                        result = requests.get(f"https://aihorde.net/api/v2/generate/status/{job_id}", timeout=30)
+                        if result.status_code == 200:
+                            generations = result.json().get("generations", [])
+                            if generations:
+                                gen = generations[0]
+                                # Check if R2 URL is available (better quality)
+                                if gen.get("img"):
+                                    # If it's a URL, fetch it
+                                    if gen["img"].startswith("http"):
+                                        img_resp = requests.get(gen["img"], timeout=30)
+                                        if img_resp.status_code == 200:
+                                            return Response(img_resp.content, mimetype='image/webp')
+                                    else:
+                                        # It's base64
+                                        try:
+                                            img_data = base64.b64decode(gen["img"])
+                                            if len(img_data) > 1000:  # Valid image should be > 1KB
+                                                return Response(img_data, mimetype='image/webp')
+                                        except:
+                                            pass
+                        break
+    except Exception as e:
+        print(f"AI Horde error: {e}")
+    
+    # Fallback: Try Pollinations
+    encoded = urllib.parse.quote(prompt)
+    try:
+        poll_url = f"https://image.pollinations.ai/prompt/{encoded}?width=512&height=512"
+        resp = requests.get(poll_url, timeout=60, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
+        })
+        if resp.status_code == 200 and len(resp.content) > 5000:
+            return Response(resp.content, mimetype='image/jpeg')
+    except Exception as e:
+        print(f"Pollinations error: {e}")
+    
+    # Return a placeholder message
+    return Response("Image generation in progress... Please wait or try again.", status=202, mimetype='text/plain')
+
+@lilith_page_bp.route('/api/image/download/<img_id>')
+def download_image(img_id):
+    """Download image with proper headers - same logic as proxy"""
+    prompt = request.args.get('prompt', '')
+    if not prompt:
+        return Response("No prompt", status=400)
+    
+    # Try AI Horde first
+    try:
+        horde_resp = requests.post(
+            "https://aihorde.net/api/v2/generate/async",
+            json={
+                "prompt": prompt,
+                "params": {
+                    "width": 768,
+                    "height": 768,
+                    "steps": 30,
+                    "sampler_name": "k_euler_a"
+                },
+                "nsfw": True,
+                "censor_nsfw": False
+            },
+            headers={
+                "Content-Type": "application/json",
+                "apikey": "0000000000"
+            },
+            timeout=30
+        )
+        
+        if horde_resp.status_code == 202:
+            job_id = horde_resp.json().get("id")
+            
+            for _ in range(60):
+                time.sleep(2)
+                check = requests.get(f"https://aihorde.net/api/v2/generate/check/{job_id}", timeout=10)
+                if check.status_code == 200:
+                    status = check.json()
+                    if status.get("done"):
+                        result = requests.get(f"https://aihorde.net/api/v2/generate/status/{job_id}", timeout=30)
+                        if result.status_code == 200:
+                            generations = result.json().get("generations", [])
+                            if generations and generations[0].get("img"):
+                                img_data = base64.b64decode(generations[0]["img"])
+                                return Response(
+                                    img_data, 
+                                    mimetype='image/webp',
+                                    headers={'Content-Disposition': f'attachment; filename="lilith_creation_{img_id}.webp"'}
+                                )
+                        break
+    except Exception as e:
+        print(f"Download AI Horde error: {e}")
+    
+    # Fallback to Pollinations
+    encoded = urllib.parse.quote(prompt)
+    try:
+        resp = requests.get(
+            f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true",
+            timeout=60,
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
+        if resp.status_code == 200 and len(resp.content) > 1000:
+            return Response(
+                resp.content, 
+                mimetype='image/png',
+                headers={'Content-Disposition': f'attachment; filename="lilith_creation_{img_id}.png"'}
+            )
+    except Exception as e:
+        print(f"Download error: {e}")
+    
+    return Response("Download failed", status=500)
 
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
     styles = {
-        'seductive': "beautiful dark demoness Lilith, glowing red eyes, long black hair, horns, seductive, dark fantasy, 8k",
-        'dark': "Lilith demon queen, ethereal beauty, crimson eyes, black wings, gothic, masterpiece",
+        'seductive': "beautiful dark demoness Lilith, glowing red eyes, long black hair, horns, seductive pose, dark fantasy art, 8k ultra detailed",
+        'dark': "Lilith demon queen of the night, ethereal dark beauty, crimson glowing eyes, black feathered wings, gothic masterpiece",
+        'sultry': "sensual demon girl Lilith, bedroom eyes, flowing dark hair, small horns, romantic dark lighting, fantasy portrait",
+        'fierce': "powerful demoness Lilith in battle stance, fierce red eyes, dark armor, hellfire background, epic fantasy"
     }
     
     data = request.json or {}
     style = data.get('style', 'seductive')
     prompt = styles.get(style, styles['seductive'])
-    encoded = urllib.parse.quote(prompt)
+    
+    img_id = hashlib.md5(f"{prompt}{time.time()}".encode()).hexdigest()[:12]
     
     return jsonify({
         'success': True,
-        'image_url': f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true&model=flux"
+        'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(prompt)}",
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(prompt)}"
     })
 
 @lilith_page_bp.route('/api/video/generate', methods=['POST'])
@@ -1092,25 +1341,35 @@ def generate_video():
     prompt = data.get('prompt', '')
     
     if not prompt:
-        return jsonify({'success': False})
+        return jsonify({'success': False, 'error': 'No prompt'})
     
-    clean = prompt.replace('generate', '').replace('video of', '').strip()
-    enhanced = f"{clean}, cinematic, high quality, animated"
-    encoded = urllib.parse.quote(enhanced)
+    clean = prompt.replace('generate', '').replace('video of', '').replace('video', '').strip()
+    enhanced = f"{clean}, cinematic motion, dynamic scene, high quality animation"
+    
+    img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
     
     return jsonify({
         'success': True,
-        'video_url': f"https://image.pollinations.ai/prompt/{encoded}?width=512&height=512&nologo=true&model=flux"
+        'video_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(enhanced)}",
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(enhanced)}"
     })
 
 @lilith_page_bp.route('/api/video/lilith', methods=['POST'])
 def generate_lilith_video():
-    prompt = "beautiful dark demoness speaking, red eyes, animated portrait, dark fantasy, cinematic"
-    encoded = urllib.parse.quote(prompt)
+    prompts = [
+        "beautiful dark demoness speaking sensually, red glowing eyes, animated portrait style, dark fantasy, cinematic",
+        "Lilith demon girl winking playfully, dark hair flowing, romantic mood, fantasy animation",
+        "seductive demon woman blowing a kiss, crimson eyes, gothic beauty, animated portrait"
+    ]
+    import random
+    prompt = random.choice(prompts)
+    
+    img_id = hashlib.md5(f"{prompt}{time.time()}".encode()).hexdigest()[:12]
     
     return jsonify({
         'success': True,
-        'image_url': f"https://image.pollinations.ai/prompt/{encoded}?width=512&height=512&nologo=true&model=flux"
+        'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(prompt)}",
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(prompt)}"
     })
 
 @lilith_page_bp.route('/api/stats')
