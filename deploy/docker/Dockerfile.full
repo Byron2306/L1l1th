@@ -1,0 +1,41 @@
+# LILITH ETERNAL - Full Dockerfile
+# With Stable Diffusion + Wav2Lip integration
+
+FROM python:3.11-slim
+
+LABEL maintainer="LuciferOS"
+LABEL description="LILITH ETERNAL - Full AI Companion with local image generation"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    ffmpeg \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy and install requirements
+COPY requirements.full.txt .
+RUN pip install --no-cache-dir -r requirements.full.txt
+
+# Copy application
+COPY lilith_server_full.py .
+COPY avatars/ ./avatars/ 2>/dev/null || mkdir -p ./avatars
+
+# Environment
+ENV OLLAMA_URL=http://ollama:11434
+ENV OLLAMA_MODEL=dolphin-mistral:7b
+ENV SD_URL=http://stable-diffusion:7860
+ENV WAV2LIP_URL=http://wav2lip:5000
+ENV PORT=5000
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/api/health || exit 1
+
+CMD ["python", "lilith_server_full.py"]

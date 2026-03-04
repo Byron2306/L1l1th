@@ -58,6 +58,24 @@ LILITH_IMAGE_URL = "https://customer-assets.emergentagent.com/job_luciferops/art
 # YOUR LILITH TALKING VIDEO
 LILITH_VIDEO_URL = "https://customer-assets.emergentagent.com/job_luciferops/artifacts/91b8cw6f_Character_Video_Generation_Request%20%28online-video-cutter.com%29.mp4"
 
+# Avatar reaction states - will be generated to look like the base image
+AVATAR_STATES = {
+    "idle": None,
+    "thinking": None,
+    "happy": None,
+    "aroused": None,
+    "speaking": None
+}
+
+# Prompts to generate reactions that look like the base character
+REACTION_PROMPTS = {
+    "idle": "beautiful anime demoness, red glowing eyes, long black hair, small horns, serene neutral expression, dark fantasy portrait style, same character, consistent appearance",
+    "thinking": "beautiful anime demoness, red glowing eyes, long black hair, small horns, thoughtful expression, finger on chin, contemplating, dark fantasy portrait, same character",
+    "happy": "beautiful anime demoness, red glowing eyes, long black hair, small horns, warm genuine smile, happy joyful expression, dark fantasy portrait, same character",
+    "aroused": "beautiful anime demoness, red glowing eyes, long black hair, small horns, seductive bedroom eyes, slight smirk, sensual expression, dark fantasy portrait, same character",
+    "speaking": "beautiful anime demoness, red glowing eyes, long black hair, small horns, mouth slightly open speaking, animated expression, dark fantasy portrait, same character"
+}
+
 LILITH_ETERNAL_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -793,10 +811,14 @@ LILITH_ETERNAL_HTML = """
                 if (data.success) {
                     addMessage(data.response, 'lilith', data.provider);
                     
+                    // Detect emotion from response for avatar state
+                    const emotion = detectEmotion(data.response);
+                    
                     if (data.audio_base64 && voiceEnabled) {
-                        playAudio(data.audio_base64);
+                        setAvatarState('speaking');
+                        playAudio(data.audio_base64, emotion);
                     } else {
-                        setAvatarState('idle');
+                        setAvatarState(emotion);
                     }
                     statusText.textContent = 'Online • Ready~';
                 } else {
@@ -808,6 +830,14 @@ LILITH_ETERNAL_HTML = """
                 addMessage('Connection error... 💋', 'system');
                 setAvatarState('idle');
             }
+        }
+        
+        function detectEmotion(text) {
+            const lower = text.toLowerCase();
+            if (/😈|💋|seduc|desire|want you|crave|naughty|pleasure/.test(lower)) return 'aroused';
+            if (/😊|😄|happy|love|wonderful|great|amazing|perfect|delightful/.test(lower)) return 'happy';
+            if (/think|consider|perhaps|hmm|🤔|wonder|ponder/.test(lower)) return 'thinking';
+            return 'idle';
         }
         
         async function handleImage(message) {
@@ -996,7 +1026,7 @@ LILITH_ETERNAL_HTML = """
             isProcessing = false;
         }
         
-        async function speakText(text) {
+        async function speakText(text, afterEmotion = 'happy') {
             try {
                 const res = await fetch('/lilith/api/voice/speak', {
                     method: 'POST',
@@ -1006,27 +1036,27 @@ LILITH_ETERNAL_HTML = """
                 
                 const data = await res.json();
                 if (data.audio_base64) {
-                    playAudio(data.audio_base64);
+                    playAudio(data.audio_base64, afterEmotion);
                 } else {
-                    setAvatarState('idle');
+                    setAvatarState(afterEmotion);
                 }
             } catch (e) {
-                setAvatarState('idle');
+                setAvatarState(afterEmotion);
             }
         }
         
-        function playAudio(base64Audio) {
+        function playAudio(base64Audio, afterEmotion = 'idle') {
             setAvatarState('speaking');
             statusText.textContent = '🔊 Speaking...';
             
             audioPlayer.src = 'data:audio/mp3;base64,' + base64Audio;
             audioPlayer.play().catch(e => {
                 console.log('Audio failed:', e);
-                setAvatarState('idle');
+                setAvatarState(afterEmotion);
             });
             
             audioPlayer.onended = () => {
-                setAvatarState('idle');
+                setAvatarState(afterEmotion);
                 statusText.textContent = 'Online • Ready~';
             };
         }
@@ -1406,6 +1436,106 @@ def clear_history():
         except:
             pass
     return jsonify({'success': True})
+
+
+@lilith_page_bp.route('/api/avatar/<state>')
+def get_avatar_state(state):
+    """Get avatar image for emotional state"""
+    global AVATAR_STATES
+    
+    if state not in AVATAR_STATES:
+        state = "idle"
+    
+    # Check if we have cached this state
+    if AVATAR_STATES.get(state):
+        return Response(AVATAR_STATES[state], mimetype='image/webp')
+    
+    # For idle, return base image
+    if state == "idle":
+        try:
+            r = requests.get(LILITH_IMAGE_URL, timeout=30)
+            if r.status_code == 200:
+                return Response(r.content, mimetype='image/png')
+        except:
+            pass
+        return Response("", status=404)
+    
+    # Generate reaction using AI Horde
+    prompt = REACTION_PROMPTS.get(state, REACTION_PROMPTS["idle"])
+    
+    try:
+        horde_resp = requests.post(
+            "https://aihorde.net/api/v2/generate/async",
+            json={
+                "prompt": prompt + ", highly detailed, masterpiece, best quality, anime style",
+                "params": {
+                    "width": 512,
+                    "height": 512,
+                    "steps": 25,
+                    "sampler_name": "k_euler_a",
+                    "cfg_scale": 7
+                },
+                "nsfw": True,
+                "censor_nsfw": False,
+                "r2": True
+            },
+            headers={
+                "Content-Type": "application/json",
+                "apikey": "0000000000"
+            },
+            timeout=30
+        )
+        
+        if horde_resp.status_code == 202:
+            job_id = horde_resp.json().get("id")
+            
+            for _ in range(60):
+                time.sleep(2)
+                check = requests.get(f"https://aihorde.net/api/v2/generate/check/{job_id}", timeout=10)
+                if check.status_code == 200 and check.json().get("done"):
+                    result = requests.get(f"https://aihorde.net/api/v2/generate/status/{job_id}", timeout=30)
+                    if result.status_code == 200:
+                        gens = result.json().get("generations", [])
+                        if gens and gens[0].get("img"):
+                            img = gens[0]["img"]
+                            if img.startswith("http"):
+                                img_data = requests.get(img, timeout=30).content
+                            else:
+                                img_data = base64.b64decode(img)
+                            
+                            # Cache it
+                            AVATAR_STATES[state] = img_data
+                            return Response(img_data, mimetype='image/webp')
+                    break
+    except Exception as e:
+        print(f"Avatar generation error: {e}")
+    
+    # Fallback to base image
+    try:
+        r = requests.get(LILITH_IMAGE_URL, timeout=30)
+        if r.status_code == 200:
+            return Response(r.content, mimetype='image/png')
+    except:
+        pass
+    
+    return Response("", status=500)
+
+
+@lilith_page_bp.route('/api/avatar/preload', methods=['POST'])
+def preload_avatars():
+    """Pre-generate all avatar states"""
+    results = {}
+    for state in AVATAR_STATES.keys():
+        if state == "idle":
+            results[state] = "base image"
+            continue
+        try:
+            # Trigger generation (async)
+            requests.get(f"http://localhost:3000/lilith/api/avatar/{state}", timeout=5)
+            results[state] = "generating"
+        except:
+            results[state] = "queued"
+    return jsonify({"success": True, "states": results})
 
 
 def create_lilith_app():

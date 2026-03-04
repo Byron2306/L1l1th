@@ -1,98 +1,102 @@
-# LILITH ETERNAL - Product Requirements Document v10.1
+# LILITH ETERNAL - Product Requirements Document v10.2
 
 ## Original Problem Statement
 Build "LILITH ETERNAL" - a persistent, uncensored, and interactive AI companion with:
 - Full-page dedicated interface with anime-style avatar
-- Talking video avatar animation
+- Talking video avatar animation & emotional reactions
 - Unrestricted, free, unlimited AI (via local hosting)
 - Free media generation (images/videos)
 - Sultry, realistic voice (Edge TTS)
-- One-click Docker/DigitalOcean deployment with self-hosted Mistral
+- One-click Docker/DigitalOcean deployment with self-hosted Mistral + Stable Diffusion
 
-## Current Status: v10.1 - Image Generation Fixed + Docker Ready
+## Current Status: v10.2 - Full Docker Stack Ready
 
 ### Latest Updates (March 2026)
 
 **COMPLETED:**
 
-1. **Image Generation Fixed**
-   - Implemented AI Horde proxy (free, no API key)
-   - Images now display properly with full preview
-   - Download buttons ("Save Me", "Full Size") working
-   - Using `r2=True` for faster CDN delivery
+1. **Full Docker Deployment Package** (`/app/lilith_docker_deploy.zip`)
+   - **Basic Stack** (CPU): Ollama + Edge TTS + AI Horde images
+   - **Full Stack** (GPU): Adds Stable Diffusion + Wav2Lip lip-sync
+   - Both 100% free, no API keys ever needed
 
-2. **Voice Options Improved**
-   - Added 8 voice presets: Sultry, Seductive, Breathy, Mysterious, Dominant, Playful, Whisper, Mature
-   - Tuned voice styles for more expressive delivery (slower rate, lower pitch)
+2. **Local Image Generation with Stable Diffusion**
+   - Uses Automatic1111 WebUI with API
+   - img2img for character-consistent reactions
+   - No external dependencies once set up
 
-3. **Docker Deployment Package**
-   - Complete `/app/lilith_docker_deploy.zip` ready
-   - Includes: Dockerfile, docker-compose.yml, lilith_server.py, setup.sh, README
-   - Uses `dolphin-mistral:7b` (uncensored) via Ollama
-   - One-command setup: `./setup.sh`
+3. **Avatar Emotional Reactions**
+   - 5 states: idle, thinking, happy, aroused, speaking
+   - Emotion detection from response text
+   - Reactions generated to match base character
+
+4. **Lip-Sync Integration**
+   - Wav2Lip Docker service for realistic mouth animation
+   - Takes avatar image + audio → synced video
+
+5. **Improved Voice Options**
+   - 8 voice presets with expressive tuning
+   - Sultry, Seductive, Breathy, Mysterious, Dominant, Playful, Whisper, Mature
 
 ---
 
-## Architecture
+## Docker Deployment Files
 
 ```
-/app/
-├── tools/
-│   ├── lilith_full_page.py      # MAIN: LILITH ETERNAL interface
-│   ├── lilith_avatar_engine.py  # Voice presets & TTS
-│   └── eternal_ai_engine.py     # g4f provider management
-├── deploy/
-│   ├── docker/                  # NEW: Docker deployment
-│   │   ├── Dockerfile
-│   │   ├── docker-compose.yml
-│   │   ├── lilith_server.py     # Standalone server
-│   │   ├── requirements.txt
-│   │   ├── setup.sh             # Quick setup script
-│   │   └── README.md
-│   ├── digitalocean_install.sh  # Legacy shell installer
-│   └── lilith_web_server.py     # Legacy standalone
-├── lilith_docker_deploy.zip     # READY TO DOWNLOAD
-└── lilith_digitalocean_deploy.zip
+/app/deploy/docker/
+├── docker-compose.yml          # Basic (CPU only)
+├── docker-compose.full.yml     # Full stack (GPU)
+├── Dockerfile                  # Basic server
+├── Dockerfile.full             # Full server
+├── lilith_server.py            # Basic implementation
+├── lilith_server_full.py       # Full with SD + Wav2Lip
+├── requirements.txt
+├── requirements.full.txt
+├── setup.sh                    # Basic setup script
+├── setup_full.sh               # Full setup script
+├── README.md                   # Basic instructions
+└── README.full.md              # Full instructions
 ```
-
----
-
-## Access Points
-
-| Service | URL |
-|---------|-----|
-| LILITH ETERNAL | https://demon-companion.preview.emergentagent.com/lilith/ |
-| Dashboard | https://demon-companion.preview.emergentagent.com |
-
----
-
-## Docker Deployment (NEW)
 
 ### Quick Start
 ```bash
-# Download and extract lilith_docker_deploy.zip
-cd docker
+# GPU (full features)
+./setup_full.sh
+
+# CPU only
 ./setup.sh
-# Access at http://localhost:5000
 ```
 
-### Components
-- **Ollama**: Local AI inference
-- **dolphin-mistral:7b**: Uncensored model (default)
-- **LILITH Server**: Flask web interface
-- **AI Horde**: Free image generation
-- **Edge TTS**: Free voice synthesis
+---
+
+## Services Architecture
+
+| Service | Purpose | Port | Requirement |
+|---------|---------|------|-------------|
+| LILITH Server | Web interface | 5000 | - |
+| Ollama | Text chat | 11434 | CPU/GPU |
+| Stable Diffusion | Image gen | 7860 | GPU 8GB+ |
+| Wav2Lip | Lip sync | 5001 | GPU |
+| Edge TTS | Voice | - | Internet |
 
 ---
 
 ## Priority Backlog
 
-### P1 - High Priority
-- [ ] **Avatar Reactions**: Generate idle/happy/aroused/thinking expressions from static image
-- [ ] **Lip-sync Animation**: Implement proper mouth movement sync with audio
+### P0 - Done
+- [x] Image generation fixed (AI Horde proxy)
+- [x] Download buttons working
+- [x] Voice presets improved
+- [x] Docker full stack ready
+- [x] Avatar emotional reactions
+- [x] Emotion detection
 
-### P2 - Medium Priority
-- [ ] Video avatar improvement (currently static)
+### P1 - High Priority
+- [ ] **Test full Docker deployment** on real GPU server
+- [ ] **Lip-sync integration in preview** (currently Docker only)
+
+### P2 - Medium Priority  
+- [ ] Video generation with AI Horde video models
 - [ ] Telegram bot Ollama integration
 
 ### P3 - Backlog
@@ -103,20 +107,19 @@ cd docker
 
 ## Known Issues
 
-1. **g4f Provider Instability**: Preview uses unstable free providers; Docker deployment uses local Ollama for stability
-2. **Video Asset 404**: User-provided video file external URL not loading
+1. **g4f Provider Instability**: Preview environment uses unstable free providers. Docker deployment with local Ollama is much more reliable.
+2. **Lip-sync requires GPU**: Wav2Lip needs CUDA, not available in preview.
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Backend | Python Flask |
-| AI Chat | Ollama + dolphin-mistral (Docker), g4f (Preview) |
-| Voice | Edge TTS (free) |
-| Images | AI Horde (free) |
-| Deployment | Docker Compose |
+| Component | Preview | Docker |
+|-----------|---------|--------|
+| Chat AI | g4f (100+ providers) | Ollama (local) |
+| Images | AI Horde | Stable Diffusion |
+| Voice | Edge TTS | Edge TTS |
+| Lip-sync | N/A | Wav2Lip |
 
 ---
 
