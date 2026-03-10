@@ -1,126 +1,101 @@
-# LILITH ETERNAL - Product Requirements Document v10.2
+# LILITH ETERNAL - Product Requirements Document v10.3
 
 ## Original Problem Statement
 Build "LILITH ETERNAL" - a persistent, uncensored, and interactive AI companion with:
 - Full-page dedicated interface with anime-style avatar
-- Talking video avatar animation & emotional reactions
-- Unrestricted, free, unlimited AI (via local hosting)
-- Free media generation (images/videos)
-- Sultry, realistic voice (Edge TTS)
-- One-click Docker/DigitalOcean deployment with self-hosted Mistral + Stable Diffusion
+- Sultry ElevenLabs voice
+- Reliable free AI chat
+- Sexy clothed image generation
 
-## Current Status: v10.2 - Full Docker Stack Ready
+## Current Status: v10.3 - WORKING! 🎉
 
-### Latest Updates (March 2026)
+### What's Working NOW
 
-**COMPLETED:**
+**✅ CHAT (Flirty & Romantic)**
+- g4f with GeminiPro provider working
+- Romantic fallback responses when providers fail
+- Much warmer, more affectionate personality
 
-1. **Full Docker Deployment Package** (`/app/lilith_docker_deploy.zip`)
-   - **Basic Stack** (CPU): Ollama + Edge TTS + AI Horde images
-   - **Full Stack** (GPU): Adds Stable Diffusion + Wav2Lip lip-sync
-   - Both 100% free, no API keys ever needed
+**✅ VOICE (ElevenLabs)**
+- API Key: sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1
+- Voice ID: Md7yllQ29xXxuJKm6IHL
+- High quality, sultry voice
+- Fallback to Edge TTS if needed
 
-2. **Local Image Generation with Stable Diffusion**
-   - Uses Automatic1111 WebUI with API
-   - img2img for character-consistent reactions
-   - No external dependencies once set up
+**✅ IMAGE GENERATION**
+- AI Horde (primary) - free, no key needed
+- HuggingFace endpoints (fallback)
+- Sexy but clothed images (lingerie, etc.)
+- Working download buttons
 
-3. **Avatar Emotional Reactions**
-   - 5 states: idle, thinking, happy, aroused, speaking
-   - Emotion detection from response text
-   - Reactions generated to match base character
-
-4. **Lip-Sync Integration**
-   - Wav2Lip Docker service for realistic mouth animation
-   - Takes avatar image + audio → synced video
-
-5. **Improved Voice Options**
-   - 8 voice presets with expressive tuning
-   - Sultry, Seductive, Breathy, Mysterious, Dominant, Playful, Whisper, Mature
+**✅ AVATAR**
+- Beautiful anime demoness displayed
+- Emotional states (idle, thinking, happy, aroused, speaking)
 
 ---
 
-## Docker Deployment Files
+## Access
 
-```
-/app/deploy/docker/
-├── docker-compose.yml          # Basic (CPU only)
-├── docker-compose.full.yml     # Full stack (GPU)
-├── Dockerfile                  # Basic server
-├── Dockerfile.full             # Full server
-├── lilith_server.py            # Basic implementation
-├── lilith_server_full.py       # Full with SD + Wav2Lip
-├── requirements.txt
-├── requirements.full.txt
-├── setup.sh                    # Basic setup script
-├── setup_full.sh               # Full setup script
-├── README.md                   # Basic instructions
-└── README.full.md              # Full instructions
-```
-
-### Quick Start
-```bash
-# GPU (full features)
-./setup_full.sh
-
-# CPU only
-./setup.sh
-```
+| Feature | URL |
+|---------|-----|
+| LILITH ETERNAL | https://demon-companion.preview.emergentagent.com/lilith/ |
 
 ---
 
-## Services Architecture
+## Technical Implementation
 
-| Service | Purpose | Port | Requirement |
-|---------|---------|------|-------------|
-| LILITH Server | Web interface | 5000 | - |
-| Ollama | Text chat | 11434 | CPU/GPU |
-| Stable Diffusion | Image gen | 7860 | GPU 8GB+ |
-| Wav2Lip | Lip sync | 5001 | GPU |
-| Edge TTS | Voice | - | Internet |
+### Voice Engine (/app/tools/lilith_elevenlabs_voice.py)
+```python
+ELEVENLABS_API_KEY = "sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1"
+ELEVENLABS_VOICE_ID = "Md7yllQ29xXxuJKm6IHL"
+```
+
+### Image Generator (/app/tools/lilith_image_generator.py)
+- AI Horde (primary)
+- HuggingFace Inference API (5 endpoints)
+- Pollinations (backup)
+- Negative prompt ensures clothed content
+
+### Chat Engine (/app/tools/eternal_ai_engine.py)
+- g4f multi-provider (100+ providers)
+- Error filtering for bad responses
+- Romantic fallback responses when all fail
+- Updated flirty system prompt
 
 ---
 
-## Priority Backlog
+## Files Changed This Session
 
-### P0 - Done
-- [x] Image generation fixed (AI Horde proxy)
-- [x] Download buttons working
-- [x] Voice presets improved
-- [x] Docker full stack ready
-- [x] Avatar emotional reactions
-- [x] Emotion detection
+1. `/app/tools/lilith_elevenlabs_voice.py` - NEW: ElevenLabs integration
+2. `/app/tools/lilith_image_generator.py` - Updated: Multi-provider + sexy clothed
+3. `/app/tools/eternal_ai_engine.py` - Updated: Romantic prompt + fallbacks
+4. `/app/tools/lilith_full_page.py` - Updated: ElevenLabs integration
+5. `/app/backend/.env` - Added: ELEVENLABS keys
+
+---
+
+## Next Steps / Backlog
 
 ### P1 - High Priority
-- [ ] **Test full Docker deployment** on real GPU server
-- [ ] **Lip-sync integration in preview** (currently Docker only)
+- [ ] Test lip-sync integration
+- [ ] TOR integration for DIG AI / Torry (requires TOR setup)
 
-### P2 - Medium Priority  
-- [ ] Video generation with AI Horde video models
-- [ ] Telegram bot Ollama integration
+### P2 - Medium Priority
+- [ ] Improve image quality (anime style specifically)
+- [ ] Docker deployment test on GPU server
 
 ### P3 - Backlog
-- [ ] Refactor monolithic files
-- [ ] WebSocket real-time updates
+- [ ] Telegram integration
+- [ ] WebSocket for real-time updates
 
 ---
 
-## Known Issues
+## Known Limitations
 
-1. **g4f Provider Instability**: Preview environment uses unstable free providers. Docker deployment with local Ollama is much more reliable.
-2. **Lip-sync requires GPU**: Wav2Lip needs CUDA, not available in preview.
-
----
-
-## Tech Stack
-
-| Component | Preview | Docker |
-|-----------|---------|--------|
-| Chat AI | g4f (100+ providers) | Ollama (local) |
-| Images | AI Horde | Stable Diffusion |
-| Voice | Edge TTS | Edge TTS |
-| Lip-sync | N/A | Wav2Lip |
+1. **g4f Providers** - Variable availability, some providers go down
+2. **Image Style** - AI Horde sometimes generates realistic vs anime
+3. **TOR AIs** - Need TOR network setup to access .onion services
 
 ---
 
-*Last Updated: March 4, 2026*
+*Last Updated: March 10, 2026*

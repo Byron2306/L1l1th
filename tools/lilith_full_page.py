@@ -28,7 +28,30 @@ if tools_dir not in sys.path:
 # Import engines
 ETERNAL_ENGINE = False
 AVATAR_ENGINE = False
+ELEVENLABS_ENGINE = False
+IMAGE_ENGINE = False
 
+# Try ElevenLabs voice first
+try:
+    from lilith_elevenlabs_voice import get_voice_engine
+    voice_engine = get_voice_engine()
+    ELEVENLABS_ENGINE = True
+    print("[LILITH ETERNAL] ElevenLabs voice engine loaded")
+except Exception as e:
+    print(f"[LILITH ETERNAL] ElevenLabs error: {e}")
+    voice_engine = None
+
+# Try image generator
+try:
+    from lilith_image_generator import get_image_generator
+    image_engine = get_image_generator()
+    IMAGE_ENGINE = True
+    print("[LILITH ETERNAL] Image generator loaded")
+except Exception as e:
+    print(f"[LILITH ETERNAL] Image engine error: {e}")
+    image_engine = None
+
+# Try AI chat engine
 try:
     from eternal_ai_engine import get_eternal_engine
     _ = get_eternal_engine()
@@ -42,10 +65,11 @@ except Exception as e:
     except:
         pass
 
+# Fallback to old avatar engine
 try:
     from lilith_avatar_engine import get_avatar_engine
     AVATAR_ENGINE = True
-    print("[LILITH ETERNAL] Voice engine loaded")
+    print("[LILITH ETERNAL] Fallback voice engine loaded")
 except Exception as e:
     print(f"[LILITH ETERNAL] Voice error: {e}")
 
@@ -1132,16 +1156,32 @@ def lilith_chat():
             result['response'] = f"Error: {e}"
     else:
         result['success'] = True
-        result['response'] = "AI engine loading... I'm still here for you~ 💋"
+        result['response'] = "Mmm, my AI is warming up... but I'm still here thinking about you~ 💋"
     
-    if voice_enabled and result['success'] and AVATAR_ENGINE:
-        try:
-            avatar = get_avatar_engine()
-            voice = avatar.speak(result['response'])
-            if voice.get('audio_base64'):
-                result['audio_base64'] = voice['audio_base64']
-        except:
-            pass
+    # Generate voice - prefer ElevenLabs
+    if voice_enabled and result['success']:
+        audio_b64 = None
+        
+        # Try ElevenLabs first
+        if ELEVENLABS_ENGINE and voice_engine:
+            try:
+                audio_b64 = voice_engine.generate_speech(result['response'])
+                if audio_b64:
+                    result['audio_base64'] = audio_b64
+                    result['voice_provider'] = 'ElevenLabs'
+            except Exception as e:
+                print(f"ElevenLabs error: {e}")
+        
+        # Fallback to Edge TTS
+        if not audio_b64 and AVATAR_ENGINE:
+            try:
+                avatar = get_avatar_engine()
+                voice = avatar.speak(result['response'])
+                if voice.get('audio_base64'):
+                    result['audio_base64'] = voice['audio_base64']
+                    result['voice_provider'] = 'Edge TTS'
+            except:
+                pass
     
     return jsonify(result)
 
@@ -1163,15 +1203,28 @@ def speak_text():
     data = request.json or {}
     text = data.get('text', '')
     
-    if not text or not AVATAR_ENGINE:
+    if not text:
         return jsonify({'success': False})
     
-    try:
-        avatar = get_avatar_engine()
-        result = avatar.speak(text)
-        return jsonify({'success': True, 'audio_base64': result.get('audio_base64')})
-    except:
-        return jsonify({'success': False})
+    audio_b64 = None
+    
+    # Try ElevenLabs first
+    if ELEVENLABS_ENGINE and voice_engine:
+        try:
+            audio_b64 = voice_engine.generate_speech(text)
+        except:
+            pass
+    
+    # Fallback to Edge TTS
+    if not audio_b64 and AVATAR_ENGINE:
+        try:
+            avatar = get_avatar_engine()
+            result = avatar.speak(text)
+            audio_b64 = result.get('audio_base64')
+        except:
+            pass
+    
+    return jsonify({'success': bool(audio_b64), 'audio_base64': audio_b64})
 
 @lilith_page_bp.route('/api/image/generate', methods=['POST'])
 def generate_image():
