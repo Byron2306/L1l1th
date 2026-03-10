@@ -30,6 +30,8 @@ ETERNAL_ENGINE = False
 AVATAR_ENGINE = False
 ELEVENLABS_ENGINE = False
 IMAGE_ENGINE = False
+TOR_ENGINE = False
+ANIMATION_ENGINE = False
 
 # Try ElevenLabs voice first
 try:
@@ -50,6 +52,29 @@ try:
 except Exception as e:
     print(f"[LILITH ETERNAL] Image engine error: {e}")
     image_engine = None
+
+# Try TOR AI engine
+try:
+    from lilith_tor_engine import get_tor_engine
+    tor_engine = get_tor_engine()
+    TOR_ENGINE = tor_engine.tor_available
+    if TOR_ENGINE:
+        print("[LILITH ETERNAL] TOR AI engine loaded (.onion access ready)")
+    else:
+        print("[LILITH ETERNAL] TOR installed but not connected yet")
+except Exception as e:
+    print(f"[LILITH ETERNAL] TOR engine error: {e}")
+    tor_engine = None
+
+# Try Animation engine
+try:
+    from lilith_animation_engine import get_animation_engine
+    animation_engine = get_animation_engine()
+    ANIMATION_ENGINE = True
+    print("[LILITH ETERNAL] Animation engine loaded")
+except Exception as e:
+    print(f"[LILITH ETERNAL] Animation error: {e}")
+    animation_engine = None
 
 # Try AI chat engine
 try:
@@ -1139,13 +1164,24 @@ def lilith_chat():
     data = request.json or {}
     message = data.get('message', '')
     voice_enabled = data.get('voice_enabled', True)
+    use_tor = data.get('use_tor', False)  # Option to force TOR
     
     if not message:
         return jsonify({'success': False, 'error': 'No message'})
     
     result = {'success': False, 'response': '', 'provider': None, 'audio_base64': None}
     
-    if ETERNAL_ENGINE:
+    # Try TOR AI first if requested or if regular providers fail
+    if use_tor and TOR_ENGINE and tor_engine:
+        try:
+            tor_result = tor_engine.chat(message)
+            if tor_result.get('success'):
+                result = tor_result
+        except Exception as e:
+            print(f"TOR chat error: {e}")
+    
+    # Try regular providers
+    if not result.get('success') and ETERNAL_ENGINE:
         try:
             engine = get_eternal_engine()
             ai_result = engine.chat(message)
@@ -1154,9 +1190,20 @@ def lilith_chat():
             result['provider'] = ai_result.get('provider')
         except Exception as e:
             result['response'] = f"Error: {e}"
-    else:
+    
+    # Try TOR as fallback if regular failed
+    if not result.get('success') and TOR_ENGINE and tor_engine and not use_tor:
+        try:
+            tor_result = tor_engine.chat(message)
+            if tor_result.get('success'):
+                result = tor_result
+        except:
+            pass
+    
+    # Final fallback
+    if not result.get('success'):
         result['success'] = True
-        result['response'] = "Mmm, my AI is warming up... but I'm still here thinking about you~ 💋"
+        result['response'] = "Mmm, my AI is warming up... but I'm still here thinking about you, darling~ 💋"
     
     # Generate voice - prefer ElevenLabs
     if voice_enabled and result['success']:
@@ -1475,8 +1522,15 @@ def get_stats():
 @lilith_page_bp.route('/api/status')
 def get_status():
     return jsonify({
-        'eternal_engine': ETERNAL_ENGINE,
-        'avatar_engine': AVATAR_ENGINE,
+        'engines': {
+            'chat': ETERNAL_ENGINE,
+            'voice_elevenlabs': ELEVENLABS_ENGINE,
+            'voice_edge': AVATAR_ENGINE,
+            'images': IMAGE_ENGINE,
+            'tor': TOR_ENGINE,
+            'animation': ANIMATION_ENGINE
+        },
+        'tor_connected': TOR_ENGINE and tor_engine and tor_engine.tor_available if 'tor_engine' in dir() else False,
         'timestamp': datetime.now().isoformat()
     })
 

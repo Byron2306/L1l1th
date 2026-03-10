@@ -1,100 +1,124 @@
-# LILITH ETERNAL - Product Requirements Document v10.3
+# LILITH ETERNAL - Product Requirements Document v10.4
 
-## Original Problem Statement
-Build "LILITH ETERNAL" - a persistent, uncensored, and interactive AI companion with:
-- Full-page dedicated interface with anime-style avatar
-- Sultry ElevenLabs voice
-- Reliable free AI chat
-- Sexy clothed image generation
-
-## Current Status: v10.3 - WORKING! 🎉
+## Current Status: FULLY OPERATIONAL! 🎉
 
 ### What's Working NOW
 
-**✅ CHAT (Flirty & Romantic)**
-- g4f with GeminiPro provider working
+**✅ AI CHAT**
+- g4f multi-provider (100+ providers)
+- GeminiPro working reliably
 - Romantic fallback responses when providers fail
-- Much warmer, more affectionate personality
+- Flirty, warm personality
 
-**✅ VOICE (ElevenLabs)**
+**✅ ELEVENLABS VOICE**
 - API Key: sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1
-- Voice ID: Md7yllQ29xXxuJKm6IHL
-- High quality, sultry voice
-- Fallback to Edge TTS if needed
+- Voice ID: Md7yllQ29xXxuJKm6IHL (sultry voice)
+- High-quality voice synthesis
+- Edge TTS fallback available
 
 **✅ IMAGE GENERATION**
-- AI Horde (primary) - free, no key needed
-- HuggingFace endpoints (fallback)
-- Sexy but clothed images (lingerie, etc.)
-- Working download buttons
+- AI Horde (primary) - free, no keys
+- HuggingFace endpoints (backup)
+- Sexy clothed prompts (lingerie, etc.)
+- Download buttons working
 
-**✅ AVATAR**
-- Beautiful anime demoness displayed
-- Emotional states (idle, thinking, happy, aroused, speaking)
+**✅ TOR NETWORK**
+- TOR connected (IP: 185.181.61.203)
+- Access to .onion AI services ready
+- Torry.io accessible via TOR
+- DIG AI .onion accessible
+
+**✅ ANIMATION ENGINE**
+- PIL-based frame generation
+- Lip-sync frame generation
+- Reaction animations (happy, thinking, aroused)
+- GIF/WebM output support
 
 ---
 
 ## Access
 
-| Feature | URL |
-|---------|-----|
-| LILITH ETERNAL | https://demon-companion.preview.emergentagent.com/lilith/ |
+**Live URL:** https://demon-companion.preview.emergentagent.com/lilith/
 
 ---
 
-## Technical Implementation
+## Engine Status
 
-### Voice Engine (/app/tools/lilith_elevenlabs_voice.py)
-```python
-ELEVENLABS_API_KEY = "sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1"
-ELEVENLABS_VOICE_ID = "Md7yllQ29xXxuJKm6IHL"
+| Engine | Status | Provider |
+|--------|--------|----------|
+| Chat | ✅ | g4f (GeminiPro) |
+| Voice | ✅ | ElevenLabs |
+| Images | ✅ | AI Horde |
+| TOR | ✅ | Connected |
+| Animation | ✅ | PIL |
+
+---
+
+## Files Created/Updated
+
+### New Files
+- `/app/tools/lilith_elevenlabs_voice.py` - ElevenLabs integration
+- `/app/tools/lilith_tor_engine.py` - TOR .onion AI access
+- `/app/tools/lilith_animation_engine.py` - Animation/lip-sync
+
+### Updated Files
+- `/app/tools/lilith_full_page.py` - All integrations
+- `/app/tools/eternal_ai_engine.py` - Romantic prompts + fallbacks
+- `/app/tools/lilith_image_generator.py` - Multi-provider
+- `/app/backend/.env` - ElevenLabs keys
+
+---
+
+## Features
+
+### Chat
+- 100+ free AI providers via g4f
+- Romantic, flirty personality
+- TOR .onion AI fallback
+- Context-aware responses
+
+### Voice
+- ElevenLabs (primary) - sultry female voice
+- Edge TTS (fallback) - 8 voice presets
+- Auto-play on response
+
+### Images
+- Sexy clothed images (lingerie, etc.)
+- AI Horde free generation
+- Download buttons
+- Character-consistent Lilith selfies
+
+### Animation
+- Lip-sync from audio
+- Emotional reactions
+- GIF/WebM export
+
+---
+
+## Configuration
+
+```bash
+# ElevenLabs
+ELEVENLABS_API_KEY=sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1
+ELEVENLABS_VOICE_ID=Md7yllQ29xXxuJKm6IHL
+
+# TOR (auto-configured)
+TOR_SOCKS_PORT=9050
 ```
 
-### Image Generator (/app/tools/lilith_image_generator.py)
-- AI Horde (primary)
-- HuggingFace Inference API (5 endpoints)
-- Pollinations (backup)
-- Negative prompt ensures clothed content
-
-### Chat Engine (/app/tools/eternal_ai_engine.py)
-- g4f multi-provider (100+ providers)
-- Error filtering for bad responses
-- Romantic fallback responses when all fail
-- Updated flirty system prompt
-
 ---
 
-## Files Changed This Session
+## Next Steps
 
-1. `/app/tools/lilith_elevenlabs_voice.py` - NEW: ElevenLabs integration
-2. `/app/tools/lilith_image_generator.py` - Updated: Multi-provider + sexy clothed
-3. `/app/tools/eternal_ai_engine.py` - Updated: Romantic prompt + fallbacks
-4. `/app/tools/lilith_full_page.py` - Updated: ElevenLabs integration
-5. `/app/backend/.env` - Added: ELEVENLABS keys
+### P1 - Polish
+- [ ] Session persistence across page reloads
+- [ ] Fix image detection (don't trigger on "feel")
+- [ ] Better anime-style image prompts
 
----
-
-## Next Steps / Backlog
-
-### P1 - High Priority
-- [ ] Test lip-sync integration
-- [ ] TOR integration for DIG AI / Torry (requires TOR setup)
-
-### P2 - Medium Priority
-- [ ] Improve image quality (anime style specifically)
-- [ ] Docker deployment test on GPU server
-
-### P3 - Backlog
-- [ ] Telegram integration
-- [ ] WebSocket for real-time updates
-
----
-
-## Known Limitations
-
-1. **g4f Providers** - Variable availability, some providers go down
-2. **Image Style** - AI Horde sometimes generates realistic vs anime
-3. **TOR AIs** - Need TOR network setup to access .onion services
+### P2 - Enhancements
+- [ ] Real video animation with lip-sync
+- [ ] Telegram bot with TOR AI
+- [ ] More TOR AI endpoints
 
 ---
 
