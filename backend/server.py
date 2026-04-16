@@ -49,7 +49,7 @@ async def proxy_all(request: Request, path: str):
     headers = dict(request.headers)
     headers.pop("host", None)
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=90.0) as client:
         try:
             response = await client.request(
                 method=request.method,

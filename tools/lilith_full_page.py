@@ -766,6 +766,24 @@ LILITH_ETERNAL_HTML = """
         const sendBtn = document.getElementById('send-btn');
         const statusText = document.getElementById('status-text');
         
+        // === Chat Persistence ===
+        function saveChatHistory() {
+            try {
+                const msgs = chatMessages.innerHTML;
+                localStorage.setItem('lilith_chat_history', msgs);
+            } catch(e) {}
+        }
+        function loadChatHistory() {
+            try {
+                const saved = localStorage.getItem('lilith_chat_history');
+                if (saved && saved.length > 100) {
+                    chatMessages.innerHTML = saved;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            } catch(e) {}
+        }
+        loadChatHistory();
+        
         // Update stats
         async function updateStats() {
             try {
@@ -860,12 +878,15 @@ LILITH_ETERNAL_HTML = """
                 if (data.success) {
                     addMessage(data.response, 'lilith', data.provider);
                     
-                    // Detect emotion from response for avatar state
                     const emotion = detectEmotion(data.response);
                     
                     if (data.audio_base64 && voiceEnabled) {
                         setAvatarState('speaking');
                         playAudio(data.audio_base64, emotion);
+                    } else if (voiceEnabled && !data.audio_base64) {
+                        // Voice was skipped (timeout budget) - request async
+                        setAvatarState(emotion);
+                        speakText(data.response.substring(0, 500), emotion);
                     } else {
                         setAvatarState(emotion);
                     }
@@ -1113,6 +1134,7 @@ LILITH_ETERNAL_HTML = """
         function clearChat() {
             chatMessages.innerHTML = '<div class="message lilith">Chat cleared~ Let\\'s start fresh, darling! 💋😈</div>';
             fetch('/lilith/api/clear', { method: 'POST' });
+            try { localStorage.removeItem('lilith_chat_history'); } catch(e) {}
         }
         
         function addMessage(text, type, provider = null) {
@@ -1129,6 +1151,7 @@ LILITH_ETERNAL_HTML = """
             
             chatMessages.appendChild(msg);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            saveChatHistory();
         }
         
         function showTyping() {
@@ -1161,17 +1184,20 @@ def lilith_home():
 
 @lilith_page_bp.route('/api/chat', methods=['POST'])
 def lilith_chat():
+    import time as _time
+    _start = _time.time()
+    
     data = request.json or {}
     message = data.get('message', '')
     voice_enabled = data.get('voice_enabled', True)
-    use_tor = data.get('use_tor', False)  # Option to force TOR
+    use_tor = data.get('use_tor', False)
     
     if not message:
         return jsonify({'success': False, 'error': 'No message'})
     
     result = {'success': False, 'response': '', 'provider': None, 'audio_base64': None}
     
-    # Try TOR AI first if requested or if regular providers fail
+    # Try TOR AI first if requested
     if use_tor and TOR_ENGINE and tor_engine:
         try:
             tor_result = tor_engine.chat(message)
@@ -1191,7 +1217,7 @@ def lilith_chat():
         except Exception as e:
             result['response'] = f"Error: {e}"
     
-    # Try TOR as fallback if regular failed
+    # Try TOR as fallback
     if not result.get('success') and TOR_ENGINE and tor_engine and not use_tor:
         try:
             tor_result = tor_engine.chat(message)
@@ -1205,14 +1231,17 @@ def lilith_chat():
         result['success'] = True
         result['response'] = "Mmm, my AI is warming up... but I'm still here thinking about you, darling~ 💋"
     
-    # Generate voice - prefer ElevenLabs
-    if voice_enabled and result['success']:
+    # Generate voice only if we have time budget left (< 15s elapsed)
+    elapsed = _time.time() - _start
+    if voice_enabled and result['success'] and elapsed < 15:
         audio_b64 = None
         
         # Try ElevenLabs first
         if ELEVENLABS_ENGINE and voice_engine:
             try:
-                audio_b64 = voice_engine.generate_speech(result['response'])
+                # Truncate text for faster voice gen
+                voice_text = result['response'][:500]
+                audio_b64 = voice_engine.generate_speech(voice_text)
                 if audio_b64:
                     result['audio_base64'] = audio_b64
                     result['voice_provider'] = 'ElevenLabs'
@@ -1282,10 +1311,10 @@ def generate_image():
         return jsonify({'success': False, 'error': 'No prompt'})
     
     # Clean and enhance prompt for LILITH anime style
-    clean = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('image of', '').strip()
+    clean = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('image of', '').replace('make', '').replace('picture of', '').strip()
     
-    # Always add LILITH character and sexy anime tags
-    enhanced = f"1girl, demon girl, red glowing eyes, black hair, small horns, large breasts, curvy, {clean}, anime style, seductive, sensual, masterpiece, best quality, detailed"
+    # Enhanced prompt with strong quality tags
+    enhanced = f"1girl, solo, demon girl, red glowing eyes, long black hair, small horns, pale skin, large breasts, curvy figure, {clean}, masterpiece, best quality, extremely detailed, beautiful detailed eyes, sharp focus, vibrant colors, anime style, professional illustration"
     
     # Generate unique ID for this image
     img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
@@ -1321,21 +1350,23 @@ def proxy_image(img_id):
             print(f"HuggingFace image error: {e}")
     
     # Fallback to AI Horde
+    neg_prompt = "lowres, bad anatomy, bad hands, extra fingers, deformed, ugly, blurry, mutated, disfigured, poorly drawn face, extra limbs, malformed limbs, child, underage, nude, naked"
     try:
         horde_resp = requests.post(
             "https://aihorde.net/api/v2/generate/async",
             json={
-                "prompt": f"{prompt}, anime style, highly detailed",
+                "prompt": f"{prompt}, anime style, highly detailed ### {neg_prompt}",
                 "params": {
                     "width": 768,
                     "height": 1024,
-                    "steps": 25,
-                    "sampler_name": "k_euler_a",
-                    "cfg_scale": 7
+                    "steps": 35,
+                    "sampler_name": "k_dpmpp_2m",
+                    "cfg_scale": 7.5
                 },
                 "nsfw": False,
                 "censor_nsfw": True,
-                "r2": True
+                "r2": True,
+                "models": ["Animagine XL 3.1", "PonyDiffusionXL"]
             },
             headers={
                 "Content-Type": "application/json",
@@ -1377,12 +1408,12 @@ def proxy_image(img_id):
     except Exception as e:
         print(f"AI Horde error: {e}")
     
-    # Fallback: Try Pollinations
+    # Fallback: Try Pollinations with enhanced params
     encoded = urllib.parse.quote(prompt)
     try:
-        poll_url = f"https://image.pollinations.ai/prompt/{encoded}?width=512&height=512"
-        resp = requests.get(poll_url, timeout=60, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
+        poll_url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&enhance=true&model=flux"
+        resp = requests.get(poll_url, timeout=90, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0'
         })
         if resp.status_code == 200 and len(resp.content) > 5000:
             return Response(resp.content, mimetype='image/jpeg')
@@ -1400,19 +1431,23 @@ def download_image(img_id):
         return Response("No prompt", status=400)
     
     # Try AI Horde first
+    neg_prompt = "lowres, bad anatomy, bad hands, extra fingers, deformed, ugly, blurry, mutated, disfigured, extra limbs, malformed limbs, child, underage, nude, naked"
     try:
         horde_resp = requests.post(
             "https://aihorde.net/api/v2/generate/async",
             json={
-                "prompt": prompt,
+                "prompt": f"{prompt} ### {neg_prompt}",
                 "params": {
                     "width": 768,
-                    "height": 768,
-                    "steps": 30,
-                    "sampler_name": "k_euler_a"
+                    "height": 1024,
+                    "steps": 35,
+                    "sampler_name": "k_dpmpp_2m",
+                    "cfg_scale": 7.5
                 },
                 "nsfw": True,
-                "censor_nsfw": False
+                "censor_nsfw": False,
+                "r2": True,
+                "models": ["Animagine XL 3.1", "PonyDiffusionXL"]
             },
             headers={
                 "Content-Type": "application/json",
@@ -1448,9 +1483,9 @@ def download_image(img_id):
     encoded = urllib.parse.quote(prompt)
     try:
         resp = requests.get(
-            f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true",
-            timeout=60,
-            headers={'User-Agent': 'Mozilla/5.0'}
+            f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1024&nologo=true&enhance=true&model=flux",
+            timeout=90,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0'}
         )
         if resp.status_code == 200 and len(resp.content) > 1000:
             return Response(
@@ -1465,13 +1500,15 @@ def download_image(img_id):
 
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
+    quality = "masterpiece, best quality, extremely detailed, beautiful detailed eyes, sharp focus, vibrant colors, anime style, detailed skin texture, professional illustration"
+    neg_hint = "lowres, bad anatomy, bad hands, extra fingers, deformed, ugly, blurry, mutated, disfigured, poorly drawn face, extra limbs, malformed limbs, child, underage, loli, nude, naked, nipples, exposed genitals"
     styles = {
-        'seductive': "1girl, demon girl Lilith, red glowing eyes, long black hair, small horns, large breasts, black lace lingerie, cleavage, lying on silk sheets, bedroom eyes, seductive pose, anime style, masterpiece, sensual",
-        'dark': "1girl, demon queen Lilith, crimson eyes, black wings, gothic corset, stockings, garter belt, dark throne room, dominant pose, anime style, masterpiece, alluring",
-        'sultry': "1girl, succubus Lilith, glowing red eyes, flowing black hair, horns, sheer negligee, sideboob, candlelit bedroom, inviting expression, anime style, masterpiece, erotic",
-        'fierce': "1girl, demoness Lilith, fierce red eyes, leather harness, chains, collar, hellfire background, dominatrix pose, anime style, masterpiece, provocative",
-        'playful': "1girl, demon girl Lilith, red eyes, black hair, horns, naked apron, kitchen setting, looking over shoulder, playful smile, anime style, masterpiece, teasing",
-        'wet': "1girl, demon girl Lilith, red glowing eyes, black hair, horns, wet micro bikini, water droplets on skin, pool, arched back, anime style, masterpiece, sensual"
+        'seductive': f"1girl, solo, demon girl Lilith, red glowing eyes, long flowing black hair, small horns, pale skin, large breasts, curvy, black lace lingerie, cleavage, lying on silk sheets with rose petals, bedroom eyes, seductive pose, dim candlelight, {quality}",
+        'dark': f"1girl, solo, demon queen Lilith, crimson glowing eyes, long black hair, elegant horns, pale porcelain skin, large breasts, gothic black corset with lace, thigh-high stockings, garter belt, dark gothic throne room, dominant confident pose, {quality}",
+        'sultry': f"1girl, solo, succubus Lilith, glowing red eyes, flowing black hair, small horns, pale skin, large breasts, sheer red silk negligee, sideboob, candlelit ornate bedroom, inviting warm expression, {quality}",
+        'fierce': f"1girl, solo, demoness Lilith, fierce red eyes, long black hair, horns, pale skin, large breasts, leather harness over lingerie, choker with ruby, dark dungeon aesthetic, dominatrix confident pose, {quality}",
+        'playful': f"1girl, solo, demon girl Lilith, red eyes, black hair, small horns, pale skin, large breasts, naked apron only, kitchen setting, morning sunlight, looking over shoulder with playful shy smile, {quality}",
+        'wet': f"1girl, solo, demon girl Lilith, red glowing eyes, black hair, small horns, pale glistening skin, large breasts, micro bikini, wet skin water droplets, beach sunset golden hour, arched back, {quality}"
     }
     
     data = request.json or {}
