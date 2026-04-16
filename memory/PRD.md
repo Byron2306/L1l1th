@@ -38,7 +38,7 @@
 
 ## Access
 
-**Live URL:** https://demon-companion.preview.emergentagent.com/lilith/
+**Live URL:** https://sultry-avatar.preview.emergentagent.com/lilith/
 
 ---
 

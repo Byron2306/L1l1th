@@ -14,7 +14,7 @@ import requests
 import os
 
 # Use the public URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://demon-companion.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://sultry-avatar.preview.emergentagent.com').rstrip('/')
 
 # Backend runs on port 5000 internally, but we access via the public URL
 # The advanced/* endpoints are proxied through /_dash/_dash/advanced/*

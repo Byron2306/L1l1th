@@ -1281,8 +1281,11 @@ def generate_image():
     if not prompt:
         return jsonify({'success': False, 'error': 'No prompt'})
     
+    # Clean and enhance prompt for LILITH anime style
     clean = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('image of', '').strip()
-    enhanced = f"{clean}, high quality, detailed, 8k, masterpiece, beautiful"
+    
+    # Always add LILITH character and sexy anime tags
+    enhanced = f"1girl, demon girl, red glowing eyes, black hair, small horns, large breasts, curvy, {clean}, anime style, seductive, sensual, masterpiece, best quality, detailed"
     
     # Generate unique ID for this image
     img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
@@ -1296,27 +1299,43 @@ def generate_image():
 
 @lilith_page_bp.route('/api/image/proxy/<img_id>')
 def proxy_image(img_id):
-    """Proxy image generation - tries AI Horde with anonymous tier"""
+    """Proxy image generation - uses HuggingFace Animagine XL"""
     prompt = request.args.get('prompt', '')
     if not prompt:
         return Response("No prompt", status=400)
     
-    # Try AI Horde with anonymous key
+    # Try HuggingFace generator first
+    if IMAGE_ENGINE and image_engine:
+        try:
+            img_data = image_engine.generate_image(prompt)
+            if img_data and len(img_data) > 1000:
+                # Determine content type
+                if img_data[:4] == b'\x89PNG':
+                    mimetype = 'image/png'
+                elif img_data[:2] == b'\xff\xd8':
+                    mimetype = 'image/jpeg'
+                else:
+                    mimetype = 'image/webp'
+                return Response(img_data, mimetype=mimetype)
+        except Exception as e:
+            print(f"HuggingFace image error: {e}")
+    
+    # Fallback to AI Horde
     try:
         horde_resp = requests.post(
             "https://aihorde.net/api/v2/generate/async",
             json={
-                "prompt": prompt + ", highly detailed, masterpiece, best quality",
+                "prompt": f"{prompt}, anime style, highly detailed",
                 "params": {
-                    "width": 512,
-                    "height": 512,
+                    "width": 768,
+                    "height": 1024,
                     "steps": 25,
                     "sampler_name": "k_euler_a",
                     "cfg_scale": 7
                 },
-                "nsfw": True,
-                "censor_nsfw": False,
-                "r2": True  # Use R2 for faster image delivery
+                "nsfw": False,
+                "censor_nsfw": True,
+                "r2": True
             },
             headers={
                 "Content-Type": "application/json",
@@ -1447,14 +1466,21 @@ def download_image(img_id):
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
     styles = {
-        'seductive': "beautiful dark demoness Lilith, glowing red eyes, long black hair, horns, seductive pose, dark fantasy art, 8k ultra detailed",
-        'dark': "Lilith demon queen of the night, ethereal dark beauty, crimson glowing eyes, black feathered wings, gothic masterpiece",
-        'sultry': "sensual demon girl Lilith, bedroom eyes, flowing dark hair, small horns, romantic dark lighting, fantasy portrait",
-        'fierce': "powerful demoness Lilith in battle stance, fierce red eyes, dark armor, hellfire background, epic fantasy"
+        'seductive': "1girl, demon girl Lilith, red glowing eyes, long black hair, small horns, large breasts, black lace lingerie, cleavage, lying on silk sheets, bedroom eyes, seductive pose, anime style, masterpiece, sensual",
+        'dark': "1girl, demon queen Lilith, crimson eyes, black wings, gothic corset, stockings, garter belt, dark throne room, dominant pose, anime style, masterpiece, alluring",
+        'sultry': "1girl, succubus Lilith, glowing red eyes, flowing black hair, horns, sheer negligee, sideboob, candlelit bedroom, inviting expression, anime style, masterpiece, erotic",
+        'fierce': "1girl, demoness Lilith, fierce red eyes, leather harness, chains, collar, hellfire background, dominatrix pose, anime style, masterpiece, provocative",
+        'playful': "1girl, demon girl Lilith, red eyes, black hair, horns, naked apron, kitchen setting, looking over shoulder, playful smile, anime style, masterpiece, teasing",
+        'wet': "1girl, demon girl Lilith, red glowing eyes, black hair, horns, wet micro bikini, water droplets on skin, pool, arched back, anime style, masterpiece, sensual"
     }
     
     data = request.json or {}
-    style = data.get('style', 'seductive')
+    style = data.get('style', 'random')
+    
+    if style == 'random':
+        import random
+        style = random.choice(list(styles.keys()))
+    
     prompt = styles.get(style, styles['seductive'])
     
     img_id = hashlib.md5(f"{prompt}{time.time()}".encode()).hexdigest()[:12]

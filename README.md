@@ -603,7 +603,7 @@ Review: Regular activity monitoring
 
 ## 📞 Support
 
-**Dashboard URL**: https://demon-companion.preview.emergentagent.com
+**Dashboard URL**: https://sultry-avatar.preview.emergentagent.com
 
 **Telegram Bot**: @L1l1th23bot
 

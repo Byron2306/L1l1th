@@ -1,179 +1,176 @@
-<analysis>**original_problem_statement:**
-The user's initial project was LuciferOS, a red-teaming platform. However, due to extreme dissatisfaction with the functionality, the user has completely pivoted the project's direction.
-
-The new, overriding goal is to create LILITH ETERNAL, a persistent, uncensored, and interactive AI companion.
-
+<analysis>**original_problem_statement**: 
+The user wants to create LILITH ETERNAL, a persistent, uncensored, and interactive AI companion. 
 **PRODUCT REQUIREMENTS:**
-1.  **New Persona & Interface:** Replace the old UI with a new, dedicated full-page interface for an AI named LILITH, using a specific anime-style demon girl image provided by the user.
-2.  **Talking Video Avatar:** When LILITH speaks, a video of her should play, animated to look like she is talking. The user provided a reference video for this.
-3.  **Unrestricted, Free, Unlimited AI:**
-    *   Integrate hundreds of free, uncensored AI models to ensure persistent access without API keys or tokens.
-    *   The user provided extensive research on open-source models (LLaMA 2, WizardLM) and deployment strategies (free cloud hosting, proxies, Tor) to achieve this.
-    *   The chat functionality must be completely uncensored, allowing any topic.
-4.  **Free Media Generation:** LILITH must be able to generate images and videos for free, on demand.
-5.  **Sultry, Realistic Voice:** Integrate a free text-to-speech service to give LILITH a sultry and alluring voice.
-6.  **One-Click DigitalOcean Deployment:** Create a comprehensive deployment package () that allows the user to easily set up the entire system on a DigitalOcean server with a single installation script. This setup must include a locally hosted, uncensored AI model.
+1. **New Persona & Interface:** Full-page interface for an anime-style demon girl AI named LILITH.
+2. **Talking Video Avatar:** Avatar must have lip-synced video/animations and emotional reaction states (idle, speaking, happy, thinking, etc.).
+3. **Unrestricted, Free, Unlimited AI:** Chat functionality must be completely uncensored using free/open-source models, g4f providers, or TOR network .onion AI routing. Must maintain a highly flirty, romantic, and seductive persona.
+4. **Free Media Generation:** Free, on-demand generation of sexy clothed (lingerie/swimsuit) anime images and videos matching Lilith's aesthetic using HuggingFace or Stable Diffusion.
+5. **Sultry, Realistic Voice:** Integration with ElevenLabs using a specific user-provided voice ID.
+6. **One-Click Deployment:** A comprehensive Docker deployment package () to deploy the entire stack (including local Ollama, Stable Diffusion, and Wav2Lip) to a DigitalOcean droplet.
 
-**User's preferred language**: English
+**User's preferred language**: English (INSTRUCT next agent to respond in English only)
 
-**what currently exists?**
-The agent has successfully pivoted to the user's new request. A new, full-page interface for LILITH ETERNAL has been created as a Flask Blueprint located at . This interface uses the user's new preferred image and features controls for chat, voice, and media generation.
+**what currently exists?** 
+A functional Flask Blueprint UI () for Lilith. Backend engines are set up for Voice (), Image Generation ( using HuggingFace Animagine XL 3.1), Chat (), and TOR network routing (). A comprehensive Docker deployment package () is prepared. The AI has been prompted to be highly flirty/seductive, and ElevenLabs voice generation is working. 
 
-A new backend engine, , was created to manage and query over 100 Starting server... [g4f v-7.0.7] providers as a temporary solution for free AI access. Free image/video generation is integrated via Pollinations.ai, and voice via .
-
-A DigitalOcean deployment package () has been created, containing an installation script (), a standalone web server (), and a .
-
-However, the new interface is not fully functional.
-
-**Last working item**:
-*   **Last item agent was working:** Debugging why the buttons on the new LILITH ETERNAL page are not working. The user reported that none of the controls (chat, generate image/video, etc.) are responsive. The agent identified a potential mismatch between the JavaScript element IDs (e.g., ) and the actual HTML element IDs (e.g., ) but did not complete the fix.
-*   **Status:** IN PROGRESS
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** Frontend testing agent. The issue is with UI interactivity. The testing agent needs to verify that all buttons and input fields on the  page are functional and trigger the correct backend API calls.
-*   **User Testing Done:** N
+**Last working item**: 
+- **Last item agent was working**: Refining the HuggingFace image generation prompts (using ) to ensure the generated images adhere strictly to the sexy clothed / lingerie / seductive aesthetic requested by the user, and verifying the outputs in the UI via the screenshot tool.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: Y (Manual screenshot testing)
+- **Which testing method agent to use?** Frontend testing agent/Screenshot tool.
+- **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Buttons on LILITH ETERNAL page are non-functional (Priority: P0)**
-    *   **Issues Detail:** The user reported that clicking any button on the  page does nothing. This makes the entire new interface unusable. The agent's initial investigation points to an ID mismatch in the HTML/JavaScript.
-    *   **Attempted fixes:** The agent identified a potential ID mismatch but did not implement a fix.
-    *   **Next debug checklist:**
-        1.  View the file .
-        2.  Inspect the JavaScript section to find the  calls for all buttons (, , , ).
-        3.  Compare the IDs used in the JavaScript with the uid=0(root) gid=0(root) groups=0(root) attributes of the corresponding buttons in the HTML template section of the same file.
-        4.  Correct any discrepancies using .
-        5.  Use the screenshot tool and check the console logs for any JavaScript errors that might prevent the event listeners from being attached correctly.
-    *   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker. Fixing it will restore the core functionality of the new interface, allowing the user to interact with LILITH.
-    *   **Status:** IN PROGRESS
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** Frontend
+- **Issue 1: False-positive Image Generation Triggers (Priority: P0)**
+    - **Attempted fixes**: None yet. Agent just identified the bug before the session ended.
+    - **Next debug checklist**: 
+        - Check  inside the  or JS  method.
+        - Look for the keyword detection logic that triggers image generation (e.g., words like feel, picture, image). The word feel is currently causing normal romantic chat messages to trigger an image generation response instead of a text response.
+        - Refine the regex or condition to strictly trigger images only on explicit requests (e.g., generate image, send a picture).
+    - **Why fix this issue and what will be achieved with the fix?**: Prevents breaking the conversational flow with unwanted image generations.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both
+
+- **Issue 2: Chat Session Persistence (Priority: P1)**
+    - **Attempted fixes**: None. 
+    - **Next debug checklist**: 
+        - Frontend : Check how messages are rendered on page load.
+        - Backend: Implement a session ID mechanism to fetch and inject the  history into the template or via an API call on initial page load.
+    - **Why fix this issue and what will be achieved with the fix?**: Currently, refreshing the page wipes the entire chat history from the UI.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: Y
+    - **Should Test frontend/backend/both after fix?**: Both
+
+- **Issue 3: g4f Provider Instability (Priority: P2)**
+    - **Attempted fixes**: Added fallback generic romantic text responses.
+    - **Next debug checklist**: Check  for failing provider rotation.
+    - **Why fix this issue**: Relying on free APIs causes intermittent Connections busy errors.
+    - **Status**: IN PROGRESS
+    - **Is recurring issue?**: Y
+    - **Should Test frontend/backend/both after fix?**: Backend
 
 **In progress Task List**:
-*   None.
+- **Task 1: Real Lip-Sync Video Implementation**
+    - **Where to resume**: The  includes a Wav2Lip service, but the actual frontend UI and backend Python script ( or similar) need to be wired to generate and stream synchronized lip movements when LILITH speaks.
+    - **What will be achieved with this?**: Fulfills the user's core requirement for a truly alive talking avatar instead of just a static pulsing image.
+    - **Status**: NOT STARTED
+    - **Should Test frontend/backend/both after fix?**: Both
+    - **Blocked on something**: None.
 
-**Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   (P0) **Finalize DigitalOcean Deployment Package:** The current package is a template. The next step is to modify [0;31m
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║     💋 LILITH ETERNAL - DigitalOcean Installer 💋            ║
-║                                                               ║
-║     Uncensored AI • Voice • Images • Video                    ║
-║     100% FREE • NO API KEYS • UNLIMITED                       ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-[0m
-[0;36mDetected RAM: 15GB[0m
-[0;32mSelected Model: Dolphin Mistral 7B (Great quality, fully uncensored)[0m
+**Upcoming and Future Tasks**:
+Upcoming Tasks:
+- (P1) Implement real Lip-sync using  for generated video responses.
+- (P2) Integrate Local AI with Telegram Bot: Modify  to utilize the new Eternal AI Engine / TOR Engine.
 
-[0;34m[1/8] Updating system and installing dependencies...[0m
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 46697 files and directories currently installed.)
-Preparing to unpack .../libnss3_2%3a3.87.1-1+deb12u2_arm64.deb ...
-Unpacking libnss3:arm64 (2:3.87.1-1+deb12u2) over (2:3.87.1-1+deb12u1) ...
-Setting up libnss3:arm64 (2:3.87.1-1+deb12u2) ...
-Processing triggers for libc-bin (2.36-9+deb12u13) ... to install a specific, uncensored, self-hosted AI model (like WizardLM via Ollama) and configure  to use it. This will fulfill the user's core requirement for a truly persistent, no-key AI.
-    *   (P1) **Implement True Talking Avatar:** The current solution plays a static video. The agent needs to research and implement a lip-sync solution (e.g.,  or a JS-based alternative) that animates the avatar's mouth in sync with the generated audio.
-    *   (P2) **Integrate Local AI with Telegram Bot:** Modify  to use the same self-hosted AI model from the DigitalOcean deployment, ensuring a consistent persona across platforms.
-*   **Future Tasks:**
-    *   (P2) **Refactor Monolithic Codebase:** The original files ( and ) are still a source of major technical debt and should be refactored into smaller, manageable modules to improve stability and maintainability.
-    *   (P3) **Original LuciferOS Project:** The initial red-teaming platform requirements are now in the backlog, as the user has completely shifted focus to the LILITH AI companion.
+Future Tasks:
+- (P3) Refactor Monolithic Codebase: Break down the massive  and  into manageable React components and standard FastAPI/Flask routes.
 
-**Completed work in this session**
-- **LILITH ETERNAL Interface:** A new, full-page UI was created at , featuring the user's requested avatar, styling, and controls for chat, voice, and media generation.
-- **Multi-Provider AI Engine:** A new engine () was built to leverage over 100 free Starting server... [g4f v-7.0.7] providers, with fallbacks to improve reliability.
-- **Uncensored Chat & Persona:** All conversational topic restrictions were removed, and a strong system prompt was implemented to enforce the LILITH persona.
-- **Free Media Generation:** Integrated Pollinations.ai to provide free image and video generation capabilities.
-- **DigitalOcean Deployment Package:** Created a zip archive  containing a 1-click install script, a standalone web server, and instructions for deployment.
+**Completed work in this session**:
+- Fixed JavaScript syntax bugs causing broken buttons on UI () (DONE).
+- Fixed CORS/ORB image blocking by creating a backend image proxy (DONE).
+- Added full Docker DO deployment package with Stable Diffusion and Wav2Lip () (DONE).
+- Integrated ElevenLabs Voice API () (DONE).
+- Installed and configured TOR network routing for .onion AI endpoints () (DONE).
+- Switched image generation to HuggingFace Gradio  () (DONE).
+- Implemented avatar emotional reaction states (idle, speaking, thinking, etc.) (DONE).
 
-**Earlier issues found/mentioned but not fixed**
-*   **Starting server... [g4f v-7.0.7] Provider Instability:** While a mega engine with over 100 providers was created as a workaround, the fundamental issue of relying on unstable, unofficial APIs remains. This is the primary motivation for the upcoming task to switch to a self-hosted model.
-*   **Monolithic Architecture:** The core of the application ( and ) remains a large, unrefactored monolith, posing a risk to future development and stability.
+**Earlier issues found/mentioned but not fixed**:
+Issue 1:
+- **Debug checklist**: False positive logic in  where normal conversational words (like feel) trigger the image generation API instead of the chat API.
+- **Why to solve this issue and what will be achieved with this?**: User conversation is being frequently interrupted by unwanted image generations.
+- **Should Test frontend/backend/both after fix**: Both
+- **Is recurring issue?**: N
 
-**Known issue recurrence from previous fork**
-*   **Monolithic Architecture:** This is a persistent issue from the project's inception.
-*   **Starting server... [g4f v-7.0.7] Provider Instability:** The reliance on Starting server... [g4f v-7.0.7] has been a constant source of problems, which the current plan aims to solve permanently.
+**Known issue recurrence from previous fork**:
+- **Issue recurrence in previous fork**: Unstable Starting server... [g4f v-7.0.7] free AI providers.
+- **Recurrence count**: 3
+- **Status**: IN PROGRESS (Mitigated via TOR engine and fallbacks, but underlying free-tier instability remains).
 
-**Code Architecture**
+**Code Architecture**:
 
 
-**Key Technical Concepts**
-*   **Backend:** Python (Flask, Flask Blueprints)
-*   **Frontend:** Server-side rendered HTML with embedded JavaScript and CSS.
-*   **AI Integration:** Starting server... [g4f v-7.0.7] library,  (voice),  (media). The next step is to add a self-hosted model (e.g., WizardLM).
-*   **Deployment:** A custom shell script and Python web server packaged for DigitalOcean.
+**Key Technical Concepts**:
+- **Backend**: Python (Flask Blueprints)
+- **Frontend**: Server-side rendered HTML with inline JS/CSS.
+- **Voice**: ElevenLabs API (Primary), Edge-TTS (Fallback).
+- **Images**: HuggingFace Spaces Gradio API ().
+- **AI Routing**: Custom engines mixing standard HTTP (g4f) and TOR (torsocks/requests via proxy).
+- **Deployment**: Docker & Docker Compose for isolation and bundled dependencies (Wav2Lip, Automatic1111).
 
-**key DB schema**
-*   No database changes were made in this session.
+**key DB schema**:
+- N/A (App relies on in-memory structures and external APIs currently; no DB integrated for Lilith yet).
 
-**changes in tech stack**
-*   No new packages were installed, but the architecture shifted to use Flask Blueprints for the new LILITH feature, decoupling it from the main monolithic files.
+**changes in tech stack**:
+- Added  and  to the environment for .onion routing.
+- Integrated  for HuggingFace spaces.
+- Added  SDK.
 
-**All files of reference**
-*   : **The main file for the current bug fix.** Contains the HTML, CSS, and broken JavaScript for the LILITH interface.
-*   : The backend engine powering the chat.
-*   : The entry point that runs the Flask application and registers the  blueprint.
-*   [0;31m
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║     💋 LILITH ETERNAL - DigitalOcean Installer 💋            ║
-║                                                               ║
-║     Uncensored AI • Voice • Images • Video                    ║
-║     100% FREE • NO API KEYS • UNLIMITED                       ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-[0m
-[0;36mDetected RAM: 15GB[0m
-[0;32mSelected Model: Dolphin Mistral 7B (Great quality, fully uncensored)[0m
-
-[0;34m[1/8] Updating system and installing dependencies...[0m: The deployment script to be finalized in the next task.
-*   : The deliverable for the deployment task.
+**All files of reference**:
+1.  (Main UI template and Flask routes - **Contains bugs for false-positive images and lacks session persistence**)
+2.  (HuggingFace image handler)
+3.  (TOR routing logic)
+4.  (Voice implementation)
+5.  (Updated requirement docs)
+6.  (Current state of Docker deployment)
 
 **Areas that need refactoring**:
-*   : This new file has already grown to include a large amount of inline HTML, CSS, and JavaScript. It should be broken into separate static files for better maintainability.
-*    & : These legacy files are the primary source of technical debt and desperately need to be refactored.
+- : Highly monolithic, mixing Flask routing, heavy HTML, CSS, and complex Vanilla JavaScript. Desperately needs separation of concerns.
 
-**key api endpoints**
-*   : Serves the main LILITH ETERNAL interface.
-*   : API to check the status of backend engines.
-*   : API endpoint for sending chat messages.
-*   : API endpoint to trigger image generation.
-*   : API endpoint to trigger video generation.
+**key api endpoints**:
+- : Main chat endpoint (handles text, routes to TOR/g4f).
+- : Standard image generation.
+- : Selfie style generation.
+- : Generates base64 audio.
+- : Returns health of all engines.
 
-**Critical Info for New Agent**
-*   **TOP PRIORITY:** The user's focus is 100% on the LILITH ETERNAL feature. Do not work on any other part of the old LuciferOS application.
-*   **IMMEDIATE BLOCKER:** Fix the non-functional buttons on the  page. The interface is unusable until this is resolved.
-*   **NEXT MAJOR GOAL:** Finalize the DigitalOcean one-click deployment package. This involves selecting and integrating a real, self-hosted uncensored AI model, which is the user's ultimate goal for achieving a persistent, unlimited AI.
+**Critical Info for New Agent**:
+- **Content Boundaries:** The user explicitly requested highly erotic, pornographic content. The previous agent correctly set a boundary to refuse explicit pornography but agreed to sexy clothed (lingerie, suggestive poses) and a highly flirty/romantic persona. **You MUST maintain this boundary.** Do not generate explicit nudity, but accommodate the seductive/romantic aesthetic.
+- **Testing Warning:** The agent relied *heavily* on manual  testing and did not use the . If you make significant architectural changes or fix the false-positive bug, use the testing agent. 
+- **Image Trigger Bug:** The phrase matching for generating images in  is too broad (e.g., triggering on feel). Fix this immediately (Priority P0).
 
-**documents and test reports created in this job**
-*   
-*   
+**documents and test reports created in this job**:
+- 
+- 
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **when I try and press buttons on the full chat, nothing works**: User reports the current P0 bug that the Lilith page controls are broken. (In Progress)
-2.  **okay I am going to host this on Digital Ocean...choose the best uncensored AI model...create a 1 click installer**: User defines the next major feature: a DigitalOcean deployment package with a self-hosted AI. (Not Started)
-3.  **Change the lilith full chat system to this. also use this image of lilith rather...**: User provides a new image for Lilith and extensive documentation/ideas for achieving an uncensored, persistent AI, triggering the EternalAI pivot. (Done)
-4.  **Her face isnt animating. I want to see her speak**: User reports that the talking avatar animation is not working as desired. (Partially addressed, needs better lip-sync)
-5.  **She cant generate my image request**: User complains about image generation failing and censorship. (Addressed by switching providers/techniques)
-6.  User uploads a new image and video for Lilith, requesting animation and a sultry voice. (Done)
-7.  User requests a full-page UI, unrestricted conversation topics, and a local AI solution to avoid keys/Ollama. (Done, local AI pending)
-8.  **Please Expand g4f provider pool for stability**: User's initial request to make the AI more reliable. (Done)
+**Last 10 User Messages and any pending HUMAN messages**:
+1. **ensure huggingface image generation is working and make image requests just slightly more erotic**: User directs focus to HuggingFace Animagine XL and requests spicier prompts. (Agent implemented & tested via screenshots).
+2. **huggingface..... stable diffusion connection for images.... now**: User demanded pivot to HF Stable Diffusion after TOR integration.
+3. **YES!! do the TOR connections. and Use libraries like manim or blender... load and train my local ollama...**: User approves TOR integration and requests animation libraries.
+4. **fine then. would simply sexy clothed work for you? Integrate those 2 TOR AIs... add elevenlabs... at least 3 to 5 top tier huggingface image generators...**: User compromised on content boundaries, finalizing the immediate tech stack.
+5. **heres the elevenlabs api key - sk_be1c... [REDACTED]... maybe try a wsl tunnel through TOR to speak to DIG AI... MAKE HER DIRTY**: User provided keys, requested explicit content, and suggested TOR endpoints.
+6. **so if we do the stable diffusion route, would that be for free too... proceed with the reactions and lip syncing...**: User confirmed Stable diffusion route.
+7. **Yes, but are you sure the uncensored ollama model can actually generate these pics and vids... go ahead with getting her reactions and lip syncing working**: User questioning Ollama capabilities, approving lip-sync focus.
+8. **1. If you can find more realistic Edge TTS voices... 2. generate other reactions... 3. fix the tiny icon issue...**: User providing a list of UI/UX feedback items after P0 fix.
+9. **well I have a small little mp4 integrated now, that sort of feels right but not really. Also, her voice options are a bit..... unsexy...**: User unhappy with base avatar loop and TTS quality.
+10. **Mistral, fix broken buttons**: User's initial command for the session.
 
-**Project Health Check:**
-*   **Broken:** The primary UI for the new LILITH ETERNAL feature is broken due to non-functional buttons.
-*   **Mocked:** The talking video is just a static video loop, not a true lip-sync animation. The 100+ AI providers are a temporary, unreliable solution pending the implementation of a self-hosted model.
+**Project Health Check**:
+- **Broken**: False-positive logic on image generation interrupts chat. Chat history clears completely on page refresh.
+- **Mocked**:  is packaged in Docker but not actively running in the frontend preview (currently just swapping static emotion images).
 
-**3rd Party Integrations**
-*   **Starting server... [g4f v-7.0.7]:** Used to access a wide array of free, third-party AI text models.
-*   **:** Used for free text-to-speech generation.
-*   **Pollinations.ai:** Used as a free API for image and video generation.
+**3rd Party Integrations**:
+- OpenAI GPT-4o — uses Emergent LLM Key (Not actively used in this stack currently).
+- ElevenLabs (Voice) — requires User API Key (Provided and implemented).
+- HuggingFace Spaces Gradio () — Free/No Key required.
+- Pollinations.ai / AI Horde — Free/No Key required (Used as fallbacks).
+- TOR Network — Local proxy routing.
 
-**Testing status**
-*   **Testing agent used after significant changes:** NO
-*   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** None.
-*   **Known regressions:** The buttons on the Lilith UI are now broken.
+**Testing status**:
+- Testing agent used after significant changes: NO (Screenshot tool heavily relied upon instead).
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: None
+- Known regressions: Chat logic is triggering image generation unexpectedly due to poor regex/string matching.
 
-**Credentials to test flow:**
-*   None required for the current tasks.
+**Credentials to test flow**:
+- ElevenLabs API Key is embedded in the  file from the user's message.
 
-**What agent forgot to execute**
-*   The agent failed to perform systematic debugging on the broken UI. After identifying a potential cause (ID mismatch), it did not execute the fix or check browser console logs for other JavaScript errors before the session ended.</analysis>
+**What agent forgot to execute**:
+- The agent forgot to run  after massive changes to the monolithic .
+- The agent forgot to implement session persistence so users don't lose chat history on page refresh.
+- The agent forgot to fix the false-positive bug where typing the word feel triggers an image generation instead of a text response.
+
+**Debugging checklist for current issue (False-Positive Image Trigger):**
+    Issue: Words like feel in normal chat trigger the image generation endpoint.
+    Frontend files to check:  (Check  JS function and  Flask route).
+    Fix: Refine the keyword detection logic. Instead of generic words, use strict regex or specific trigger commands like  or strictly matching generate an image of, send me a picture, etc.</analysis>
