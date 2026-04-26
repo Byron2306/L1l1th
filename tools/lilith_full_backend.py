@@ -73,9 +73,9 @@ else:
 
 HF_TOKEN = os.environ.get('HF_TOKEN') or config.get('lilith', 'hf_token', fallback=None)
 MODEL_DEFAULT = config.get('lilith', 'model', fallback='llama3.2:3b')
-CACHE_DIR = "/var/cache/lucifera"
-PAYLOAD_DIR = "/var/lib/lucifera/payloads"
-LOG_DIR = "/var/log/lucifera"
+CACHE_DIR = "/workspaces/L1l1th/cache/lucifera"
+PAYLOAD_DIR = "/workspaces/L1l1th/lib/lucifera/payloads"
+LOG_DIR = "/workspaces/L1l1th/log/lucifera"
 
 # Create directories
 os.makedirs(CACHE_DIR, exist_ok=True)

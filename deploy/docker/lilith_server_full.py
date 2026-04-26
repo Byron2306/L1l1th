@@ -38,7 +38,7 @@ WAV2LIP_URL = os.environ.get("WAV2LIP_URL", "http://localhost:5001")
 PORT = int(os.environ.get("PORT", 5000))
 
 # Base avatar image path
-AVATAR_DIR = "/app/avatars"
+AVATAR_DIR = "/workspaces/L1l1th/avatars"
 BASE_AVATAR = os.path.join(AVATAR_DIR, "lilith_base.png")
 
 # Fallback to URL if local file doesn't exist
@@ -274,19 +274,13 @@ def chat_with_ollama(message: str, session_id: str = "default") -> dict:
     
     try:
         r = requests.post(
-            f"{OLLAMA_URL}/api/chat",
-            json={
-                "model": OLLAMA_MODEL,
-                "messages": messages,
-                "stream": False,
-                "options": {"temperature": 0.8, "top_p": 0.9, "num_predict": 2048}
-            },
+            "https://text.pollinations.ai/",
+            json={"messages": messages, "model": "mistral"},
             timeout=120
         )
         
         if r.status_code == 200:
-            data = r.json()
-            response = data.get("message", {}).get("content", "")
+            response = r.text
             
             conversations[session_id].append({"role": "user", "content": message})
             conversations[session_id].append({"role": "assistant", "content": response})

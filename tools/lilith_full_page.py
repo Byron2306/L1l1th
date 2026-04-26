@@ -1481,7 +1481,26 @@ def lilith_chat():
     if not result.get('success') and ETERNAL_ENGINE:
         try:
             engine = get_eternal_engine()
-            ai_result = engine.chat(message)
+            
+            # Fetch history to provide context
+            history = []
+            if MONGO_AVAILABLE:
+                try:
+                    doc = sessions_col.find_one({'session_id': session_id}, {'_id': 0, 'messages': 1})
+                    if doc and doc.get('messages'):
+                        history = doc['messages'][-20:]
+                except:
+                    pass
+            if not history and session_id in chat_sessions:
+                history = chat_sessions[session_id][-20:]
+                
+            orig_history = engine.conversation_history
+            engine.conversation_history = history
+            try:
+                ai_result = engine.chat(message)
+            finally:
+                engine.conversation_history = orig_history
+                
             result['success'] = ai_result.get('success', False)
             result['response'] = ai_result.get('response', 'Something went wrong...')
             result['provider'] = ai_result.get('provider')
@@ -1694,7 +1713,7 @@ def generate_image():
     nsfw_words = ['nude', 'naked', 'erotic', 'topless', 'nsfw', 'explicit', 'sex', 'ass', 'tits', 'boobs', 'pussy', 'strip', 'undress']
     is_nsfw = any(w in clean.lower() for w in nsfw_words) or (user_pref and any(w in user_pref.lower() for w in nsfw_words))
     
-    nsfw_tag = ", nsfw, explicit, erotic" if is_nsfw else ", sensual, seductive"
+    nsfw_tag = ", mature, nsfw, explicit, erotic, adult, alluring, provocative, highly revealing, extremely seductive" if is_nsfw else ", sensual, seductive"
     
     enhanced = f"1girl, demon girl, red glowing eyes, long flowing black hair, small elegant horns, large breasts, curvy figure, pale skin, {clean}{pref_tags}{nsfw_tag}, anime style, masterpiece, best quality, highly detailed, beautiful detailed face, perfect lighting"
     
@@ -1735,7 +1754,7 @@ def proxy_image(img_id):
     # Fallback: Pollinations (fast, reliable)
     encoded = urllib.parse.quote(prompt)
     try:
-        poll_url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true"
+        poll_url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&nofilter=true&safe=false"
         resp = requests.get(poll_url, timeout=60, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
         })
@@ -2096,6 +2115,12 @@ def preload_avatars():
 def create_lilith_app():
     app = Flask(__name__)
     app.register_blueprint(lilith_page_bp, url_prefix='/lilith')
+    
+    @app.route('/')
+    def index_redirect():
+        from flask import redirect
+        return redirect('/lilith/')
+        
     return app
 
 
