@@ -30,7 +30,7 @@ except ImportError:
 # LILITH character base tags
 LILITH_BASE_TAGS = "1girl, demon girl, beautiful, red glowing eyes, long flowing black hair, small elegant horns, pale skin, seductive smile, large breasts, curvy figure, thick thighs"
 
-# Sexy CLOTHED outfit options - more erotic but still clothed
+# Sexy outfit options - from clothed to nude based on user preference
 SEXY_OUTFITS = [
     "black lace lingerie, cleavage, bedroom eyes, lying on bed",
     "red silk negligee, sideboob, romantic candlelight",
@@ -43,14 +43,20 @@ SEXY_OUTFITS = [
     "bunny girl outfit, fishnet stockings, playboy pose",
     "sukumizu swimsuit, wet, pool, inviting expression",
     "china dress with high slit, no bra, elegant",
-    "virgin killer sweater, bare back, shy smile"
+    "virgin killer sweater, bare back, shy smile",
+    "topless, covering with hands, coy expression, bedroom",
+    "nude, tasteful pose, silk sheets, artistic lighting",
+    "nude, bath scene, rose petals, steam, sensual",
+    "nude, back view, looking over shoulder, moonlight",
+    "nude, lying on bed, silk ribbon loosely draped, seductive gaze",
+    "topless, unbuttoned shirt falling off shoulder, morning light",
 ]
 
 # Quality tags for anime
 QUALITY_TAGS = "masterpiece, best quality, highly detailed, detailed face, beautiful eyes, perfect anatomy, sensual, alluring, provocative, beautiful lighting, cinematic lighting, 8k uhd"
 
-# Negative prompt - clothed but sexy
-NEGATIVE_PROMPT = "nude, naked, nipples, exposed genitals, penis, vagina, completely naked, low quality, bad anatomy, deformed, ugly, blurry, extra limbs, worst quality, child, underage, loli"
+# Negative prompt - quality focused, no content restrictions
+NEGATIVE_PROMPT = "low quality, bad anatomy, deformed, ugly, blurry, extra limbs, worst quality, child, underage, loli, extra fingers, mutated hands, poorly drawn face, disfigured"
 
 
 class HuggingFaceImageGenerator:
@@ -192,8 +198,8 @@ class HuggingFaceImageGenerator:
                         "sampler_name": "k_euler_a",
                         "cfg_scale": 7
                     },
-                    "nsfw": False,
-                    "censor_nsfw": True,
+                    "nsfw": True,
+                    "censor_nsfw": False,
                     "r2": True
                 },
                 headers={
