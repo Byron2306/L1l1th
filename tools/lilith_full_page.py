@@ -1413,11 +1413,17 @@ LILITH_ETERNAL_HTML = """
 
 @lilith_page_bp.route('/')
 def lilith_home():
-    return render_template_string(
+    response = render_template_string(
         LILITH_ETERNAL_HTML, 
         lilith_image=LILITH_IMAGE_URL,
         lilith_video=LILITH_VIDEO_URL
     )
+    # Prevent CDN caching to ensure latest HTML is served
+    resp = Response(response, content_type='text/html')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 @lilith_page_bp.route('/api/chat', methods=['POST'])
 def lilith_chat():
