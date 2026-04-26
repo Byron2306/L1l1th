@@ -1184,7 +1184,7 @@ LILITH_ETERNAL_HTML = """
                 const res = await fetch('/lilith/api/video/lilith', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ expression: 'speaking' })
+                    body: JSON.stringify({ expression: 'speaking', session_id: sessionId })
                 });
                 
                 const data = await res.json();

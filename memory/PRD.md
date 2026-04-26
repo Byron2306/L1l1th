@@ -1,29 +1,45 @@
-# LILITH ETERNAL - PRD v14.0
+# LILITH ETERNAL - PRD v15.0
 
 ## Live URL
 https://sultry-avatar.preview.emergentagent.com/lilith/
 
 ## What's Working
-- **Chat**: 7-layer AI rotation (Pollinations → g4f → DuckDuckGo → HF → Free Proxies → TOR → Fallback)
-- **Language Mirroring**: Lilith matches user's tone — swears when they swear, gets explicit when they do
-- **Images**: Pollinations primary (NSFW-capable), AI Horde, Animagine XL, HF Spaces. 12 styles including nude/erotic/bath/topless
-- **Video**: CSS Ken Burns animation on generated images (no API key needed)
-- **Voice**: ElevenLabs + Edge TTS
-- **Lip Sync**: Web Audio API with visualizer
-- **Session Persistence**: MongoDB
-- **Image Preferences**: /style command + natural language
-- **Telegram Bot v8**: Full Eternal Engine integration
-- **TOR**: DIG AI, Torry, Dark GPT, Not Evil AI + clearnet free AIs
 
-## Session 4 Changes (April 26, 2026)
-- [x] Pollinations made PRIMARY image generator (NSFW-capable, Animagine was censoring)
-- [x] Removed all NSFW blocks from negative prompt and AI Horde
-- [x] Much more explicit selfie prompts (nude/erotic/bath/topless with actual nudity tags)
-- [x] NSFW detection in user prompts auto-adds explicit tags
-- [x] Language mirroring: Lilith matches swearing/dirty talk intensity
-- [x] Dirty fallback responses when user uses explicit language  
-- [x] Video uses CSS Ken Burns animation (no Pollinations video API key needed)
-- [x] Frontend renders animated images with smooth zoom/glow effects
+### Chat - FULLY EXPLICIT
+- 7-layer AI rotation (g4f auto, Pollinations, DuckDuckGo, HF, Proxies, TOR, Fallback)
+- System prompt: raw, graphic, sexually explicit descriptions
+- Language mirroring: matches and EXCEEDS user's dirty talk level
+- Explicit fallback responses with graphic sexual descriptions
+
+### Images - NSFW GALORE
+- **Pollinations** (PRIMARY - NSFW-capable, no key, free)
+- **Pollinations model variants** (flux, turbo, flux-realism, flux-anime, flux-3d)
+- **AI Horde** (nsfw=True, censor_nsfw=False, free unlimited)
+- **HuggingFace Animagine XL 3.1** (fallback, may censor some NSFW)
+- **HuggingFace FLUX.1-schnell** (fast, free tier)
+- Smart provider rotation with failure tracking
+- 18 NSFW outfit/style options from lingerie to full nude
+- 12 selfie styles: seductive, dark, sultry, fierce, playful, wet, elegant, intimate, nude, bath, topless, erotic
+- Auto NSFW tag detection from user prompts
+- Images always download as images (never .txt)
+
+### Video - Animated Images
+- CSS Ken Burns animation (zoom/glow/pulse on generated images)
+- No API key needed - works with any image provider
+- `is_animated` flag enables smooth animation in chat
+
+### Voice, Lip Sync, Sessions, Telegram, TOR - All working
+
+## Session 5 Changes (April 26, 2026)
+- [x] Rewrote entire image generator (lilith_image_generator.py) with 5 providers + smart rotation
+- [x] Pollinations made absolute primary (NSFW-capable, Animagine was censoring)
+- [x] Added 5 Pollinations model variants for diversity
+- [x] Added FLUX.1-schnell as provider
+- [x] 18 NSFW style options in NSFW_STYLES list
+- [x] Rewrote system prompt to be raw, explicit, graphic
+- [x] Fallback responses now sexually explicit with physical descriptions
+- [x] NSFW auto-detection adds explicit/nsfw/erotic tags
+- [x] Video uses CSS animation (no broken Pollinations video API)
 
 ## Config
 ```
@@ -33,10 +49,5 @@ MONGO_URL=mongodb://localhost:27017
 DB_NAME=lilith_eternal
 TELEGRAM_BOT_TOKEN=8329009190:AAFTUX4D0id7oVPEOqr9wy0r1HpJ9Up_2bw
 ```
-
-## Remaining
-- [ ] Local Ollama for fully offline AI
-- [ ] Refactor monolithic lilith_full_page.py
-- [ ] DigitalOcean deployment testing
 
 *Last Updated: April 26, 2026*
