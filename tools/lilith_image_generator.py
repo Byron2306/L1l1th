@@ -89,7 +89,7 @@ class HuggingFaceImageGenerator:
     def generate_image(self, prompt: str, ensure_clothed: bool = True) -> Optional[bytes]:
         """
         Generate an image from prompt.
-        Tries HuggingFace first, falls back to AI Horde.
+        Tries multiple providers: Animagine XL -> Pollinations -> AI Horde -> HF Spaces
         """
         # Add quality tags if not present
         if "masterpiece" not in prompt.lower():
@@ -105,10 +105,22 @@ class HuggingFaceImageGenerator:
             self.last_provider = "Animagine XL 3.1"
             return result
         
-        # Try AI Horde as fallback
+        # Try Pollinations (fast, reliable)
+        result = self._generate_pollinations(prompt)
+        if result:
+            self.last_provider = "Pollinations"
+            return result
+        
+        # Try AI Horde (free, unlimited)
         result = self._generate_ai_horde(prompt)
         if result:
             self.last_provider = "AI Horde"
+            return result
+        
+        # Try additional HuggingFace Spaces
+        result = self._generate_hf_spaces(prompt)
+        if result:
+            self.last_provider = "HuggingFace Space"
             return result
         
         return None
@@ -224,6 +236,76 @@ class HuggingFaceImageGenerator:
                     
         except Exception as e:
             print(f"[IMAGE] AI Horde error: {e}")
+        
+        return None
+    
+    def _generate_pollinations(self, prompt: str) -> Optional[bytes]:
+        """Generate with Pollinations.ai (fast, free, no key)"""
+        try:
+            encoded = urllib.parse.quote(prompt)
+            # Use higher resolution
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&seed={random.randint(0, 999999)}"
+            
+            resp = requests.get(url, timeout=60, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
+            })
+            
+            if resp.status_code == 200 and len(resp.content) > 5000:
+                print(f"[IMAGE] Pollinations generated {len(resp.content)} bytes")
+                return resp.content
+                
+        except Exception as e:
+            print(f"[IMAGE] Pollinations error: {e}")
+        
+        return None
+    
+    def _generate_hf_spaces(self, prompt: str) -> Optional[bytes]:
+        """Try additional HuggingFace Spaces for image generation"""
+        if not GRADIO_AVAILABLE:
+            return None
+        
+        # List of alternative HuggingFace Spaces for anime/art generation
+        spaces = [
+            'stabilityai/stable-diffusion-3-medium',
+            'prodia/sdxl-stable-diffusion-xl',
+            'ByteDance/SDXL-Lightning',
+        ]
+        
+        for space in spaces:
+            try:
+                client = Client(space)
+                result = client.predict(
+                    prompt,
+                    NEGATIVE_PROMPT,
+                    api_name="/run"
+                )
+                
+                if result:
+                    # Handle different return formats
+                    img_path = None
+                    if isinstance(result, str) and os.path.exists(result):
+                        img_path = result
+                    elif isinstance(result, tuple) and len(result) > 0:
+                        first = result[0]
+                        if isinstance(first, str) and os.path.exists(first):
+                            img_path = first
+                        elif isinstance(first, list) and len(first) > 0:
+                            item = first[0]
+                            if isinstance(item, dict):
+                                img_path = item.get('image', item.get('path', ''))
+                            elif isinstance(item, str):
+                                img_path = item
+                    
+                    if img_path and os.path.exists(img_path):
+                        with open(img_path, 'rb') as f:
+                            data = f.read()
+                        if len(data) > 1000:
+                            print(f"[IMAGE] HF Space {space} generated {len(data)} bytes")
+                            return data
+                            
+            except Exception as e:
+                print(f"[IMAGE] HF Space {space} error: {e}")
+                continue
         
         return None
     

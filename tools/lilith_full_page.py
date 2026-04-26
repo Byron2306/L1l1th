@@ -265,6 +265,64 @@ LILITH_ETERNAL_HTML = """
             animation: speakingGlow 0.3s ease-in-out infinite alternate;
         }
         
+        /* Lip sync overlay */
+        .lip-sync-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+            mix-blend-mode: soft-light;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .avatar-container.speaking .lip-sync-overlay {
+            opacity: 1;
+        }
+        
+        .mouth-indicator {
+            position: absolute;
+            bottom: 28%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 6px;
+            background: rgba(255, 0, 51, 0.6);
+            border-radius: 50%;
+            filter: blur(8px);
+            transition: height 0.05s ease, width 0.05s ease;
+        }
+        
+        .audio-visualizer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 25;
+        }
+        
+        .avatar-container.speaking .audio-visualizer {
+            opacity: 0.7;
+        }
+        
+        .viz-bar {
+            width: 3px;
+            background: linear-gradient(to top, rgba(255, 0, 51, 0.8), rgba(255, 102, 153, 0.4));
+            border-radius: 2px;
+            min-height: 2px;
+            transition: height 0.05s ease;
+        }
+        
         @keyframes idleGlow {
             0%, 100% { 
                 filter: brightness(1) saturate(1);
@@ -679,6 +737,14 @@ LILITH_ETERNAL_HTML = """
                     <video class="avatar-video" id="avatar-video" loop muted playsinline>
                         <source src="{{ lilith_video }}" type="video/mp4">
                     </video>
+                    
+                    <!-- Lip Sync Overlay -->
+                    <div class="lip-sync-overlay" id="lip-sync-overlay">
+                        <div class="mouth-indicator" id="mouth-indicator"></div>
+                    </div>
+                    
+                    <!-- Audio Visualizer -->
+                    <div class="audio-visualizer" id="audio-visualizer"></div>
                 </div>
             </div>
             
@@ -1155,19 +1221,148 @@ LILITH_ETERNAL_HTML = """
             }
         }
         
-        function playAudio(base64Audio, afterEmotion = 'idle') {
-            setAvatarState('speaking');
-            statusText.textContent = '🔊 Speaking...';
+        // ========== LIP SYNC ENGINE ==========
+        let audioContext = null;
+        let analyser = null;
+        let lipSyncAnimFrame = null;
+        
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.4;
+            }
+        }
+        
+        // Create visualizer bars
+        const vizContainer = document.getElementById('audio-visualizer');
+        for (let i = 0; i < 20; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'viz-bar';
+            bar.style.height = '2px';
+            vizContainer.appendChild(bar);
+        }
+        
+        function animateLipSync() {
+            if (!analyser) return;
             
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Calculate overall volume (mouth openness)
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const avgVolume = sum / dataArray.length / 255;
+            
+            // Animate mouth indicator
+            const mouth = document.getElementById('mouth-indicator');
+            if (mouth) {
+                const mouthHeight = 6 + (avgVolume * 30);
+                const mouthWidth = 40 + (avgVolume * 20);
+                mouth.style.height = mouthHeight + 'px';
+                mouth.style.width = mouthWidth + 'px';
+            }
+            
+            // Animate avatar image scale (subtle breathing/talking effect)
+            const avatarImg = document.getElementById('avatar-image');
+            if (avatarImg) {
+                const scale = 1.0 + (avgVolume * 0.03);
+                const brightness = 1.0 + (avgVolume * 0.15);
+                avatarImg.style.transform = `scale(${scale})`;
+                avatarImg.style.filter = `brightness(${brightness})`;
+            }
+            
+            // Animate visualizer bars
+            const bars = vizContainer.children;
+            const binSize = Math.floor(dataArray.length / bars.length);
+            for (let i = 0; i < bars.length; i++) {
+                const binIndex = i * binSize;
+                const value = dataArray[binIndex] || 0;
+                const height = Math.max(2, (value / 255) * 35);
+                bars[i].style.height = height + 'px';
+            }
+            
+            // Pulse the avatar glow based on volume
+            const container = document.getElementById('avatar-container');
+            if (container) {
+                const glowSize = 60 + (avgVolume * 80);
+                container.style.boxShadow = `0 0 ${glowSize}px rgba(255, 0, 51, ${0.4 + avgVolume * 0.4}), 0 0 ${glowSize * 1.5}px rgba(255, 0, 51, ${0.2 + avgVolume * 0.2})`;
+            }
+            
+            lipSyncAnimFrame = requestAnimationFrame(animateLipSync);
+        }
+        
+        function stopLipSync() {
+            if (lipSyncAnimFrame) {
+                cancelAnimationFrame(lipSyncAnimFrame);
+                lipSyncAnimFrame = null;
+            }
+            
+            // Reset avatar
+            const avatarImg = document.getElementById('avatar-image');
+            if (avatarImg) {
+                avatarImg.style.transform = 'scale(1)';
+                avatarImg.style.filter = 'brightness(1)';
+            }
+            
+            const container = document.getElementById('avatar-container');
+            if (container) {
+                container.style.boxShadow = '';
+            }
+            
+            // Reset visualizer
+            const bars = vizContainer.children;
+            for (let i = 0; i < bars.length; i++) {
+                bars[i].style.height = '2px';
+            }
+            
+            const mouth = document.getElementById('mouth-indicator');
+            if (mouth) {
+                mouth.style.height = '6px';
+                mouth.style.width = '40px';
+            }
+        }
+        
+        function playAudio(base64Audio, afterEmotion = 'idle') {
+            initAudioContext();
+            setAvatarState('speaking');
+            statusText.textContent = 'Speaking...';
+            
+            // Decode base64 to audio buffer
+            const audioData = atob(base64Audio);
+            const audioArray = new Uint8Array(audioData.length);
+            for (let i = 0; i < audioData.length; i++) {
+                audioArray[i] = audioData.charCodeAt(i);
+            }
+            
+            // Create audio element and connect to analyser
             audioPlayer.src = 'data:audio/mp3;base64,' + base64Audio;
+            
+            // Connect audio to Web Audio API for analysis
+            try {
+                const source = audioContext.createMediaElementSource(audioPlayer);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+            } catch (e) {
+                // Source already connected, just play
+            }
+            
+            // Start lip sync animation
+            animateLipSync();
+            
             audioPlayer.play().catch(e => {
                 console.log('Audio failed:', e);
+                stopLipSync();
                 setAvatarState(afterEmotion);
             });
             
             audioPlayer.onended = () => {
+                stopLipSync();
                 setAvatarState(afterEmotion);
-                statusText.textContent = 'Online • Ready~';
+                statusText.textContent = 'Online \u2022 Ready~';
             };
         }
         

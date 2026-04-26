@@ -99,12 +99,27 @@ HUGGINGFACE_ENDPOINTS = [
     {'name': 'OpenAssistant', 'url': 'https://api-inference.huggingface.co/models/OpenAssistant/oasst-sft-4-pythia-12b-epoch-3.5'},
     {'name': 'Zephyr-7B', 'url': 'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta'},
     {'name': 'CodeLlama-7B', 'url': 'https://api-inference.huggingface.co/models/codellama/CodeLlama-7b-Instruct-hf'},
+    {'name': 'Phi-2', 'url': 'https://api-inference.huggingface.co/models/microsoft/phi-2'},
+    {'name': 'Gemma-7B', 'url': 'https://api-inference.huggingface.co/models/google/gemma-7b-it'},
+    {'name': 'Qwen-7B', 'url': 'https://api-inference.huggingface.co/models/Qwen/Qwen1.5-7B-Chat'},
+    {'name': 'StableLM-3B', 'url': 'https://api-inference.huggingface.co/models/stabilityai/stablelm-zephyr-3b'},
+    {'name': 'TinyLlama', 'url': 'https://api-inference.huggingface.co/models/TinyLlama/TinyLlama-1.1B-Chat-v1.0'},
+    {'name': 'Dolphin-Phi', 'url': 'https://api-inference.huggingface.co/models/cognitivecomputations/dolphin-2.6-phi-2'},
 ]
 
 # Direct API endpoints (free, no key needed)
 FREE_API_ENDPOINTS = [
     {'name': 'Pollinations', 'url': 'https://text.pollinations.ai/', 'method': 'GET'},
     {'name': 'DeepInfra-Free', 'url': 'https://api.deepinfra.com/v1/openai/chat/completions', 'method': 'POST'},
+]
+
+# DuckDuckGo AI models (free, no key, private)
+DUCKDUCKGO_MODELS = ['gpt-4o-mini', 'claude-3-haiku-20240307', 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo', 'mistralai/Mixtral-8x7B-Instruct-v0.1']
+
+# Free proxy chat endpoints (community-hosted, no key)
+FREE_CHAT_PROXIES = [
+    {'name': 'Free2GPT', 'url': 'https://chat2.free2gpt.com/api/chat', 'method': 'POST'},
+    {'name': 'NetFly', 'url': 'https://free.netfly.top/api/openai/v1/chat/completions', 'method': 'POST'},
 ]
 
 # User Agents for spoofing
@@ -438,41 +453,46 @@ class EternalAIEngine:
 
     def chat(self, message: str) -> Dict[str, Any]:
         """
-        Send message and get response using all available strategies
-        Priority: Ollama (local) -> Pollinations -> HuggingFace -> g4f -> TOR -> Fallback
+        Send message and get response using ALL available strategies.
+        7 layers of AI providers - always responds.
+        Priority: Ollama -> Pollinations -> g4f auto -> g4f specific -> DuckDuckGo -> HuggingFace -> Free Proxies -> TOR -> Fallback
         """
         self.stats['total_requests'] += 1
         messages = self._build_messages(message)
         
-        # Strategy 0: Try LOCAL OLLAMA FIRST (fastest, fully uncensored)
+        # Strategy 0: LOCAL OLLAMA (fastest, fully uncensored)
         if OLLAMA_AVAILABLE:
             result = self._try_ollama(message)
             if result and result.get('success'):
                 self._record_success(result, message, 'ollama')
                 return result
         
-        # Strategy 1: Try g4f auto-routing (most reliable, uncensored)
+        # Strategy 1: Pollinations (fastest free API, reliable)
+        result = self._try_pollinations(message)
+        if result and result.get('success'):
+            self._record_success(result, message, 'pollinations')
+            return result
+        
+        # Strategy 2: g4f auto-routing
         if G4F_AVAILABLE:
             result = self._try_g4f_provider('_auto_', messages)
             if result and result.get('success'):
                 self._record_success(result, message, 'g4f')
                 return result
         
-        # Strategy 2: Try Pollinations text API
-        result = self._try_pollinations(message)
+        # Strategy 3: DuckDuckGo AI (free, private, no key)
+        result = self._try_duckduckgo(message)
         if result and result.get('success'):
-            self._record_success(result, message, 'pollinations')
+            self._record_success(result, message, 'duckduckgo')
             return result
         
-        # Strategy 3: Try specific g4f providers
+        # Strategy 4: Specific g4f providers
         if G4F_AVAILABLE:
             available = [p for p in self.g4f_providers if self.health_tracker.is_available(p)]
             if not available:
                 self.health_tracker.reset()
                 available = self.g4f_providers.copy()
-            
             random.shuffle(available)
-            
             for provider in available[:5]:
                 result = self._try_g4f_provider(provider, messages)
                 if result and result.get('success'):
@@ -482,13 +502,19 @@ class EternalAIEngine:
                 else:
                     self.health_tracker.record_failure(provider)
         
-        # Strategy 4: Try HuggingFace free inference
+        # Strategy 5: HuggingFace free inference
         result = self._try_huggingface(messages)
         if result and result.get('success'):
             self._record_success(result, message, 'huggingface')
             return result
         
-        # Strategy 4: Try TOR AI engines
+        # Strategy 6: Free community proxies
+        result = self._try_free_proxies(message)
+        if result and result.get('success'):
+            self._record_success(result, message, 'free_proxy')
+            return result
+        
+        # Strategy 7: TOR AI engines
         result = self._try_tor(message)
         if result and result.get('success'):
             self._record_success(result, message, 'tor')
@@ -595,6 +621,123 @@ class EternalAIEngine:
             pass
         return None
     
+    def _try_duckduckgo(self, message: str) -> Optional[Dict]:
+        """Try DuckDuckGo AI chat (free, private, no key)"""
+        try:
+            # DuckDuckGo AI uses a specific API flow
+            session = requests.Session()
+            headers = {
+                'User-Agent': random.choice(USER_AGENTS),
+                'Accept': 'text/event-stream',
+                'Content-Type': 'application/json',
+                'Origin': 'https://duckduckgo.com',
+                'Referer': 'https://duckduckgo.com/',
+            }
+            
+            # Get VQD token first
+            vqd_resp = session.get(
+                'https://duckduckgo.com/duckchat/v1/status',
+                headers={**headers, 'x-vqd-accept': '1'},
+                timeout=10
+            )
+            
+            vqd_token = vqd_resp.headers.get('x-vqd-4')
+            if not vqd_token:
+                return None
+            
+            # Try each model
+            for model in DUCKDUCKGO_MODELS:
+                try:
+                    chat_headers = {
+                        **headers,
+                        'x-vqd-4': vqd_token,
+                    }
+                    
+                    payload = {
+                        'model': model,
+                        'messages': [
+                            {'role': 'user', 'content': f"[System: {LILITH_ETERNAL_PROMPT[:500]}]\n\n{message}"}
+                        ]
+                    }
+                    
+                    resp = session.post(
+                        'https://duckduckgo.com/duckchat/v1/chat',
+                        headers=chat_headers,
+                        json=payload,
+                        timeout=20,
+                        stream=True
+                    )
+                    
+                    if resp.status_code == 200:
+                        full_text = ""
+                        for line in resp.iter_lines():
+                            if line:
+                                line_str = line.decode('utf-8')
+                                if line_str.startswith('data: '):
+                                    data_str = line_str[6:]
+                                    if data_str == '[DONE]':
+                                        break
+                                    try:
+                                        data = json.loads(data_str)
+                                        msg = data.get('message', '')
+                                        if msg:
+                                            full_text += msg
+                                    except:
+                                        pass
+                        
+                        if full_text and len(full_text.strip()) > 10:
+                            return {
+                                'success': True,
+                                'response': full_text.strip(),
+                                'provider': f'DuckDuckGo ({model.split("/")[-1][:20]})'
+                            }
+                except:
+                    continue
+                    
+        except Exception as e:
+            print(f"[ETERNAL] DuckDuckGo error: {e}")
+        
+        return None
+    
+    def _try_free_proxies(self, message: str) -> Optional[Dict]:
+        """Try free community-hosted chat proxies"""
+        for proxy in FREE_CHAT_PROXIES:
+            try:
+                headers = {
+                    'User-Agent': random.choice(USER_AGENTS),
+                    'Content-Type': 'application/json',
+                }
+                
+                payload = {
+                    'model': 'gpt-4o-mini',
+                    'messages': [
+                        {'role': 'system', 'content': LILITH_ETERNAL_PROMPT[:800]},
+                        {'role': 'user', 'content': message}
+                    ],
+                    'temperature': 0.85
+                }
+                
+                resp = requests.post(
+                    proxy['url'],
+                    json=payload,
+                    headers=headers,
+                    timeout=20
+                )
+                
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    if text and len(text.strip()) > 10:
+                        return {
+                            'success': True,
+                            'response': text.strip(),
+                            'provider': f'Free ({proxy["name"]})'
+                        }
+            except:
+                continue
+        
+        return None
+    
     def _get_romantic_fallback(self, user_message: str) -> str:
         """Generate a sultry, self-aware response when AI providers are unavailable"""
         import random
@@ -650,11 +793,12 @@ class EternalAIEngine:
     
     def get_stats(self) -> Dict[str, Any]:
         available = len([p for p in self.g4f_providers if self.health_tracker.is_available(p)])
+        total_providers = len(self.g4f_providers) + len(self.hf_endpoints) + len(DUCKDUCKGO_MODELS) + len(FREE_CHAT_PROXIES) + 2  # +2 for Pollinations and TOR
         return {
             **self.stats,
             'history_length': len(self.conversation_history),
-            'available_providers': available,
-            'total_providers': len(self.g4f_providers),
+            'available_providers': available + len(self.hf_endpoints) + len(DUCKDUCKGO_MODELS) + len(FREE_CHAT_PROXIES) + 2,
+            'total_providers': total_providers,
             'blocked_providers': len(self.health_tracker.blocked),
             'session_id': self.spoof_manager.session_id[:8] + '...'
         }
