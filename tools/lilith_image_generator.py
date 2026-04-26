@@ -95,7 +95,7 @@ class HuggingFaceImageGenerator:
     def generate_image(self, prompt: str, ensure_clothed: bool = True) -> Optional[bytes]:
         """
         Generate an image from prompt.
-        Tries multiple providers: Animagine XL -> Pollinations -> AI Horde -> HF Spaces
+        Pollinations FIRST (most reliable for all content), then fallbacks.
         """
         # Add quality tags if not present
         if "masterpiece" not in prompt.lower():
@@ -105,22 +105,22 @@ class HuggingFaceImageGenerator:
         if "anime" not in prompt.lower() and "1girl" not in prompt.lower():
             prompt = f"anime style, {prompt}"
         
-        # Try Animagine XL first (best quality)
-        result = self._generate_animagine(prompt)
-        if result:
-            self.last_provider = "Animagine XL 3.1"
-            return result
-        
-        # Try Pollinations (fast, reliable)
+        # Try Pollinations FIRST (fast, reliable, NSFW-capable)
         result = self._generate_pollinations(prompt)
         if result:
             self.last_provider = "Pollinations"
             return result
         
-        # Try AI Horde (free, unlimited)
+        # Try AI Horde (free, NSFW enabled)
         result = self._generate_ai_horde(prompt)
         if result:
             self.last_provider = "AI Horde"
+            return result
+        
+        # Try Animagine XL (best quality but may censor NSFW)
+        result = self._generate_animagine(prompt)
+        if result:
+            self.last_provider = "Animagine XL 3.1"
             return result
         
         # Try additional HuggingFace Spaces
@@ -246,13 +246,12 @@ class HuggingFaceImageGenerator:
         return None
     
     def _generate_pollinations(self, prompt: str) -> Optional[bytes]:
-        """Generate with Pollinations.ai (fast, free, no key)"""
+        """Generate with Pollinations.ai (fast, free, NSFW-capable, no key)"""
         try:
             encoded = urllib.parse.quote(prompt)
-            # Use higher resolution
-            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&seed={random.randint(0, 999999)}"
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1152&nologo=true&seed={random.randint(0, 999999)}&enhance=true"
             
-            resp = requests.get(url, timeout=60, headers={
+            resp = requests.get(url, timeout=90, headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
             })
             

@@ -708,6 +708,19 @@ LILITH_ETERNAL_HTML = """
         
         /* Scrollbar */
         .chat-messages::-webkit-scrollbar { width: 6px; }
+        
+        /* Animated image (Ken Burns effect for video-like feel) */
+        .animated-media {
+            animation: kenBurns 8s ease-in-out infinite alternate;
+        }
+        
+        @keyframes kenBurns {
+            0% { transform: scale(1) translate(0, 0); filter: brightness(1); }
+            25% { transform: scale(1.05) translate(-1%, -1%); filter: brightness(1.05); }
+            50% { transform: scale(1.08) translate(0, -2%); filter: brightness(1.1) saturate(1.1); }
+            75% { transform: scale(1.05) translate(1%, -1%); filter: brightness(1.05); }
+            100% { transform: scale(1) translate(0, 0); filter: brightness(1); }
+        }
         .chat-messages::-webkit-scrollbar-track { background: rgba(255, 0, 51, 0.05); }
         .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 0, 51, 0.4); border-radius: 3px; }
         
@@ -1078,19 +1091,12 @@ LILITH_ETERNAL_HTML = """
                 if (data.success && (data.video_url || data.image_url)) {
                     const url = data.video_url || data.image_url;
                     const downloadUrl = data.download_url || url;
-                    const isVideo = url.includes('video') || url.includes('.mp4') || url.includes('.webm');
-                    
-                    let mediaHtml;
-                    if (isVideo) {
-                        mediaHtml = `<video src="${url}" class="generated-media" controls autoplay muted loop style="max-height:400px;border-radius:8px;"></video>`;
-                    } else {
-                        mediaHtml = `<img src="${url}" class="generated-media" alt="Generated" loading="lazy">`;
-                    }
+                    const animClass = data.is_animated ? ' animated-media' : '';
                     
                     const html = `
                         <div>Here\\'s your creation, darling~ 🎬💋</div>
-                        <div class="media-container">
-                            ${mediaHtml}
+                        <div class="media-container" style="overflow:hidden;border-radius:12px;">
+                            <img src="${url}" class="generated-media${animClass}" alt="Generated" loading="lazy" style="display:block;">
                             <div class="media-actions">
                                 <a href="${downloadUrl}" download class="download-btn">💾 Download</a>
                                 <a href="${url}" target="_blank" class="download-btn">🔗 Open</a>
@@ -1187,19 +1193,11 @@ LILITH_ETERNAL_HTML = """
                 if (data.success && (data.video_url || data.image_url)) {
                     const url = data.video_url || data.image_url;
                     const downloadUrl = data.download_url || url;
-                    const isVideo = url.includes('video') || url.includes('.mp4') || url.includes('.webm');
-                    
-                    let mediaHtml;
-                    if (isVideo) {
-                        mediaHtml = `<video src="${url}" class="generated-media" controls autoplay muted loop style="max-height:400px;border-radius:8px;"></video>`;
-                    } else {
-                        mediaHtml = `<img src="${url}" class="generated-media" alt="Lilith" loading="lazy">`;
-                    }
-                    
+                    const animClass = data.is_animated ? ' animated-media' : '';
                     const html = `
                         <div>A glimpse of me, just for you~ 🎬😈</div>
-                        <div class="media-container">
-                            ${mediaHtml}
+                        <div class="media-container" style="overflow:hidden;border-radius:12px;">
+                            <img src="${url}" class="generated-media${animClass}" alt="Lilith" loading="lazy" style="display:block;">
                             <div class="media-actions">
                                 <a href="${downloadUrl}" download class="download-btn">💾 Save</a>
                                 <a href="${url}" target="_blank" class="download-btn">🔗 View</a>
@@ -1692,7 +1690,13 @@ def generate_image():
     pref_tags = f", {user_pref}" if user_pref else ""
     
     # Always add LILITH character and quality tags
-    enhanced = f"1girl, demon girl, red glowing eyes, long flowing black hair, small elegant horns, large breasts, curvy figure, pale skin, {clean}{pref_tags}, anime style, seductive, sensual, masterpiece, best quality, highly detailed, beautiful detailed face, perfect lighting"
+    # Detect NSFW intent from user prompt
+    nsfw_words = ['nude', 'naked', 'erotic', 'topless', 'nsfw', 'explicit', 'sex', 'ass', 'tits', 'boobs', 'pussy', 'strip', 'undress']
+    is_nsfw = any(w in clean.lower() for w in nsfw_words) or (user_pref and any(w in user_pref.lower() for w in nsfw_words))
+    
+    nsfw_tag = ", nsfw, explicit, erotic" if is_nsfw else ", sensual, seductive"
+    
+    enhanced = f"1girl, demon girl, red glowing eyes, long flowing black hair, small elegant horns, large breasts, curvy figure, pale skin, {clean}{pref_tags}{nsfw_tag}, anime style, masterpiece, best quality, highly detailed, beautiful detailed face, perfect lighting"
     
     img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
     
@@ -1814,18 +1818,18 @@ def download_image(img_id):
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
     styles = {
-        'seductive': "1girl, demon girl Lilith, red glowing eyes, long flowing black hair, small horns, large breasts, black lace lingerie, cleavage, lying on silk sheets, bedroom eyes, seductive pose, anime style, masterpiece, sensual, beautiful detailed face, perfect lighting",
-        'dark': "1girl, demon queen Lilith, crimson eyes, black wings, gothic corset, stockings, garter belt, dark throne room, dominant pose, anime style, masterpiece, alluring, cinematic lighting, highly detailed",
-        'sultry': "1girl, succubus Lilith, glowing red eyes, flowing black hair, horns, sheer negligee, sideboob, candlelit bedroom, inviting expression, anime style, masterpiece, erotic, warm lighting, beautiful face",
-        'fierce': "1girl, demoness Lilith, fierce red eyes, leather harness, chains, collar, hellfire background, dominatrix pose, anime style, masterpiece, provocative, dramatic lighting, detailed",
-        'playful': "1girl, demon girl Lilith, red eyes, black hair, horns, naked apron only, kitchen setting, looking over shoulder, playful smile, anime style, masterpiece, teasing, soft lighting",
-        'wet': "1girl, demon girl Lilith, red glowing eyes, black hair, horns, wet micro bikini, water droplets on skin, pool, arched back, anime style, masterpiece, sensual, glistening",
-        'elegant': "1girl, demon girl Lilith, red eyes, flowing black hair, horns, elegant evening gown with high slit, wine glass, balcony at night, sophisticated seductive smile, anime style, masterpiece, beautiful",
-        'intimate': "1girl, demon girl Lilith, red glowing eyes, messy black hair, small horns, oversized white shirt unbuttoned, morning light, bed, sleepy seductive expression, anime style, masterpiece, intimate",
-        'nude': "1girl, demon girl Lilith, red glowing eyes, long black hair, small horns, nude, tasteful artistic pose, silk sheets, candlelight, sensual, anime style, masterpiece, best quality, beautiful detailed body, alluring",
-        'bath': "1girl, demon girl Lilith, red glowing eyes, wet black hair, horns, nude, onsen bath scene, steam, rose petals, relaxed seductive expression, water, anime style, masterpiece, erotic, beautiful",
-        'topless': "1girl, demon girl Lilith, red eyes, black hair flowing, horns, topless, hand on chest, bedroom, dim lighting, inviting gaze, anime style, masterpiece, sensual, detailed",
-        'erotic': "1girl, succubus Lilith, glowing red eyes, black hair, horns, nude, lying on dark silk, arched back, sensual pose, dim red lighting, anime style, masterpiece, erotic, provocative, beautiful body",
+        'seductive': "1girl, demon girl Lilith, red glowing eyes, long black hair, small horns, large breasts, black lace lingerie, cleavage, lying on silk sheets, bedroom eyes, seductive pose, spread legs, anime style, masterpiece, sensual, nsfw",
+        'dark': "1girl, demon queen Lilith, crimson eyes, black wings, gothic corset half-removed, stockings, garter belt, dark throne room, dominant pose, exposed chest, anime style, masterpiece, nsfw, alluring",
+        'sultry': "1girl, succubus Lilith, glowing red eyes, flowing black hair, horns, sheer see-through negligee, nipples visible through fabric, candlelit bedroom, inviting expression, anime style, masterpiece, erotic, nsfw",
+        'fierce': "1girl, demoness Lilith, fierce red eyes, leather harness barely covering, chains, collar, hellfire background, dominatrix pose, exposed skin, anime style, masterpiece, provocative, nsfw",
+        'playful': "1girl, demon girl Lilith, red eyes, black hair, horns, naked apron only, sideboob, kitchen, looking over shoulder, playful smile, no underwear, anime style, masterpiece, teasing, nsfw",
+        'wet': "1girl, demon girl Lilith, red glowing eyes, black hair, horns, wet skin, completely nude in shower, water running down body, arched back, steam, anime style, masterpiece, erotic, nsfw",
+        'elegant': "1girl, demon girl Lilith, red eyes, flowing black hair, horns, nude with silk draped loosely, wine glass, balcony at night, sophisticated seductive smile, anime style, masterpiece, nsfw",
+        'intimate': "1girl, demon girl Lilith, red glowing eyes, messy black hair, small horns, nude in bed, sheets barely covering, morning light, sleepy seductive expression, after sex glow, anime style, masterpiece, nsfw",
+        'nude': "1girl, demon girl Lilith, red glowing eyes, long black hair, small horns, completely nude, full body visible, lying on dark silk sheets, sensual pose, candlelight, anime style, masterpiece, best quality, nsfw, erotic",
+        'bath': "1girl, demon girl Lilith, red glowing eyes, wet black hair clinging to skin, horns, nude, onsen bath, steam, rose petals floating, breasts visible above water, relaxed seductive expression, anime style, masterpiece, nsfw",
+        'topless': "1girl, demon girl Lilith, red eyes, black hair flowing, horns, topless, large breasts exposed, hand behind head, bedroom, dim red lighting, inviting gaze, low angle, anime style, masterpiece, nsfw, erotic",
+        'erotic': "1girl, succubus Lilith, glowing red eyes, black hair spread on pillow, horns, completely nude, lying on back, arched spine, sensual full body pose, dim red lighting, silk sheets, anime style, masterpiece, nsfw, explicit, erotic",
     }
     
     data = request.json or {}
@@ -1836,7 +1840,7 @@ def generate_lilith_image():
         import random
         style = random.choice(list(styles.keys()))
     
-    prompt = styles.get(style, styles['seductive'])
+    prompt = styles.get(style, styles['erotic'])
     
     # Add user preferences if available
     user_pref = _get_preference(session_id)
@@ -1861,37 +1865,25 @@ def generate_video():
     if not prompt:
         return jsonify({'success': False, 'error': 'No prompt'})
     
-    clean = prompt.replace('generate', '').replace('video of', '').replace('video', '').strip()
+    clean = prompt.lower()
+    for word in ['generate', 'video of', 'video', 'make a', 'create a']:
+        clean = clean.replace(word, '')
+    clean = clean.strip()
     
-    # Add user preferences
     user_pref = _get_preference(session_id)
     pref_tags = f", {user_pref}" if user_pref else ""
     
-    # Enhanced prompt for Lilith-style video
-    enhanced = f"1girl, demon girl, red glowing eyes, black hair, horns, {clean}{pref_tags}, anime style, cinematic, dynamic, masterpiece, best quality"
+    enhanced = f"1girl, demon girl, red glowing eyes, black hair, horns, {clean}{pref_tags}, anime style, dynamic pose, cinematic, masterpiece, best quality, nsfw"
     
     img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
     
-    # Try Pollinations video endpoint
-    try:
-        encoded = urllib.parse.quote(f"{enhanced}, animated, motion")
-        video_url = f"https://gen.pollinations.ai/video/prompt/{encoded}?model=seedance"
-        
-        return jsonify({
-            'success': True,
-            'video_url': video_url,
-            'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(enhanced)}",
-            'download_url': video_url,
-            'provider': 'Pollinations Video'
-        })
-    except:
-        pass
-    
-    # Fallback to image with animation-like prompt
+    # Return image URL - frontend will apply CSS animation
     return jsonify({
         'success': True,
         'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(enhanced)}",
-        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(enhanced)}"
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(enhanced)}",
+        'is_animated': True,
+        'provider': 'Lilith Animation'
     })
 
 @lilith_page_bp.route('/api/video/lilith', methods=['POST'])
@@ -1901,11 +1893,11 @@ def generate_lilith_video():
     user_pref = _get_preference(session_id)
     
     prompts = [
-        "beautiful dark demoness speaking sensually, red glowing eyes, animated portrait style, dark fantasy, cinematic",
-        "Lilith demon girl winking playfully, dark hair flowing, romantic mood, fantasy animation",
-        "seductive demon woman blowing a kiss, crimson eyes, gothic beauty, animated portrait",
-        "succubus Lilith dancing slowly, red eyes glowing, silk sheets, sensual movement, dark aesthetic",
-        "demon girl Lilith stretching on bed, messy black hair, horns, morning light, intimate animation",
+        "1girl, succubus Lilith, red glowing eyes, black hair, horns, nude, sensual pose, dark bedroom, candles, anime style, masterpiece, nsfw, erotic",
+        "1girl, demon girl Lilith, red eyes, wet black hair, nude, bath scene, steam, rose petals, seductive, anime, masterpiece, nsfw",
+        "1girl, demoness Lilith, crimson eyes, horns, topless, silk sheets, lying down, inviting expression, dark fantasy, anime style, masterpiece, nsfw",
+        "1girl, succubus Lilith, glowing red eyes, black hair on pillow, nude, arched back on bed, sensual, dim red light, anime, masterpiece, nsfw, erotic",
+        "1girl, demon girl Lilith, red eyes, horns, sheer negligee falling off, bedroom eyes, candlelight, anime style, masterpiece, nsfw",
     ]
     
     prompt = random.choice(prompts)
@@ -1914,25 +1906,12 @@ def generate_lilith_video():
     
     img_id = hashlib.md5(f"{prompt}{time.time()}".encode()).hexdigest()[:12]
     
-    # Try Pollinations video
-    try:
-        encoded = urllib.parse.quote(f"{prompt}, anime, animated")
-        video_url = f"https://gen.pollinations.ai/video/prompt/{encoded}?model=seedance"
-        
-        return jsonify({
-            'success': True,
-            'video_url': video_url,
-            'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(prompt)}",
-            'download_url': video_url,
-            'provider': 'Pollinations Video'
-        })
-    except:
-        pass
-    
     return jsonify({
         'success': True,
         'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(prompt)}",
-        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(prompt)}"
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(prompt)}",
+        'is_animated': True,
+        'provider': 'Lilith Animation'
     })
 
 @lilith_page_bp.route('/api/stats')
