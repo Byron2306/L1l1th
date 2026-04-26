@@ -47,7 +47,7 @@ SEXY_OUTFITS = [
 ]
 
 # Quality tags for anime
-QUALITY_TAGS = "masterpiece, best quality, highly detailed, detailed face, beautiful eyes, perfect anatomy, sensual, alluring, provocative"
+QUALITY_TAGS = "masterpiece, best quality, highly detailed, detailed face, beautiful eyes, perfect anatomy, sensual, alluring, provocative, beautiful lighting, cinematic lighting, 8k uhd"
 
 # Negative prompt - clothed but sexy
 NEGATIVE_PROMPT = "nude, naked, nipples, exposed genitals, penis, vagina, completely naked, low quality, bad anatomy, deformed, ugly, blurry, extra limbs, worst quality, child, underage, loli"
@@ -131,12 +131,12 @@ class HuggingFaceImageGenerator:
                 prompt,                     # prompt
                 NEGATIVE_PROMPT,            # negative_prompt
                 random.randint(0, 999999),  # seed (random)
-                832,                        # width
-                1216,                       # height
-                7,                          # guidance_scale
-                28,                         # steps
+                896,                        # width (higher quality)
+                1344,                       # height (higher quality)
+                7.5,                        # guidance_scale (slightly higher for better detail)
+                35,                         # steps (more steps for quality)
                 "DPM++ 2M Karras",          # sampler
-                "832 x 1216",               # aspect_ratio
+                "896 x 1344",               # aspect_ratio
                 "Anime",                    # style_preset
                 "Standard v3.1",            # quality_tags
                 False,                      # use_upscaler

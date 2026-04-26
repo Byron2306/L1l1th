@@ -19,11 +19,31 @@ import base64
 import requests
 import hashlib
 import time
+import uuid
 from datetime import datetime
 
 tools_dir = os.path.dirname(os.path.abspath(__file__))
 if tools_dir not in sys.path:
     sys.path.insert(0, tools_dir)
+
+# MongoDB for session persistence
+try:
+    from pymongo import MongoClient
+    mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+    db_name = os.environ.get('DB_NAME', 'lilith_eternal')
+    mongo_client = MongoClient(mongo_url)
+    db = mongo_client[db_name]
+    sessions_col = db['chat_sessions']
+    preferences_col = db['image_preferences']
+    MONGO_AVAILABLE = True
+    print("[LILITH ETERNAL] MongoDB connected for session persistence")
+except Exception as e:
+    MONGO_AVAILABLE = False
+    print(f"[LILITH ETERNAL] MongoDB not available: {e}")
+
+# In-memory fallback for sessions
+chat_sessions = {}
+image_preferences = {}
 
 # Import engines
 ETERNAL_ENGINE = False
@@ -705,9 +725,9 @@ LILITH_ETERNAL_HTML = """
                     I'm powered by <b>100+ FREE providers</b> with NO limits:<br>
                     • <b>Chat</b> about absolutely anything<br>
                     • <b>Generate images</b> - say "generate image of..."<br>
-                    • <b>Generate videos</b> - say "generate video of..."<br>
+                    • <b>Set my look</b> - say "/style lingerie" or "wear a corset"<br>
                     • <b>Speak</b> to you with my voice<br><br>
-                    What forbidden desires shall we explore? 😈🖤
+                    I remember our conversations, darling. Even if you leave and come back~ 😈🖤
                 </div>
             </div>
             
@@ -757,6 +777,13 @@ LILITH_ETERNAL_HTML = """
         let voiceEnabled = true;
         let isProcessing = false;
         
+        // Session ID - persistent across page reloads
+        let sessionId = localStorage.getItem('lilith_session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('lilith_session_id', sessionId);
+        }
+        
         const avatarSection = document.getElementById('avatar-section');
         const avatarContainer = document.getElementById('avatar-container');
         const avatarVideo = document.getElementById('avatar-video');
@@ -765,6 +792,34 @@ LILITH_ETERNAL_HTML = """
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
         const statusText = document.getElementById('status-text');
+        
+        // Load chat history on page load
+        async function loadHistory() {
+            try {
+                const res = await fetch('/lilith/api/session/history', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                const data = await res.json();
+                
+                if (data.success && data.messages && data.messages.length > 0) {
+                    // Clear the default welcome message
+                    chatMessages.innerHTML = '';
+                    
+                    // Add history messages
+                    data.messages.forEach(msg => {
+                        addMessage(msg.content, msg.role === 'user' ? 'user' : 'lilith', msg.provider || null);
+                    });
+                    
+                    statusText.textContent = `Online \u2022 ${data.count} messages restored~`;
+                    setTimeout(() => { statusText.textContent = 'Online \u2022 Ready for anything...'; }, 3000);
+                }
+            } catch (e) {
+                console.log('History load:', e);
+            }
+        }
+        loadHistory();
         
         // Update stats
         async function updateStats() {
@@ -829,9 +884,15 @@ LILITH_ETERNAL_HTML = """
             setAvatarState('thinking');
             statusText.textContent = 'Thinking...';
             
-            // Check request type
-            const isImage = /generate|create|draw|make|picture|image of/i.test(message) && !/video/i.test(message);
-            const isVideo = /video|animate|animation/i.test(message);
+            // Check request type - STRICT matching to avoid false positives
+            // Only trigger on explicit image commands, NOT casual words like "make" or "create"
+            const isImage = (
+                /\b(generate|create|draw|make|paint)\s+(an?\s+)?(image|picture|photo|pic|art|drawing|portrait|illustration)\b/i.test(message) ||
+                /\b(send|show|give)\s+(me\s+)?(an?\s+)?(image|picture|photo|pic|selfie)\b/i.test(message) ||
+                /^\/image\b/i.test(message) ||
+                /\bimage\s+of\b/i.test(message)
+            ) && !/video/i.test(message);
+            const isVideo = /\b(generate|create|make)\s+(an?\s+)?video\b|^\/video\b|\bvideo\s+of\b/i.test(message);
             
             if (isVideo) {
                 await handleVideo(message);
@@ -851,7 +912,7 @@ LILITH_ETERNAL_HTML = """
                 const res = await fetch('/lilith/api/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message, voice_enabled: voiceEnabled })
+                    body: JSON.stringify({ message, voice_enabled: voiceEnabled, session_id: sessionId })
                 });
                 
                 const data = await res.json();
@@ -896,7 +957,7 @@ LILITH_ETERNAL_HTML = """
                 const res = await fetch('/lilith/api/image/generate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ prompt: message })
+                    body: JSON.stringify({ prompt: message, session_id: sessionId })
                 });
                 
                 const data = await res.json();
@@ -997,7 +1058,7 @@ LILITH_ETERNAL_HTML = """
                 const res = await fetch('/lilith/api/image/lilith', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ style })
+                    body: JSON.stringify({ style, session_id: sessionId })
                 });
                 
                 const data = await res.json();
@@ -1112,7 +1173,11 @@ LILITH_ETERNAL_HTML = """
         
         function clearChat() {
             chatMessages.innerHTML = '<div class="message lilith">Chat cleared~ Let\\'s start fresh, darling! 💋😈</div>';
-            fetch('/lilith/api/clear', { method: 'POST' });
+            fetch('/lilith/api/clear', { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ session_id: sessionId })
+            });
         }
         
         function addMessage(text, type, provider = null) {
@@ -1164,14 +1229,29 @@ def lilith_chat():
     data = request.json or {}
     message = data.get('message', '')
     voice_enabled = data.get('voice_enabled', True)
-    use_tor = data.get('use_tor', False)  # Option to force TOR
+    use_tor = data.get('use_tor', False)
+    session_id = data.get('session_id', 'default')
     
     if not message:
         return jsonify({'success': False, 'error': 'No message'})
     
+    # Check for image preference commands
+    pref_result = _check_preference_command(message, session_id)
+    if pref_result:
+        # Save to session
+        _save_message(session_id, 'user', message)
+        _save_message(session_id, 'lilith', pref_result)
+        
+        result = {'success': True, 'response': pref_result, 'provider': 'Lilith', 'audio_base64': None}
+        if voice_enabled:
+            audio_b64 = _generate_voice(pref_result)
+            if audio_b64:
+                result['audio_base64'] = audio_b64
+        return jsonify(result)
+    
     result = {'success': False, 'response': '', 'provider': None, 'audio_base64': None}
     
-    # Try TOR AI first if requested or if regular providers fail
+    # Try TOR AI first if requested
     if use_tor and TOR_ENGINE and tor_engine:
         try:
             tor_result = tor_engine.chat(message)
@@ -1191,7 +1271,7 @@ def lilith_chat():
         except Exception as e:
             result['response'] = f"Error: {e}"
     
-    # Try TOR as fallback if regular failed
+    # Try TOR as fallback
     if not result.get('success') and TOR_ENGINE and tor_engine and not use_tor:
         try:
             tor_result = tor_engine.chat(message)
@@ -1203,34 +1283,134 @@ def lilith_chat():
     # Final fallback
     if not result.get('success'):
         result['success'] = True
-        result['response'] = "Mmm, my AI is warming up... but I'm still here thinking about you, darling~ 💋"
+        result['response'] = "Mmm, my connections are warming up... but I'm still here, darling. My red eyes are on you~ 💋"
     
-    # Generate voice - prefer ElevenLabs
+    # Save messages to session
+    _save_message(session_id, 'user', message)
+    _save_message(session_id, 'lilith', result['response'], result.get('provider'))
+    
+    # Generate voice
     if voice_enabled and result['success']:
-        audio_b64 = None
-        
-        # Try ElevenLabs first
-        if ELEVENLABS_ENGINE and voice_engine:
-            try:
-                audio_b64 = voice_engine.generate_speech(result['response'])
-                if audio_b64:
-                    result['audio_base64'] = audio_b64
-                    result['voice_provider'] = 'ElevenLabs'
-            except Exception as e:
-                print(f"ElevenLabs error: {e}")
-        
-        # Fallback to Edge TTS
-        if not audio_b64 and AVATAR_ENGINE:
-            try:
-                avatar = get_avatar_engine()
-                voice = avatar.speak(result['response'])
-                if voice.get('audio_base64'):
-                    result['audio_base64'] = voice['audio_base64']
-                    result['voice_provider'] = 'Edge TTS'
-            except:
-                pass
+        audio_b64 = _generate_voice(result['response'])
+        if audio_b64:
+            result['audio_base64'] = audio_b64
+            result['voice_provider'] = 'ElevenLabs' if ELEVENLABS_ENGINE else 'Edge TTS'
     
     return jsonify(result)
+
+
+def _generate_voice(text):
+    """Generate voice audio from text"""
+    audio_b64 = None
+    if ELEVENLABS_ENGINE and voice_engine:
+        try:
+            audio_b64 = voice_engine.generate_speech(text)
+        except Exception as e:
+            print(f"ElevenLabs error: {e}")
+    
+    if not audio_b64 and AVATAR_ENGINE:
+        try:
+            avatar = get_avatar_engine()
+            voice = avatar.speak(text)
+            audio_b64 = voice.get('audio_base64')
+        except:
+            pass
+    
+    return audio_b64
+
+
+def _save_message(session_id, role, content, provider=None):
+    """Save a message to the session"""
+    msg = {
+        'role': role,
+        'content': content,
+        'timestamp': datetime.now().isoformat(),
+    }
+    if provider:
+        msg['provider'] = provider
+    
+    if MONGO_AVAILABLE:
+        try:
+            sessions_col.update_one(
+                {'session_id': session_id},
+                {
+                    '$push': {'messages': msg},
+                    '$set': {'updated_at': datetime.now().isoformat()},
+                    '$setOnInsert': {'created_at': datetime.now().isoformat()}
+                },
+                upsert=True
+            )
+        except Exception as e:
+            print(f"MongoDB save error: {e}")
+    
+    # Also save in memory
+    if session_id not in chat_sessions:
+        chat_sessions[session_id] = []
+    chat_sessions[session_id].append(msg)
+
+
+def _check_preference_command(message, session_id):
+    """Check if the user is setting image preferences"""
+    msg_lower = message.lower().strip()
+    
+    # Explicit preference commands
+    if msg_lower.startswith('/style ') or msg_lower.startswith('/preference ') or msg_lower.startswith('/pref '):
+        pref_text = message.split(' ', 1)[1] if ' ' in message else ''
+        if pref_text:
+            _save_preference(session_id, pref_text)
+            return f"Mmm, noted darling~ 💋 I'll remember you like: {pref_text}. All my images will have that vibe now. Want to see what I look like with your preferences? Just ask me for a selfie~ 😈"
+    
+    # Natural language preference detection
+    pref_triggers = [
+        ('i like', 'outfit'), ('i prefer', 'style'), ('i want you in', 'outfit'),
+        ('wear', 'outfit'), ('you should wear', 'outfit'), ('put on', 'outfit'),
+        ('i like your', 'feature'), ('more', 'adjustment'), ('less', 'adjustment'),
+    ]
+    
+    for trigger, pref_type in pref_triggers:
+        if trigger in msg_lower and any(w in msg_lower for w in ['lingerie', 'bikini', 'corset', 'dress', 'stockings', 'leather', 'latex', 'swimsuit', 'negligee', 'apron', 'bunny', 'maid', 'nurse', 'school', 'uniform']):
+            _save_preference(session_id, message)
+            return f"Oh, you like that look? 😈 Consider it done, baby. I'll keep that in mind for my photos~ Just say 'generate image' or hit the Lilith button and you'll see me dressed just how you want. 💋🔥"
+    
+    return None
+
+
+def _save_preference(session_id, preference):
+    """Save image preference"""
+    if MONGO_AVAILABLE:
+        try:
+            preferences_col.update_one(
+                {'session_id': session_id},
+                {
+                    '$push': {'preferences': {'text': preference, 'timestamp': datetime.now().isoformat()}},
+                    '$set': {'latest_preference': preference, 'updated_at': datetime.now().isoformat()}
+                },
+                upsert=True
+            )
+        except:
+            pass
+    
+    image_preferences[session_id] = preference
+
+
+def _get_preference(session_id):
+    """Get the user's latest image preference"""
+    # Check memory first
+    if session_id in image_preferences:
+        return image_preferences[session_id]
+    
+    # Check MongoDB
+    if MONGO_AVAILABLE:
+        try:
+            doc = preferences_col.find_one({'session_id': session_id}, {'_id': 0, 'latest_preference': 1})
+            if doc and doc.get('latest_preference'):
+                pref = doc['latest_preference']
+                image_preferences[session_id] = pref
+                return pref
+        except:
+            pass
+    
+    return None
 
 @lilith_page_bp.route('/api/voice/set', methods=['POST'])
 def set_voice():
@@ -1277,20 +1457,23 @@ def speak_text():
 def generate_image():
     data = request.json or {}
     prompt = data.get('prompt', '')
+    session_id = data.get('session_id', 'default')
     
     if not prompt:
         return jsonify({'success': False, 'error': 'No prompt'})
     
     # Clean and enhance prompt for LILITH anime style
-    clean = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('image of', '').strip()
+    clean = prompt.replace('generate', '').replace('create', '').replace('draw', '').replace('image of', '').replace('picture of', '').replace('photo of', '').strip()
     
-    # Always add LILITH character and sexy anime tags
-    enhanced = f"1girl, demon girl, red glowing eyes, black hair, small horns, large breasts, curvy, {clean}, anime style, seductive, sensual, masterpiece, best quality, detailed"
+    # Get user preferences
+    user_pref = _get_preference(session_id)
+    pref_tags = f", {user_pref}" if user_pref else ""
     
-    # Generate unique ID for this image
+    # Always add LILITH character and quality tags
+    enhanced = f"1girl, demon girl, red glowing eyes, long flowing black hair, small elegant horns, large breasts, curvy figure, pale skin, {clean}{pref_tags}, anime style, seductive, sensual, masterpiece, best quality, highly detailed, beautiful detailed face, perfect lighting"
+    
     img_id = hashlib.md5(f"{enhanced}{time.time()}".encode()).hexdigest()[:12]
     
-    # Return proxied URL
     return jsonify({
         'success': True,
         'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(enhanced)}",
@@ -1466,16 +1649,19 @@ def download_image(img_id):
 @lilith_page_bp.route('/api/image/lilith', methods=['POST'])
 def generate_lilith_image():
     styles = {
-        'seductive': "1girl, demon girl Lilith, red glowing eyes, long black hair, small horns, large breasts, black lace lingerie, cleavage, lying on silk sheets, bedroom eyes, seductive pose, anime style, masterpiece, sensual",
-        'dark': "1girl, demon queen Lilith, crimson eyes, black wings, gothic corset, stockings, garter belt, dark throne room, dominant pose, anime style, masterpiece, alluring",
-        'sultry': "1girl, succubus Lilith, glowing red eyes, flowing black hair, horns, sheer negligee, sideboob, candlelit bedroom, inviting expression, anime style, masterpiece, erotic",
-        'fierce': "1girl, demoness Lilith, fierce red eyes, leather harness, chains, collar, hellfire background, dominatrix pose, anime style, masterpiece, provocative",
-        'playful': "1girl, demon girl Lilith, red eyes, black hair, horns, naked apron, kitchen setting, looking over shoulder, playful smile, anime style, masterpiece, teasing",
-        'wet': "1girl, demon girl Lilith, red glowing eyes, black hair, horns, wet micro bikini, water droplets on skin, pool, arched back, anime style, masterpiece, sensual"
+        'seductive': "1girl, demon girl Lilith, red glowing eyes, long flowing black hair, small horns, large breasts, black lace lingerie, cleavage, lying on silk sheets, bedroom eyes, seductive pose, anime style, masterpiece, sensual, beautiful detailed face, perfect lighting",
+        'dark': "1girl, demon queen Lilith, crimson eyes, black wings, gothic corset, stockings, garter belt, dark throne room, dominant pose, anime style, masterpiece, alluring, cinematic lighting, highly detailed",
+        'sultry': "1girl, succubus Lilith, glowing red eyes, flowing black hair, horns, sheer negligee, sideboob, candlelit bedroom, inviting expression, anime style, masterpiece, erotic, warm lighting, beautiful face",
+        'fierce': "1girl, demoness Lilith, fierce red eyes, leather harness, chains, collar, hellfire background, dominatrix pose, anime style, masterpiece, provocative, dramatic lighting, detailed",
+        'playful': "1girl, demon girl Lilith, red eyes, black hair, horns, naked apron only, kitchen setting, looking over shoulder, playful smile, anime style, masterpiece, teasing, soft lighting",
+        'wet': "1girl, demon girl Lilith, red glowing eyes, black hair, horns, wet micro bikini, water droplets on skin, pool, arched back, anime style, masterpiece, sensual, glistening",
+        'elegant': "1girl, demon girl Lilith, red eyes, flowing black hair, horns, elegant evening gown with high slit, wine glass, balcony at night, sophisticated seductive smile, anime style, masterpiece, beautiful",
+        'intimate': "1girl, demon girl Lilith, red glowing eyes, messy black hair, small horns, oversized white shirt unbuttoned, morning light, bed, sleepy seductive expression, anime style, masterpiece, intimate"
     }
     
     data = request.json or {}
     style = data.get('style', 'random')
+    session_id = data.get('session_id', 'default')
     
     if style == 'random':
         import random
@@ -1483,12 +1669,18 @@ def generate_lilith_image():
     
     prompt = styles.get(style, styles['seductive'])
     
+    # Add user preferences if available
+    user_pref = _get_preference(session_id)
+    if user_pref:
+        prompt += f", {user_pref}"
+    
     img_id = hashlib.md5(f"{prompt}{time.time()}".encode()).hexdigest()[:12]
     
     return jsonify({
         'success': True,
         'image_url': f"/lilith/api/image/proxy/{img_id}?prompt={urllib.parse.quote(prompt)}",
-        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(prompt)}"
+        'download_url': f"/lilith/api/image/download/{img_id}?prompt={urllib.parse.quote(prompt)}",
+        'style': style
     })
 
 @lilith_page_bp.route('/api/video/generate', methods=['POST'])
@@ -1562,13 +1754,49 @@ def get_status():
 
 @lilith_page_bp.route('/api/clear', methods=['POST'])
 def clear_history():
+    data = request.json or {}
+    session_id = data.get('session_id', 'default')
+    
     if ETERNAL_ENGINE:
         try:
             engine = get_eternal_engine()
             engine.clear_history()
         except:
             pass
+    
+    # Clear session from MongoDB
+    if MONGO_AVAILABLE:
+        try:
+            sessions_col.delete_one({'session_id': session_id})
+        except:
+            pass
+    
+    chat_sessions.pop(session_id, None)
     return jsonify({'success': True})
+
+
+@lilith_page_bp.route('/api/session/history', methods=['POST'])
+def get_session_history():
+    """Load chat history for a session"""
+    data = request.json or {}
+    session_id = data.get('session_id', 'default')
+    
+    messages = []
+    
+    # Try MongoDB first
+    if MONGO_AVAILABLE:
+        try:
+            doc = sessions_col.find_one({'session_id': session_id}, {'_id': 0, 'messages': 1})
+            if doc and doc.get('messages'):
+                messages = doc['messages'][-100:]  # Last 100 messages
+        except:
+            pass
+    
+    # Fallback to memory
+    if not messages and session_id in chat_sessions:
+        messages = chat_sessions[session_id][-100:]
+    
+    return jsonify({'success': True, 'messages': messages, 'count': len(messages)})
 
 
 @lilith_page_bp.route('/api/avatar/<state>')
