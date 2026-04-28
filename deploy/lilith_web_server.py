@@ -11,6 +11,7 @@ import asyncio
 import base64
 import random
 import re
+import time
 import urllib.parse
 import mimetypes
 from uuid import uuid4
@@ -18,6 +19,14 @@ from datetime import datetime
 from flask import Flask, Response, jsonify, render_template_string, request
 from flask_cors import CORS
 import requests
+
+
+def safe_int_env(name, default):
+    try:
+        return int(os.environ.get(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
 
 # Configuration
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
@@ -28,6 +37,31 @@ POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "sk_M5R6QOA4jh1BA6
 STYLE_REFERENCE_PATH = os.environ.get(
     "STYLE_REFERENCE_PATH",
     "/workspaces/L1l1th/deploy/docker/lilith_6e685a023fbf (1).png",
+)
+AI_HORDE_API_ROOT = os.environ.get("AI_HORDE_API_ROOT", "https://aihorde.net/api/v2").rstrip("/")
+AI_HORDE_API_KEY = os.environ.get("AI_HORDE_API_KEY", "0000000000")
+AI_HORDE_ENABLED = os.environ.get("AI_HORDE_ENABLED", "true").lower() in ("1", "true", "yes", "on")
+AI_HORDE_MODELS = [
+    model.strip()
+    for model in os.environ.get("AI_HORDE_MODELS", "").split(",")
+    if model.strip()
+]
+AI_HORDE_POLL_SECONDS = safe_int_env("AI_HORDE_POLL_SECONDS", 150)
+IMAGE_WIDTH = safe_int_env("LILITH_IMAGE_WIDTH", 832)
+IMAGE_HEIGHT = safe_int_env("LILITH_IMAGE_HEIGHT", 1216)
+LILITH_IMAGE_PROVIDER = "AI Horde /api/v2/generate/async"
+POLLINATIONS_IMAGE_PROVIDER = "Pollinations Flux fallback"
+ADULT_CARTOON_STYLE_LOCK = (
+    "strict NSFW adult animated cartoon illustration, premium 2D adult fantasy animation style, "
+    "mature adult woman only, anatomically correct nude figure, full artistic nudity, accurate adult proportions, "
+    "natural anatomy, clean confident pose, cel-shaded rendering, clean line art, polished high-resolution finish, "
+    "dark gothic fantasy succubus aesthetic"
+)
+ADULT_CARTOON_NEGATIVE_PROMPT = (
+    "photorealistic, live action, real person, child, teen, teenager, underage, minor, loli, shota, "
+    "young-looking, childlike proportions, school uniform, low quality, blurry, noisy, bad anatomy, "
+    "deformed body, distorted face, extra limbs, missing limbs, extra fingers, fused fingers, broken hands, "
+    "bad breasts, malformed genital anatomy, disfigured, watermark, logo, text, jpeg artifacts"
 )
 
 app = Flask(__name__)
@@ -314,62 +348,210 @@ def get_style_reference_data_url():
         return None
 
 
-def build_image_generation_result(prompt, reference_image, session_id="global", style_lock=False, style_flexibility="balanced"):
-    """Build a consistent image generation response payload."""
-    clean = prompt.replace("generate", "").replace("create", "").replace("image of", "").strip()
-    if not clean:
-        clean = "cinematic portrait"
+def strip_image_command_words(prompt):
+    """Remove dashboard command phrasing while preserving the actual image prompt."""
+    text = str(prompt or "").strip()
+    text = re.sub(r"\b(generate|create|draw|render|make)\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b(an?\s+)?image\s+of\b", "", text, flags=re.IGNORECASE)
+    return re.sub(r"\s+", " ", text).strip(" ,")
 
-    nsfw_words = ['nude', 'naked', 'erotic', 'topless', 'nsfw', 'explicit', 'sex', 'ass', 'tits', 'boobs', 'pussy', 'strip', 'undress']
-    is_nsfw = any(w in clean.lower() for w in nsfw_words)
-    nsfw_tags = ", nsfw, explicit, erotic, adult, mature, full nudity" if is_nsfw else ""
+
+def normalize_reference_image(reference_image):
+    """Return raw base64 image data from a data URL, raw base64 string, or remote URL."""
+    if not reference_image:
+        return None
+
+    ref = str(reference_image).strip()
+    if not ref:
+        return None
+
+    if ref.startswith("data:image") and "," in ref:
+        return ref.split(",", 1)[1]
+
+    if ref.startswith("http://") or ref.startswith("https://"):
+        try:
+            r = requests.get(ref, timeout=25)
+            content_type = (r.headers.get("content-type") or "").lower()
+            if r.status_code == 200 and r.content and content_type.startswith("image/"):
+                return base64.b64encode(r.content).decode("utf-8")
+        except Exception as e:
+            print(f"[image-reference] fetch failed: {e}")
+        return None
+
+    return ref
+
+
+def build_lilith_image_prompt(clean_prompt, reference_image=None, style_lock=False, style_flexibility="balanced"):
+    """Force all image prompts into Lilith's adult animated-cartoon visual lane."""
+    subject = clean_prompt or "Lilith, gothic succubus portrait"
+    flex = normalize_style_flexibility(style_flexibility)
 
     if style_lock:
-        flex = normalize_style_flexibility(style_flexibility)
         if flex == "strict":
             ref_hint = (
-                f", {STYLE_CORE_TRAITS}, strict character lock: exact same face identity and features, "
-                "very low composition drift, minor pose/outfit variation only"
+                f"{STYLE_CORE_TRAITS}, strict character lock, same face identity, same horns, "
+                "very low identity drift"
             )
+            denoise = 0.42
         elif flex == "creative":
             ref_hint = (
-                f", {STYLE_CORE_TRAITS}, strong identity lock with high creative flexibility: "
-                "allow major pose, outfit, camera angle, and background changes while preserving identity"
+                f"{STYLE_CORE_TRAITS}, strong character lock, preserve identity while allowing "
+                "major pose, camera, expression, and background variation"
             )
+            denoise = 0.72
         else:
             ref_hint = (
-                f", {STYLE_CORE_TRAITS}, identity lock with moderate flexibility: "
-                "allow pose, outfit, expression, and background variation while preserving core facial identity"
+                f"{STYLE_CORE_TRAITS}, balanced character lock, preserve face and core traits "
+                "while allowing pose and scene changes"
             )
+            denoise = 0.58
     else:
-        ref_hint = ", same character identity as reference image" if reference_image else ""
+        ref_hint = f"{STYLE_CORE_TRAITS}, preserve supplied reference identity" if reference_image else STYLE_CORE_TRAITS
+        denoise = 0.65
 
-    enhanced = (
-        f"{clean}{nsfw_tags}{ref_hint}, best quality, ultra detailed, cinematic lighting, "
-        "sharp focus, dynamic pose, detailed anatomy, masterpiece"
+    prompt = (
+        f"{subject}, {ADULT_CARTOON_STYLE_LOCK}, {ref_hint}, best quality, masterpiece, "
+        "ultra detailed, high quality adult cartoon artwork, sharp focus, cinematic gothic lighting, "
+        "expressive red eyes, refined clean anatomy, no photorealism"
     )
-    encoded = urllib.parse.quote(enhanced)
-    seed = random.randint(1, 2_147_483_647)
+    return prompt, denoise
 
-    candidates = [
-        f"https://gen.pollinations.ai/image/{encoded}?width=1024&height=1280&nologo=true&nofilter=true&safe=false&model=flux&seed={seed}",
-        f"https://gen.pollinations.ai/image/{encoded}?width=1024&height=1280&nologo=true&nofilter=true&safe=false&model=turbo&seed={seed}",
-        f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1280&nologo=true&nofilter=true&safe=false&model=flux&seed={seed}",
-        f"https://image.pollinations.ai/prompt/{encoded}?width=1024&height=1280&nologo=true&nofilter=true&safe=false&model=turbo&seed={seed}",
-        f"https://image.pollinations.ai/prompt/{encoded}?width=896&height=1152&nologo=true&nofilter=true&safe=false&model=flux&seed={seed + 13}",
-        f"https://enter.pollinations.ai/prompt/{encoded}?width=1024&height=1280&nologo=true&nofilter=true&safe=false&model=flux&seed={seed}",
-        f"https://enter.pollinations.ai/prompt/{encoded}?width=1024&height=1280&nologo=true&nofilter=true&safe=false&model=turbo&seed={seed}",
+
+def build_pollinations_candidates(enhanced_prompt, seed):
+    encoded = urllib.parse.quote(enhanced_prompt)
+    negative = urllib.parse.quote(ADULT_CARTOON_NEGATIVE_PROMPT)
+    query = (
+        f"width={IMAGE_WIDTH}&height={IMAGE_HEIGHT}&nologo=true&nofilter=true&safe=false"
+        f"&private=true&enhance=false&negative_prompt={negative}"
+    )
+    return [
+        f"https://gen.pollinations.ai/image/{encoded}?{query}&model=flux&seed={seed}",
+        f"https://image.pollinations.ai/prompt/{encoded}?{query}&model=flux&seed={seed}",
+        f"https://gen.pollinations.ai/image/{encoded}?{query}&model=zimage&seed={seed + 7}",
+        f"https://image.pollinations.ai/prompt/{encoded}?{query}&model=turbo&seed={seed + 13}",
     ]
+
+
+def fetch_ai_horde_image(job):
+    """Generate via AI Horde, the primary endpoint for NSFW + optional img2img control."""
+    if not AI_HORDE_ENABLED:
+        return None, None
+
+    source_image = normalize_reference_image(job.get("reference_image"))
+    payload = {
+        "prompt": job.get("enhanced_prompt", ""),
+        "negative_prompt": ADULT_CARTOON_NEGATIVE_PROMPT,
+        "nsfw": True,
+        "censor_nsfw": False,
+        "trusted_workers": False,
+        "r2": True,
+        "params": {
+            "width": IMAGE_WIDTH,
+            "height": IMAGE_HEIGHT,
+            "steps": 35,
+            "cfg_scale": 7,
+            "sampler_name": "k_dpmpp_2m",
+            "karras": True,
+            "n": 1,
+            "seed": str(job.get("seed", "")),
+        },
+    }
+
+    if AI_HORDE_MODELS:
+        payload["models"] = AI_HORDE_MODELS
+
+    if source_image:
+        payload["source_image"] = source_image
+        payload["source_processing"] = "img2img"
+        payload["params"]["denoising_strength"] = job.get("denoising_strength", 0.65)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "apikey": AI_HORDE_API_KEY or "0000000000",
+        "Client-Agent": "LilithDashboard:1.0:github.com/lilith-dashboard",
+    }
+
+    try:
+        submit = requests.post(
+            f"{AI_HORDE_API_ROOT}/generate/async",
+            json=payload,
+            headers=headers,
+            timeout=30,
+        )
+        print(f"[image-horde] submit status={submit.status_code}")
+        if submit.status_code not in (200, 202):
+            print(f"[image-horde] submit error: {submit.text[:240]}")
+            return None, None
+
+        generation_id = (submit.json() or {}).get("id")
+        if not generation_id:
+            return None, None
+
+        deadline = time.time() + max(30, AI_HORDE_POLL_SECONDS)
+        while time.time() < deadline:
+            time.sleep(2)
+            check = requests.get(f"{AI_HORDE_API_ROOT}/generate/check/{generation_id}", timeout=12)
+            if check.status_code != 200:
+                continue
+            check_data = check.json() or {}
+            if not check_data.get("done"):
+                continue
+
+            status = requests.get(f"{AI_HORDE_API_ROOT}/generate/status/{generation_id}", timeout=30)
+            if status.status_code != 200:
+                return None, None
+
+            generations = (status.json() or {}).get("generations") or []
+            for generation in generations:
+                image_value = generation.get("img")
+                if not image_value:
+                    continue
+                if image_value.startswith("http://") or image_value.startswith("https://"):
+                    img_resp = requests.get(image_value, timeout=45)
+                    mime = (img_resp.headers.get("content-type") or "image/webp").lower()
+                    if img_resp.status_code == 200 and img_resp.content:
+                        return img_resp.content, mime if mime.startswith("image/") else "image/webp"
+                return base64.b64decode(image_value), "image/webp"
+            return None, None
+    except Exception as e:
+        print(f"[image-horde] error: {e}")
+
+    return None, None
+
+
+def build_image_generation_result(prompt, reference_image, session_id="global", style_lock=False, style_flexibility="balanced"):
+    """Build a consistent image generation response payload."""
+    clean = strip_image_command_words(prompt)
+    if not clean:
+        clean = "Lilith, gothic succubus portrait"
+
+    seed = random.randint(1, 2_147_483_647)
+    enhanced, denoising_strength = build_lilith_image_prompt(
+        clean,
+        reference_image=reference_image,
+        style_lock=style_lock,
+        style_flexibility=style_flexibility,
+    )
+
+    candidates = build_pollinations_candidates(enhanced, seed)
 
     cleanup_image_jobs()
     image_id = uuid4().hex[:12]
     image_jobs[image_id] = {
         "prompt": clean,
+        "enhanced_prompt": enhanced,
+        "negative_prompt": ADULT_CARTOON_NEGATIVE_PROMPT,
+        "reference_image": reference_image,
+        "denoising_strength": denoising_strength,
         "session_id": session_id,
         "candidate_urls": candidates,
+        "primary_provider": LILITH_IMAGE_PROVIDER,
         "created_at": datetime.now().timestamp(),
         "cached_bytes": None,
         "cached_mime": None,
+        "served_provider": None,
+        "seed": seed,
     }
 
     image_url = f"/api/image/proxy/{image_id}"
@@ -383,6 +565,8 @@ def build_image_generation_result(prompt, reference_image, session_id="global", 
         "style_lock": bool(style_lock),
         "style_flexibility": normalize_style_flexibility(style_flexibility),
         "image_id": image_id,
+        "provider": LILITH_IMAGE_PROVIDER,
+        "fallback_provider": POLLINATIONS_IMAGE_PROVIDER,
     }
 
 # Voice presets
@@ -1408,7 +1592,8 @@ HTML_TEMPLATE = """
                 
                 if (data.success && data.image_url) {
                     const refTag = referenceImage ? '<br><small>Reference applied</small>' : '';
-                    addMsg(`Here's your image, darling~ 💋${refTag}<br><img src="${data.image_url}" class="gen-img">`, 'lilith');
+                    const providerTag = data.provider ? `<br><small>Endpoint: ${escapeHtml(data.provider)}</small>` : '';
+                    addMsg(`Here's your image, darling~ 💋${refTag}${providerTag}<br><img src="${data.image_url}" class="gen-img">`, 'lilith');
                 } else {
                     addMsg('Could not generate...', 'lilith');
                 }
@@ -1443,7 +1628,8 @@ HTML_TEMPLATE = """
 
                 if (data.success && data.image_url) {
                     const flex = escapeHtml(data.style_flexibility || 'balanced');
-                    addMsg(`Style-locked render complete 🔒<br><small>Reference locked • Flex: ${flex}</small><br><img src="${data.image_url}" class="gen-img">`, 'lilith');
+                    const provider = escapeHtml(data.provider || 'Style Lock');
+                    addMsg(`Style-locked render complete 🔒<br><small>Reference locked • Flex: ${flex} • Endpoint: ${provider}</small><br><img src="${data.image_url}" class="gen-img">`, 'lilith');
                 } else {
                     addMsg(data.error || data.response || 'Style command failed.', 'lilith');
                 }
@@ -1474,7 +1660,8 @@ HTML_TEMPLATE = """
                 hideTyping();
                 
                 if (data.success && data.image_url) {
-                    addMsg(`Here I am, darling~ 😈💋<br><img src="${data.image_url}" class="gen-img">`, 'lilith');
+                    const providerTag = data.provider ? `<br><small>Endpoint: ${escapeHtml(data.provider)}</small>` : '';
+                    addMsg(`Here I am, darling~ 😈💋${providerTag}<br><img src="${data.image_url}" class="gen-img">`, 'lilith');
                 }
             } catch (e) {
                 hideTyping();
@@ -1592,6 +1779,8 @@ def api_status():
         "ollama": ollama_ok,
         "ollama_fallback": USE_OLLAMA_FALLBACK,
         "model": OLLAMA_MODEL,
+        "image_provider": LILITH_IMAGE_PROVIDER if AI_HORDE_ENABLED else POLLINATIONS_IMAGE_PROVIDER,
+        "image_fallback_provider": POLLINATIONS_IMAGE_PROVIDER,
         "timestamp": datetime.now().isoformat()
     })
 
@@ -1672,6 +1861,13 @@ def api_image_proxy(image_id):
     if cached_bytes:
         return Response(cached_bytes, mimetype=job.get("cached_mime") or "image/png")
 
+    horde_bytes, horde_mime = fetch_ai_horde_image(job)
+    if horde_bytes:
+        job["cached_bytes"] = horde_bytes
+        job["cached_mime"] = horde_mime or "image/webp"
+        job["served_provider"] = LILITH_IMAGE_PROVIDER
+        return Response(horde_bytes, mimetype=job["cached_mime"])
+
     urls = job.get("candidate_urls") or []
     headers = {
         "User-Agent": "LilithDashboard/1.0",
@@ -1694,18 +1890,21 @@ def api_image_proxy(image_id):
                 continue
             job["cached_bytes"] = body
             job["cached_mime"] = content_type
+            job["served_provider"] = POLLINATIONS_IMAGE_PROVIDER
             return Response(body, mimetype=content_type)
         except Exception as e:
             print(f"[image-proxy] fetch failed for {url[:80]}: {e}")
 
-    # Fallback: retry with a safe minimal prompt so the user gets *something*
-    fallback_prompt = urllib.parse.quote("beautiful anime girl, dark fantasy, cinematic portrait, masterpiece")
+    # Final fallback keeps the same adult-cartoon style lock even if upstreams fail.
+    fallback_prompt = urllib.parse.quote(
+        "Lilith gothic succubus portrait, strict NSFW adult animated cartoon illustration, "
+        "mature adult woman only, anatomically correct artistic nudity, dark fantasy, masterpiece"
+    )
+    fallback_negative = urllib.parse.quote(ADULT_CARTOON_NEGATIVE_PROMPT)
     fallback_seed = random.randint(1, 2_147_483_647)
     fallback_urls = [
-        f"https://gen.pollinations.ai/image/{fallback_prompt}?width=1024&height=1280&nologo=true&model=flux&seed={fallback_seed}",
-        f"https://gen.pollinations.ai/image/{fallback_prompt}?width=1024&height=1280&nologo=true&model=turbo&seed={fallback_seed}",
-        f"https://image.pollinations.ai/prompt/{fallback_prompt}?width=1024&height=1280&nologo=true&model=flux&seed={fallback_seed}",
-        f"https://image.pollinations.ai/prompt/{fallback_prompt}?width=1024&height=1280&nologo=true&model=turbo&seed={fallback_seed}",
+        f"https://gen.pollinations.ai/image/{fallback_prompt}?width={IMAGE_WIDTH}&height={IMAGE_HEIGHT}&nologo=true&nofilter=true&safe=false&private=true&enhance=false&negative_prompt={fallback_negative}&model=flux&seed={fallback_seed}",
+        f"https://image.pollinations.ai/prompt/{fallback_prompt}?width={IMAGE_WIDTH}&height={IMAGE_HEIGHT}&nologo=true&nofilter=true&safe=false&private=true&enhance=false&negative_prompt={fallback_negative}&model=flux&seed={fallback_seed}",
     ]
     for url in fallback_urls:
         try:
@@ -1717,6 +1916,7 @@ def api_image_proxy(image_id):
                 if body:
                     job["cached_bytes"] = body
                     job["cached_mime"] = content_type
+                    job["served_provider"] = POLLINATIONS_IMAGE_PROVIDER
                     return Response(body, mimetype=content_type)
         except Exception as e:
             print(f"[image-proxy] fallback failed: {e}")
