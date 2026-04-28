@@ -59,6 +59,11 @@ services:
     environment:
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=dolphin-mistral:7b
+      - AI_HORDE_ENABLED=true
+      - AI_HORDE_API_ROOT=https://aihorde.net/api/v2
+      - AI_HORDE_API_KEY=${AI_HORDE_API_KEY:-0000000000}
+      - LILITH_IMAGE_WIDTH=832
+      - LILITH_IMAGE_HEIGHT=1216
       - PORT=5000
     depends_on:
       ollama:

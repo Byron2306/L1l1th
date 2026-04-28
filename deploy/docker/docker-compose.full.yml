@@ -136,6 +136,9 @@ services:
       - OLLAMA_MODEL=dolphin-mistral:7b
       - SD_URL=http://stable-diffusion:7860
       - WAV2LIP_URL=http://wav2lip:5000
+      - AI_HORDE_ENABLED=true
+      - AI_HORDE_API_ROOT=https://aihorde.net/api/v2
+      - AI_HORDE_API_KEY=${AI_HORDE_API_KEY:-0000000000}
       - PORT=5000
     depends_on:
       ollama:

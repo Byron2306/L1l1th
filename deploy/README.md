@@ -7,7 +7,7 @@ LILITH ETERNAL is a completely **FREE, UNLIMITED, UNCENSORED** AI system that ru
 **Features:**
 - 🧠 Local AI with Ollama (Dolphin-Mistral - fully uncensored)
 - 🔊 Voice synthesis (Edge TTS - free, unlimited)
-- 🖼️ Image generation (Pollinations.ai - free)
+- 🖼️ Image generation (AI Horde primary with Pollinations Flux fallback)
 - 💬 Web interface
 - 🤖 Telegram bot
 - 🔓 NO restrictions, NO censorship
@@ -144,6 +144,28 @@ Access: `http://YOUR_SERVER_IP:5000`
 | `/api/clear` | POST | Clear history |
 | `/api/voice/speak` | POST | Generate voice |
 | `/api/image/generate` | POST | Generate image |
+
+### Image Generation Endpoint
+
+The deploy dashboard uses **AI Horde** as the primary image endpoint:
+
+```text
+POST https://aihorde.net/api/v2/generate/async
+```
+
+It is selected because it supports explicit NSFW generation flags, disabling NSFW censoring, and img2img reference input for style/identity lock. If AI Horde is unavailable or slow, the dashboard falls back to Pollinations Flux via `https://gen.pollinations.ai/image/{prompt}` with `safe=false`.
+
+Optional environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AI_HORDE_ENABLED` | `true` | Enable AI Horde as the primary image provider |
+| `AI_HORDE_API_ROOT` | `https://aihorde.net/api/v2` | AI Horde API root |
+| `AI_HORDE_API_KEY` | `0000000000` | AI Horde API key; anonymous key works but is slower |
+| `AI_HORDE_MODELS` | empty | Optional comma-separated Horde model allowlist |
+| `AI_HORDE_POLL_SECONDS` | `150` | Max seconds to wait for Horde before fallback |
+| `LILITH_IMAGE_WIDTH` | `832` | Generated image width |
+| `LILITH_IMAGE_HEIGHT` | `1216` | Generated image height |
 
 ### Chat API Example
 
