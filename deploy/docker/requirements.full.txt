@@ -1,9 +1,0 @@
-# LILITH ETERNAL - Full Requirements
-
-flask>=2.3.0
-flask-cors>=4.0.0
-requests>=2.31.0
-edge-tts>=6.1.9
-aiohttp>=3.9.0
-pillow>=10.0.0
-numpy>=1.24.0

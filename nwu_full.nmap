@@ -1,2 +1,0 @@
-# Nmap 7.93 scan initiated Tue Feb 10 22:01:38 2026 as: nmap -Pn -p- -A -sV -O -sC -T4 --traceroute -oA nwu_full www.nwu.ac.za
-Couldn't open a raw socket. Error: Operation not permitted (1)
