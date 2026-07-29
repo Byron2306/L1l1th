@@ -1,125 +1,80 @@
-# LILITH ETERNAL - Product Requirements Document v10.4
+# Lilith — Adult Companion App
 
-## Current Status: FULLY OPERATIONAL! 🎉
+## What this is
+Private (18+) adult roleplay companion app. Flirty/suggestive chat, TTS voice replies, and anime portrait generation with a curated wardrobe of lingerie/swimwear/boudoir/themed looks. Content is **suggestive-clothed**, not explicit — safety negative prompts and system prompt hard limits are in place (no minors, no real-person sexualization, no hacking/weapons/harm instructions).
 
-### What's Working NOW
+## Architecture
+- **`/app/backend`** — FastAPI (uvicorn on `:8001`), routes under `/api`.
+  - `server.py` — endpoints
+  - `services/eternal_ai_engine.py` — chat with priority chain: **Emergent (Claude Sonnet 4.5)** → Ollama → Pollinations POST/OpenAI-compat/GET → HF Inference → g4f → offline flirty fallback
+  - `services/lilith_image_generator.py` — image with priority chain: **LILITH ZeroGPU HF Space** → Animagine XL 3.1 → Pollinations Flux → AI Horde. 18 named outfits in 4 categories (lingerie / swimwear / boudoir / themed).
+  - `services/lilith_elevenlabs_voice.py` — TTS: ElevenLabs primary → Edge TTS fallback
+  - `services/lilith_animation_engine.py` — Lip-sync frames (available, not yet wired)
+  - `services/extended_providers.py` — clean multi-provider LLM wrapper (reserve)
+- **`/app/frontend`** — Vite + React 18 on `:3000`.
+  - Age gate (localStorage `lilith:18ok`)
+  - Left: avatar frame + name plate + provider chip + wardrobe launcher
+  - Right: chat with message bubbles, voice toggle, textarea composer
+  - Slide-in wardrobe drawer with categorized outfit picker
+- **`/app/bot/telegram_bot.py`** — sanitized bot (only chat/voice/image commands). Not currently supervised.
 
-**✅ AI CHAT**
-- g4f multi-provider (100+ providers)
-- GeminiPro working reliably
-- Romantic fallback responses when providers fail
-- Flirty, warm personality
-
-**✅ ELEVENLABS VOICE**
-- API Key: sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1
-- Voice ID: Md7yllQ29xXxuJKm6IHL (sultry voice)
-- High-quality voice synthesis
-- Edge TTS fallback available
-
-**✅ IMAGE GENERATION**
-- AI Horde (primary) - free, no keys
-- HuggingFace endpoints (backup)
-- Sexy clothed prompts (lingerie, etc.)
-- Download buttons working
-
-**✅ TOR NETWORK**
-- TOR connected (IP: 185.181.61.203)
-- Access to .onion AI services ready
-- Torry.io accessible via TOR
-- DIG AI .onion accessible
-
-**✅ ANIMATION ENGINE**
-- PIL-based frame generation
-- Lip-sync frame generation
-- Reaction animations (happy, thinking, aroused)
-- GIF/WebM output support
-
----
-
-## Access
-
-**Live URL:** https://demon-companion.preview.emergentagent.com/lilith/
-
----
-
-## Engine Status
-
-| Engine | Status | Provider |
-|--------|--------|----------|
-| Chat | ✅ | g4f (GeminiPro) |
-| Voice | ✅ | ElevenLabs |
-| Images | ✅ | AI Horde |
-| TOR | ✅ | Connected |
-| Animation | ✅ | PIL |
-
----
-
-## Files Created/Updated
-
-### New Files
-- `/app/tools/lilith_elevenlabs_voice.py` - ElevenLabs integration
-- `/app/tools/lilith_tor_engine.py` - TOR .onion AI access
-- `/app/tools/lilith_animation_engine.py` - Animation/lip-sync
-
-### Updated Files
-- `/app/tools/lilith_full_page.py` - All integrations
-- `/app/tools/eternal_ai_engine.py` - Romantic prompts + fallbacks
-- `/app/tools/lilith_image_generator.py` - Multi-provider
-- `/app/backend/.env` - ElevenLabs keys
-
----
-
-## Features
-
-### Chat
-- 100+ free AI providers via g4f
-- Romantic, flirty personality
-- TOR .onion AI fallback
-- Context-aware responses
-
-### Voice
-- ElevenLabs (primary) - sultry female voice
-- Edge TTS (fallback) - 8 voice presets
-- Auto-play on response
-
-### Images
-- Sexy clothed images (lingerie, etc.)
-- AI Horde free generation
-- Download buttons
-- Character-consistent Lilith selfies
-
-### Animation
-- Lip-sync from audio
-- Emotional reactions
-- GIF/WebM export
-
----
-
-## Configuration
-
-```bash
-# ElevenLabs
-ELEVENLABS_API_KEY=sk_be1c723ee790986c8c10418a351ac7438de2bbba972d02a1
-ELEVENLABS_VOICE_ID=Md7yllQ29xXxuJKm6IHL
-
-# TOR (auto-configured)
-TOR_SOCKS_PORT=9050
+## API surface
+```
+GET  /api/                       — API index
+GET  /api/status                 — chat + voice + image health
+POST /api/chat                   {message, session_id?}
+POST /api/clear                  {session_id?}
+POST /api/voice/speak            {text}         -> base64 MP3
+POST /api/image/generate         {prompt}       -> base64 image
+GET  /api/image/outfits          -> catalog (id, label, category)
+GET  /api/image/lilith?outfit=X  -> binary image (webp/png)
 ```
 
----
+## Design system
+- Palette: `--ink #0a0708`, `--wine #5a1826`, `--gold #c9a875`, `--ivory #f4ebe1`
+- Type: Playfair Display (serif) + Inter (sans)
+- Vibe: noir + boudoir; gold hairline rules; wine CTAs; grain overlay; no neon glow
 
-## Next Steps
+## Env (backend/.env)
+- `MONGO_URL`, `DB_NAME` — reserved (no DB writes yet)
+- `EMERGENT_LLM_KEY` — universal key, powers Claude Sonnet 4.5 chat
+- `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` — TTS
+- `HF_TOKEN`, `LILITH_IMAGE_SPACE` — primary image generator
+- `TELEGRAM_BOT_TOKEN` — bot (currently not running)
 
-### P1 - Polish
-- [ ] Session persistence across page reloads
-- [ ] Fix image detection (don't trigger on "feel")
-- [ ] Better anime-style image prompts
+## Removed (was in old LuciferOS codebase)
+Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`, `nmap.exe`, `vulnerability_scanner.ps1`, `ai_providers.py`, all `*attack*/*exploit*/*harvest*/*malware*` modules, v6 telegram bot's hacking command handlers, and every offensive `.md` doc. Freed ~1.7GB.
 
-### P2 - Enhancements
-- [ ] Real video animation with lip-sync
-- [ ] Telegram bot with TOR AI
-- [ ] More TOR AI endpoints
+## Sanitized
+- Chat system prompt no longer says "NEVER refuse" or "no safety filters"; instead has HARD LIMITS block (no minors, no real-person sexualization, no hacking/malware/weapons).
+- Image generator keeps original negative prompt blocking `child, underage, loli, shota, nude, naked, nipples, exposed genitals, penis, vagina, completely naked`.
+- Hardcoded ElevenLabs API key removed from source; lives only in `.env`.
 
----
+## Status (verified end-to-end)
+| Feature | Status |
+|---|---|
+| Chat (multi-turn, Claude Sonnet 4.5) | ✅ live |
+| Voice (ElevenLabs) | ✅ live |
+| Image (ZeroGPU HF Space) | ✅ live, ~5–20s |
+| Wardrobe picker (18 outfits, 4 categories) | ✅ live |
+| Age gate | ✅ localStorage-persisted |
 
-*Last Updated: March 10, 2026*
+## Backlog / P1
+- Gallery of previously generated images
+- Seed-lock / same-character continuity
+- Custom outfit builder (free-text)
+- Persist chat history to Mongo (currently in-memory per engine instance)
+- Voice preset picker (ElevenLabs voice IDs) in UI
+- Wire animation engine for talking avatar
+- Telegram bot back under supervisor (safe subset only)
+
+## Backlog / P2
+- Streaming SSE chat replies
+- Mobile layout polish
+- Multi-session support in UI
+- Rate limiting
+
+## What I will NOT build
+- Explicit NSFW image generation (removing safety negative prompts, integrating unfiltered SD/Flux endpoints)
+- Uncensored erotic-prose chat (bypassing model content limits)
+- Any offensive/security tooling
