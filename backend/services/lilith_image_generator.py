@@ -33,20 +33,39 @@ LILITH_BASE = (
 )
 
 # Sexy CLOTHED outfits — each carefully crafted for quality
-OUTFITS = [
-    "black lace lingerie, cleavage, bedroom eyes, lying on silk bed, rose petals, dim candlelight",
-    "red silk negligee, sideboob, romantic atmosphere, wine glass nearby, soft lighting",
-    "black corset with lace trim, thigh-high stockings, garter belt, dominant confident pose",
-    "sheer see-through nightgown, backlit silhouette, moonlight through window, mysterious",
-    "leather harness over black lingerie, choker with gem, chains, dark dungeon aesthetic",
-    "bunny girl outfit, black fishnet stockings, bow tie, playful teasing pose",
-    "china dress with very high slit, no bra visible cleavage, elegant standing pose, lanterns",
-    "virgin killer sweater, bare back exposed, looking over shoulder with shy smile",
-    "micro bikini, wet glistening skin, beach sunset, arched back, water droplets",
-    "naked apron only, kitchen setting, looking over shoulder, morning light, domestic",
-    "tight latex bodysuit, deep zipper cleavage, nightclub neon lighting, confident",
-    "bridal lingerie, white lace, veil, wedding night atmosphere, blushing",
-]
+# Named outfits — each is an ID -> full prompt fragment.
+# Category tags let the UI group them (lingerie / swimwear / boudoir / themed).
+OUTFITS: Dict[str, Dict[str, str]] = {
+    "black_lace_lingerie":  {"category": "lingerie",  "label": "Black lace lingerie on silk bed",     "prompt": "black lace lingerie, cleavage, bedroom eyes, lying on silk bed, rose petals, dim candlelight"},
+    "red_silk_negligee":    {"category": "boudoir",   "label": "Red silk negligee, wine & candles",   "prompt": "red silk negligee, sideboob, romantic atmosphere, wine glass nearby, soft lighting"},
+    "black_corset":         {"category": "lingerie",  "label": "Black corset + garter + thigh-highs", "prompt": "black corset with lace trim, thigh-high stockings, garter belt, dominant confident pose"},
+    "sheer_nightgown":      {"category": "boudoir",   "label": "Sheer nightgown, moonlight",          "prompt": "sheer see-through nightgown, backlit silhouette, moonlight through window, mysterious"},
+    "leather_harness":      {"category": "lingerie",  "label": "Leather harness over lingerie",       "prompt": "leather harness over black lingerie, choker with gem, chains, dark dungeon aesthetic"},
+    "bunny_girl":            {"category": "themed",    "label": "Bunny girl + fishnets",               "prompt": "bunny girl outfit, black fishnet stockings, bow tie, playful teasing pose"},
+    "china_dress":          {"category": "themed",    "label": "China dress, high slit",              "prompt": "china dress with very high slit, elegant standing pose, lanterns"},
+    "virgin_killer_sweater":{"category": "themed",    "label": "Virgin killer sweater",               "prompt": "virgin killer sweater, bare back exposed, looking over shoulder with shy smile"},
+    "micro_bikini_beach":   {"category": "swimwear",  "label": "Micro bikini, beach sunset",          "prompt": "micro bikini, wet glistening skin, beach sunset, arched back, water droplets"},
+    "classic_bikini_pool":  {"category": "swimwear",  "label": "Classic bikini poolside",             "prompt": "classic string bikini, poolside, wet hair, sunlight, glistening skin, playful smile"},
+    "highwaist_bikini":     {"category": "swimwear",  "label": "High-waist retro bikini",             "prompt": "high-waist retro bikini, cat-eye sunglasses, tropical beach, vintage pin-up pose"},
+    "monokini":             {"category": "swimwear",  "label": "Cutout monokini",                     "prompt": "black cutout monokini, standing at the water's edge, wet skin, golden hour lighting"},
+    "wet_shirt_pool":       {"category": "swimwear",  "label": "Wet white shirt poolside",            "prompt": "wet see-through white shirt over bikini, poolside, water droplets, sunlit"},
+    "apron_kitchen":        {"category": "themed",    "label": "Apron in morning kitchen",            "prompt": "wearing only a frilly apron over lingerie, kitchen setting, looking over shoulder, morning light, domestic"},
+    "latex_bodysuit":       {"category": "lingerie",  "label": "Latex bodysuit, neon nightclub",      "prompt": "tight latex bodysuit, deep zipper cleavage, nightclub neon lighting, confident"},
+    "bridal_lingerie":      {"category": "boudoir",   "label": "Bridal lingerie, white lace",         "prompt": "bridal lingerie, white lace, veil, wedding night atmosphere, blushing"},
+    "silk_robe":            {"category": "boudoir",   "label": "Open silk robe, morning",             "prompt": "open silk robe over matching lingerie set, morning light, coffee cup, relaxed"},
+    "gym_activewear":       {"category": "themed",    "label": "Sporty activewear",                   "prompt": "tight sports bra and yoga leggings, gym setting, athletic pose, healthy glow"},
+}
+
+
+def _outfit_prompt(outfit: Optional[str]) -> str:
+    """Resolve an outfit ID (or 'random', or None) to a prompt fragment."""
+    if not outfit or outfit == "random":
+        return random.choice(list(OUTFITS.values()))["prompt"]
+    entry = OUTFITS.get(outfit)
+    if entry:
+        return entry["prompt"]
+    # Allow free-form outfit strings too
+    return outfit
 
 # Quality boosters
 QUALITY_POSITIVE = (
@@ -112,10 +131,7 @@ class HuggingFaceImageGenerator:
     # ------------------------------------------------------------------
 
     def generate_lilith_image(self, outfit_style: str = "random") -> Optional[bytes]:
-        if outfit_style == "random":
-            outfit = random.choice(OUTFITS)
-        else:
-            outfit = outfit_style if outfit_style in OUTFITS else random.choice(OUTFITS)
+        outfit = _outfit_prompt(outfit_style)
         prompt = f"{LILITH_BASE}, {outfit}, {QUALITY_POSITIVE}"
         return self.generate_image(prompt)
 

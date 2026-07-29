@@ -127,13 +127,38 @@ def api_image_generate(req: ImageRequest):
     }
 
 
+@app.get("/api/image/outfits")
+def api_image_outfits():
+    """List all named outfits (id, label, category) for the outfit picker UI."""
+    from services.lilith_image_generator import OUTFITS
+    items = [
+        {"id": oid, "label": data["label"], "category": data["category"]}
+        for oid, data in OUTFITS.items()
+    ]
+    # Grouped view for convenience
+    grouped: dict[str, list] = {}
+    for it in items:
+        grouped.setdefault(it["category"], []).append({"id": it["id"], "label": it["label"]})
+    return {"outfits": items, "by_category": grouped, "count": len(items)}
+
+
 @app.get("/api/image/lilith")
 def api_image_lilith(outfit: str = "random"):
     image = get_image_generator()
     data = image.generate_lilith_image(outfit_style=outfit)
     if not data:
         raise HTTPException(status_code=503, detail="Image generation failed")
-    return Response(content=data, media_type="image/png")
+    # HF ZeroGPU Space returns WebP; Animagine/Pollinations return PNG/JPEG.
+    # Sniff from magic bytes so browsers render correctly.
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        mime = "image/webp"
+    elif data.startswith(b"\x89PNG"):
+        mime = "image/png"
+    elif data.startswith(b"\xff\xd8"):
+        mime = "image/jpeg"
+    else:
+        mime = "application/octet-stream"
+    return Response(content=data, media_type=mime)
 
 
 @app.get("/api/")
