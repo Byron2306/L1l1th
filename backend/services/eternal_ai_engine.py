@@ -35,6 +35,18 @@ except ImportError:
     G4F_AVAILABLE = False
 
 # ============================================================
+# EMERGENT UNIVERSAL LLM KEY (primary — reliable paid provider)
+# ============================================================
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+EMERGENT_PROVIDER = os.environ.get("EMERGENT_PROVIDER", "anthropic")
+EMERGENT_MODEL = os.environ.get("EMERGENT_MODEL", "claude-sonnet-4-5-20250929")
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    EMERGENT_AVAILABLE = bool(EMERGENT_LLM_KEY)
+except ImportError:
+    EMERGENT_AVAILABLE = False
+
+# ============================================================
 # OLLAMA (local, fastest, truly uncensored)
 # ============================================================
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
@@ -193,7 +205,9 @@ class EternalAIEngine:
         }
         self._last_good_provider: Optional[str] = None  # cache last working provider
         self._lock = threading.Lock()
-        print("[ETERNAL v2] Engine initialized — Pollinations primary, fast-rotation")
+        self._emergent_chat = None
+        self._emergent_session_id = hashlib.md5(f"{time.time()}{id(self)}".encode()).hexdigest()[:12]
+        print("[ETERNAL v2] Engine initialized — Emergent primary, Pollinations/HF/g4f fallback")
 
     # ------------------------------------------------------------------
     # Helpers
@@ -229,6 +243,51 @@ class EternalAIEngine:
         ]
         lower = text.lower()
         return not any(b in lower for b in bad)
+
+    # ------------------------------------------------------------------
+    # Provider: Emergent Universal LLM Key (primary, reliable)
+    # ------------------------------------------------------------------
+
+    def _try_emergent(self, message: str) -> Optional[Dict]:
+        if not EMERGENT_AVAILABLE:
+            return None
+        tag = f"Emergent/{EMERGENT_PROVIDER}:{EMERGENT_MODEL}"
+        if not self.health.is_healthy(tag):
+            return None
+        try:
+            if self._emergent_chat is None:
+                self._emergent_chat = LlmChat(
+                    api_key=EMERGENT_LLM_KEY,
+                    session_id=self._emergent_session_id,
+                    system_message=LILITH_SYSTEM_PROMPT,
+                ).with_model(EMERGENT_PROVIDER, EMERGENT_MODEL)
+
+            import asyncio as _asyncio
+
+            async def _run():
+                return await self._emergent_chat.send_message(UserMessage(text=message))
+
+            try:
+                loop = _asyncio.get_event_loop()
+                if loop.is_running():
+                    # We're inside an async context — use a new loop in a thread.
+                    from concurrent.futures import ThreadPoolExecutor
+                    with ThreadPoolExecutor(max_workers=1) as ex:
+                        fut = ex.submit(_asyncio.run, _run())
+                        text = fut.result(timeout=60)
+                else:
+                    text = _asyncio.run(_run())
+            except RuntimeError:
+                text = _asyncio.run(_run())
+
+            text = (text or "").strip()
+            if self._is_valid_response(text):
+                self.health.record(tag, True)
+                return {"success": True, "response": text, "provider": tag}
+        except Exception as e:
+            print(f"[ETERNAL] Emergent error: {e}")
+        self.health.record(tag, False)
+        return None
 
     # ------------------------------------------------------------------
     # Provider: Ollama (local)
@@ -451,6 +510,15 @@ class EternalAIEngine:
             self._last_good_provider = None
             self._cooldown_all_pollinations()
 
+        # 0) Emergent Universal Key (primary — most reliable)
+        if EMERGENT_AVAILABLE:
+            result = self._try_emergent(message)
+            if result and result.get("success"):
+                self._last_good_provider = "emergent"
+                self._record_success(result["provider"])
+                self._save_history(message, result["response"])
+                return self._make_response(result)
+
         # 1) Ollama
         if OLLAMA_AVAILABLE:
             result = self._try_ollama(message)
@@ -504,7 +572,9 @@ class EternalAIEngine:
     def _try_provider_by_name(self, name: str, message: str, messages: List[Dict]) -> Optional[Dict]:
         """Re-try the last successful provider."""
         try:
-            if name == "ollama":
+            if name == "emergent":
+                return self._try_emergent(message)
+            elif name == "ollama":
                 return self._try_ollama(message)
             elif name == "pollinations_chat":
                 return self._try_pollinations_chat(messages)
