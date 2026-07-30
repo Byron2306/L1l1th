@@ -130,12 +130,14 @@ class HuggingFaceImageGenerator:
     # Public API
     # ------------------------------------------------------------------
 
-    def generate_lilith_image(self, outfit_style: str = "random") -> Optional[bytes]:
+    def generate_lilith_image(self, outfit_style: str = "random",
+                              seed: Optional[int] = None) -> Optional[bytes]:
         outfit = _outfit_prompt(outfit_style)
         prompt = f"{LILITH_BASE}, {outfit}, {QUALITY_POSITIVE}"
-        return self.generate_image(prompt)
+        return self.generate_image(prompt, seed=seed)
 
-    def generate_image(self, prompt: str, ensure_clothed: bool = True) -> Optional[bytes]:
+    def generate_image(self, prompt: str, ensure_clothed: bool = True,
+                       seed: Optional[int] = None) -> Optional[bytes]:
         # Ensure quality tags
         if "masterpiece" not in prompt.lower():
             prompt = f"{prompt}, {QUALITY_POSITIVE}"
@@ -143,19 +145,19 @@ class HuggingFaceImageGenerator:
             prompt = f"anime style, {prompt}"
 
         # Try LILITH Space (user's private ZeroGPU, uncensored, best quality)
-        result = self._generate_space(prompt)
+        result = self._generate_space(prompt, seed=seed)
         if result:
             self.last_provider = "LILITH Space (ZeroGPU)"
             return result
 
         # Try Animagine (best quality)
-        result = self._generate_animagine(prompt)
+        result = self._generate_animagine(prompt, seed=seed)
         if result:
             self.last_provider = "Animagine XL 3.1"
             return result
 
         # Fallback: Pollinations image (uses Flux, decent quality)
-        result = self._generate_pollinations(prompt)
+        result = self._generate_pollinations(prompt, seed=seed)
         if result:
             self.last_provider = "Pollinations/Flux"
             return result
@@ -172,12 +174,13 @@ class HuggingFaceImageGenerator:
     # LILITH Space (user's private ZeroGPU, uncensored) - PRIMARY
     # ------------------------------------------------------------------
 
-    def _generate_space(self, prompt: str) -> Optional[bytes]:
+    def _generate_space(self, prompt: str, seed: Optional[int] = None) -> Optional[bytes]:
         if not self.space_client:
             self._connect_space()
             if not self.space_client:
                 return None
         try:
+            used_seed = seed if seed is not None else random.randint(1, 999999)
             result = self.space_client.predict(
                 prompt,             # prompt
                 QUALITY_NEGATIVE,   # negative_prompt
@@ -185,7 +188,7 @@ class HuggingFaceImageGenerator:
                 1152,               # height
                 24,                 # steps
                 5.5,                # guidance_scale
-                random.randint(1, 999999),  # seed
+                used_seed,          # seed
                 api_name="/generate",
             )
             img_path = result[0] if isinstance(result, (list, tuple)) else result
@@ -204,16 +207,17 @@ class HuggingFaceImageGenerator:
     # Animagine XL 3.1 (HuggingFace Space)
     # ------------------------------------------------------------------
 
-    def _generate_animagine(self, prompt: str) -> Optional[bytes]:
+    def _generate_animagine(self, prompt: str, seed: Optional[int] = None) -> Optional[bytes]:
         if not self.animagine_client:
             self._connect_animagine()
             if not self.animagine_client:
                 return None
         try:
+            used_seed = seed if seed is not None else random.randint(0, 2**32)
             result = self.animagine_client.predict(
                 prompt,                     # positive prompt
                 QUALITY_NEGATIVE,           # negative prompt
-                random.randint(0, 2**32),   # seed
+                used_seed,                  # seed
                 832,                        # width
                 1216,                       # height
                 7.5,                        # guidance_scale (slightly higher for better adherence)
@@ -248,11 +252,12 @@ class HuggingFaceImageGenerator:
     # Pollinations Image (uses Flux, free, reliable)
     # ------------------------------------------------------------------
 
-    def _generate_pollinations(self, prompt: str) -> Optional[bytes]:
+    def _generate_pollinations(self, prompt: str, seed: Optional[int] = None) -> Optional[bytes]:
         try:
             import urllib.parse
             encoded = urllib.parse.quote(prompt)
-            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&enhance=true&model=flux"
+            seed_qs = f"&seed={seed}" if seed is not None else ""
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&enhance=true&model=flux{seed_qs}"
             r = requests.get(
                 url,
                 timeout=90,

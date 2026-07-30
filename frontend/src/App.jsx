@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import WardrobeDrawer from './WardrobeDrawer.jsx';
+import GalleryDrawer from './GalleryDrawer.jsx';
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND}/api`;
@@ -20,11 +22,7 @@ function AgeGate({ onEnter }) {
           in your jurisdiction and consent to adult-themed conversation and imagery.
         </p>
         <div className="gate-buttons">
-          <button
-            className="btn primary"
-            onClick={onEnter}
-            data-testid="age-gate-enter"
-          >
+          <button className="btn primary" onClick={onEnter} data-testid="age-gate-enter">
             I am 18 or older — enter
           </button>
         </div>
@@ -35,83 +33,18 @@ function AgeGate({ onEnter }) {
 }
 
 // ---------------------------------------------------------------------------
-// Wardrobe drawer — pick an outfit, generate an image.
-// ---------------------------------------------------------------------------
-
-const CATEGORY_ORDER = ['lingerie', 'swimwear', 'boudoir', 'themed'];
-const CATEGORY_LABELS = {
-  lingerie: 'Lingerie',
-  swimwear: 'Swimwear',
-  boudoir: 'Boudoir',
-  themed: 'Themed',
-};
-
-function WardrobeDrawer({ open, onClose, onPick, busy }) {
-  const [outfits, setOutfits] = useState(null);
-
-  useEffect(() => {
-    if (!open || outfits) return;
-    fetch(`${API}/image/outfits`)
-      .then((r) => r.json())
-      .then((d) => setOutfits(d.by_category || {}))
-      .catch(() => setOutfits({}));
-  }, [open, outfits]);
-
-  if (!open) return null;
-
-  return (
-    <>
-      <div className="drawer-backdrop" onClick={onClose} data-testid="wardrobe-backdrop" />
-      <aside className="drawer" data-testid="wardrobe-drawer">
-        <div className="drawer-close">
-          <div>
-            <h3 className="serif">Wardrobe</h3>
-            <div className="subtitle">Choose a look</div>
-          </div>
-          <button className="btn ghost" onClick={onClose} data-testid="wardrobe-close">Close</button>
-        </div>
-
-        <button
-          className="btn primary"
-          style={{ width: '100%', marginBottom: 22 }}
-          disabled={busy}
-          onClick={() => onPick('random')}
-          data-testid="wardrobe-surprise"
-        >
-          {busy ? 'Painting…' : 'Surprise Me'}
-        </button>
-
-        {!outfits && <div className="dim serif italic">Loading wardrobe…</div>}
-
-        {outfits &&
-          CATEGORY_ORDER.filter((c) => outfits[c]?.length).map((cat) => (
-            <div key={cat} className="category">
-              <div className="cat-label">{CATEGORY_LABELS[cat] || cat}</div>
-              <div className="outfit-grid">
-                {outfits[cat].map((o) => (
-                  <button
-                    key={o.id}
-                    className="outfit"
-                    disabled={busy}
-                    onClick={() => onPick(o.id)}
-                    data-testid={`outfit-${o.id}`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-      </aside>
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Avatar side
 // ---------------------------------------------------------------------------
 
-function AvatarSide({ imageUrl, imageLoading, speaking, provider, onOpenWardrobe }) {
+function AvatarSide({
+  imageUrl,
+  imageLoading,
+  speaking,
+  provider,
+  currentSeed,
+  onOpenWardrobe,
+  onOpenGallery,
+}) {
   return (
     <section className="avatar-side" data-testid="avatar-side">
       <div className={`avatar-frame ${speaking ? 'speaking' : ''}`} data-testid="avatar-frame">
@@ -142,19 +75,25 @@ function AvatarSide({ imageUrl, imageLoading, speaking, provider, onOpenWardrobe
         <div className="tag">Adult Companion · 18+</div>
       </div>
 
-      {provider && (
-        <div className="provider-chip" data-testid="provider-chip">
-          {provider}
-        </div>
-      )}
+      <div className="chip-row">
+        {provider && (
+          <div className="provider-chip" data-testid="provider-chip" title={provider}>
+            {provider.length > 42 ? provider.slice(0, 40) + '…' : provider}
+          </div>
+        )}
+        {currentSeed != null && (
+          <div className="provider-chip gold-chip" data-testid="seed-chip" title="Current locked seed">
+            seed · {currentSeed}
+          </div>
+        )}
+      </div>
 
       <div className="avatar-actions">
-        <button
-          className="btn primary"
-          onClick={onOpenWardrobe}
-          data-testid="open-wardrobe-btn"
-        >
-          Open Wardrobe
+        <button className="btn primary" onClick={onOpenWardrobe} data-testid="open-wardrobe-btn">
+          Wardrobe
+        </button>
+        <button className="btn" onClick={onOpenGallery} data-testid="open-gallery-btn">
+          Gallery
         </button>
       </div>
     </section>
@@ -165,14 +104,7 @@ function AvatarSide({ imageUrl, imageLoading, speaking, provider, onOpenWardrobe
 // Chat side
 // ---------------------------------------------------------------------------
 
-function ChatSide({
-  messages,
-  onSend,
-  busy,
-  voiceOn,
-  onToggleVoice,
-  onClear,
-}) {
+function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear }) {
   const [text, setText] = useState('');
   const listRef = useRef(null);
 
@@ -202,12 +134,7 @@ function ChatSide({
           <div className="subtitle">A private evening</div>
         </div>
         <div className="header-actions">
-          <button
-            className="btn ghost"
-            onClick={onClear}
-            disabled={busy}
-            data-testid="clear-history-btn"
-          >
+          <button className="btn ghost" onClick={onClear} disabled={busy} data-testid="clear-history-btn">
             Clear
           </button>
         </div>
@@ -218,12 +145,7 @@ function ChatSide({
           <div key={i} className={`msg ${m.role}`} data-testid={`msg-${m.role}-${i}`}>
             {m.text && <div>{m.text}</div>}
             {m.imageUrl && (
-              <img
-                src={m.imageUrl}
-                alt="generated"
-                className="msg-img"
-                data-testid={`msg-img-${i}`}
-              />
+              <img src={m.imageUrl} alt="generated" className="msg-img" data-testid={`msg-img-${i}`} />
             )}
             {m.meta && <div className="msg-meta">{m.meta}</div>}
           </div>
@@ -246,12 +168,7 @@ function ChatSide({
             data-testid="chat-input"
             disabled={busy}
           />
-          <button
-            className="btn primary"
-            onClick={submit}
-            disabled={busy || !text.trim()}
-            data-testid="send-btn"
-          >
+          <button className="btn primary" onClick={submit} disabled={busy || !text.trim()} data-testid="send-btn">
             Send
           </button>
         </div>
@@ -282,15 +199,30 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [busy, setBusy] = useState(false);
   const [voiceOn, setVoiceOn] = useState(true);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryRefresh, setGalleryRefresh] = useState(0);
+
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [chatProvider, setChatProvider] = useState(null);
+  const [imageProvider, setImageProvider] = useState(null);
   const [speaking, setSpeaking] = useState(false);
+
+  const [seedLocked, setSeedLocked] = useState(false);
+  const [currentSeed, setCurrentSeed] = useState(null); // int or null
+
   const audioRef = useRef(null);
 
   useEffect(() => {
     if (localStorage.getItem('lilith:18ok') === 'yes') setGateOk(true);
+    const savedLock = localStorage.getItem('lilith:seedLocked') === 'yes';
+    const savedSeed = parseInt(localStorage.getItem('lilith:seed') || '', 10);
+    if (savedLock && Number.isFinite(savedSeed)) {
+      setSeedLocked(true);
+      setCurrentSeed(savedSeed);
+    }
   }, []);
 
   useEffect(() => {
@@ -302,6 +234,11 @@ export default function App() {
       },
     ]);
   }, [gateOk]);
+
+  useEffect(() => {
+    localStorage.setItem('lilith:seedLocked', seedLocked ? 'yes' : 'no');
+    if (currentSeed != null) localStorage.setItem('lilith:seed', String(currentSeed));
+  }, [seedLocked, currentSeed]);
 
   const enterSite = () => {
     localStorage.setItem('lilith:18ok', 'yes');
@@ -316,9 +253,7 @@ export default function App() {
       setSpeaking(true);
       el.play().catch(() => setSpeaking(false));
       el.onended = () => setSpeaking(false);
-    } catch {
-      setSpeaking(false);
-    }
+    } catch { setSpeaking(false); }
   };
 
   const sendMessage = async (text) => {
@@ -349,9 +284,9 @@ export default function App() {
             const vd = await vr.json();
             if (vd.audio_base64) playAudio(vd.audio_base64);
           }
-        } catch { /* voice failure is silent */ }
+        } catch { /* voice failure silent */ }
       }
-    } catch (e) {
+    } catch {
       setMessages((m) => [
         ...m,
         { role: 'lilith', text: '(the line went quiet for a moment…)', meta: 'connection error' },
@@ -362,36 +297,82 @@ export default function App() {
   };
 
   const clearHistory = async () => {
-    setMessages([
-      {
-        role: 'lilith',
-        text: 'A fresh start, darling. Where were we? 💋',
-      },
-    ]);
-    try { await fetch(`${API}/clear`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' }); } catch {}
+    setMessages([{ role: 'lilith', text: 'A fresh start, darling. Where were we? 💋' }]);
+    try {
+      await fetch(`${API}/clear`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+      });
+    } catch {}
   };
 
-  const pickOutfit = async (outfitId) => {
+  /**
+   * Generate a portrait. `payload` is one of:
+   *   { outfit: 'micro_bikini_beach' }
+   *   { outfit: 'random' }
+   *   { custom_prompt: 'gold silk gown, opera house…' }
+   */
+  const generatePortrait = async (payload) => {
     setAvatarBusy(true);
     setDrawerOpen(false);
     try {
-      // Use direct URL so browser can render the returned image (webp/png)
-      const url = `${API}/image/lilith?outfit=${encodeURIComponent(outfitId)}&t=${Date.now()}`;
-      // Preload — this way we swap in only once the new image is ready
-      const img = new Image();
-      img.onload = () => {
-        setAvatarUrl(url);
-        setAvatarBusy(false);
-        setMessages((m) => [
-          ...m,
-          { role: 'lilith', text: 'How do I look, darling? 💋', imageUrl: url, meta: `outfit · ${outfitId}` },
-        ]);
-      };
-      img.onerror = () => setAvatarBusy(false);
-      img.src = url;
+      const body = { ...payload };
+      if (seedLocked && currentSeed != null) body.seed = currentSeed;
+      const res = await fetch(`${API}/image/lilith`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      const url = `${BACKEND}${data.url}`;
+      // If not seed-locked, still remember the seed that was used so the user can lock it later
+      if (!seedLocked && data.seed != null) setCurrentSeed(data.seed);
+      setImageProvider(data.provider || null);
+      setAvatarUrl(url);
+      setMessages((m) => [
+        ...m,
+        {
+          role: 'lilith',
+          text: 'How do I look, darling? 💋',
+          imageUrl: url,
+          meta: `${payload.custom_prompt ? 'custom' : 'outfit'} · seed ${data.seed} · ${data.provider}`,
+        },
+      ]);
+      setGalleryRefresh((k) => k + 1);
     } catch {
+      setMessages((m) => [
+        ...m,
+        { role: 'lilith', text: '(the paint smudged — try again in a moment, darling)', meta: 'image error' },
+      ]);
+    } finally {
       setAvatarBusy(false);
     }
+  };
+
+  const galleryDelete = async (id) => {
+    try { await fetch(`${API}/gallery/${id}`, { method: 'DELETE' }); }
+    catch {}
+    // if the deleted entry is currently displayed, clear the avatar
+    if (avatarUrl && avatarUrl.endsWith(`/api/gallery/${id}`)) setAvatarUrl(null);
+  };
+
+  const galleryPick = (entry) => {
+    setAvatarUrl(`${BACKEND}${entry.url}`);
+    // Adopt this entry's seed so subsequent generations keep the same face
+    if (entry.seed != null) {
+      setCurrentSeed(entry.seed);
+      setSeedLocked(true);
+    }
+    setGalleryOpen(false);
+    setMessages((m) => [
+      ...m,
+      {
+        role: 'lilith',
+        text: 'Bringing back that look for you~ 💋',
+        imageUrl: `${BACKEND}${entry.url}`,
+        meta: `${entry.label} · seed ${entry.seed ?? '—'}`,
+      },
+    ]);
   };
 
   if (!gateOk) return <AgeGate onEnter={enterSite} />;
@@ -403,8 +384,10 @@ export default function App() {
           imageUrl={avatarUrl}
           imageLoading={avatarBusy}
           speaking={speaking}
-          provider={chatProvider}
+          provider={imageProvider || chatProvider}
+          currentSeed={seedLocked ? currentSeed : null}
           onOpenWardrobe={() => setDrawerOpen(true)}
+          onOpenGallery={() => setGalleryOpen(true)}
         />
         <ChatSide
           messages={messages}
@@ -417,10 +400,24 @@ export default function App() {
       </div>
 
       <WardrobeDrawer
+        api={API}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onPick={pickOutfit}
+        onPick={generatePortrait}
         busy={avatarBusy}
+        seedLocked={seedLocked}
+        currentSeed={currentSeed}
+        onToggleSeedLock={() => setSeedLocked((v) => !v)}
+        onSetSeed={(n) => setCurrentSeed(n)}
+      />
+
+      <GalleryDrawer
+        api={API}
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onSelect={galleryPick}
+        onDelete={galleryDelete}
+        refreshKey={galleryRefresh}
       />
 
       <audio ref={audioRef} style={{ display: 'none' }} />

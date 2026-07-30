@@ -55,16 +55,16 @@ Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`,
 |---|---|
 | Chat (multi-turn, Claude Sonnet 4.5) | ✅ live |
 | Voice (ElevenLabs) | ✅ live |
-| Image (ZeroGPU HF Space) | ✅ live, ~5–20s |
+| Image (ZeroGPU HF Space → Pollinations/Flux fallback) | ✅ live |
 | Wardrobe picker (18 outfits, 4 categories) | ✅ live |
+| **Image Gallery** (scrolling grid, thumb → restore, delete) | ✅ live |
+| **Seed Lock** (pin same face across looks; adopted from gallery pick) | ✅ live |
+| **Custom Outfits** (free-text "describe her look") | ✅ live |
 | Age gate | ✅ localStorage-persisted |
 
 ## Backlog / P1
-- Gallery of previously generated images
-- Seed-lock / same-character continuity
-- Custom outfit builder (free-text)
-- Persist chat history to Mongo (currently in-memory per engine instance)
 - Voice preset picker (ElevenLabs voice IDs) in UI
+- Persist chat history to Mongo (currently in-memory per engine instance)
 - Wire animation engine for talking avatar
 - Telegram bot back under supervisor (safe subset only)
 
@@ -73,6 +73,7 @@ Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`,
 - Mobile layout polish
 - Multi-session support in UI
 - Rate limiting
+- Persist gallery beyond container lifetime (Mongo + object storage)
 
 ## What I will NOT build
 - Explicit NSFW image generation (removing safety negative prompts, integrating unfiltered SD/Flux endpoints)
