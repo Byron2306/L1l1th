@@ -387,24 +387,18 @@ export default function App() {
         const el = audioRef.current;
         if (!el || !url) return resolve();
         el.src = url;
-        setSpeaking(true);
+        // Preview URLs are on ElevenLabs' CDN (cross-origin, no CORS headers)
+        // — WebAudio analyser can't read them, so we skip _startAudioAnalysis()
+        // for previews and let the audio play plainly.
         const onEnd = () => {
-          setSpeaking(false);
-          _stopAudioAnalysis();
           el.onended = null;
           el.onpause = null;
           resolve();
         };
         el.onended = onEnd;
         el.onpause = onEnd;
-        el.play().then(() => _startAudioAnalysis()).catch(() => {
-          setSpeaking(false);
-          _stopAudioAnalysis();
-          resolve();
-        });
+        el.play().catch(() => resolve());
       } catch {
-        setSpeaking(false);
-        _stopAudioAnalysis();
         resolve();
       }
     });

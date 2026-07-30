@@ -69,12 +69,18 @@ Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`,
 | **Persistence** — Mongo `chat_sessions` / `gallery_entries` / `system_state`; files under `/app/data/gallery/` and `/app/data/references/` | ✅ live |
 | Age gate | ✅ localStorage-persisted |
 
+## Recent changes (Feb 2026)
+- **Image quality** — tightened positive/negative prompts, bumped HF Space steps 24→30 and guidance 5.5→6.5, and baked anti-deformity anchors into the Pollinations Flux fallback (which ignores negative prompts) to fix reported deformities.
+- **Voice Preview button** — `/api/voice/list` now returns `preview_url` per voice; a ▶/■ preview button next to the voice dropdown plays the ElevenLabs sample. Cross-origin preview URLs bypass the WebAudio analyser to avoid CORS warnings.
+- Regression covered by `/app/backend/tests/backend_test.py` (voice list/select/speak, chat, image gen).
+
 ## Backlog / P1
 - Telegram bot back under supervisor (safe subset only)
+- **Face-Swap Boost (InsightFace / InSwapper128)** — deferred: local install adds ~1GB and disk is at 83%. Options for later: (a) run against a remote HF Space, (b) prune before installing locally.
 
 ## Backlog / P2
-- **ControlNet OpenPose** — upgrade the pose reference from prompt-hint to true skeleton-guided generation
-- Face-swap post-processing (InSwapper128) as an additional fidelity boost across providers
+- **Presets** — save a full setup (face reference + voice + seed + favourite scenes) as a named preset ("Evening at Home", "Rooftop Date") to load in one tap
+- **ControlNet OpenPose** — upgrade pose reference from prompt-hint to true skeleton-guided generation
 - Streaming SSE chat replies
 - Mobile layout polish
 - Multi-session support in UI
