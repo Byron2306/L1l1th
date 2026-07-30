@@ -120,9 +120,10 @@ function AvatarSide({
 // Chat side
 // ---------------------------------------------------------------------------
 
-function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear, voices, voiceId, onSelectVoice }) {
+function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear, voices, voiceId, onSelectVoice, onPreviewVoice }) {
   const [text, setText] = useState('');
   const listRef = useRef(null);
+  const [previewing, setPreviewing] = useState(null);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -139,6 +140,15 @@ function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear, voi
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
+    }
+  };
+
+  const previewCurrent = () => {
+    if (!voiceId) return;
+    const v = voices.find((x) => x.voice_id === voiceId);
+    if (v?.preview_url) {
+      setPreviewing(voiceId);
+      onPreviewVoice(v.preview_url).finally(() => setPreviewing(null));
     }
   };
 
@@ -198,20 +208,31 @@ function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear, voi
             Voice {voiceOn ? 'On' : 'Off'}
           </button>
           {voiceOn && voices && voices.length > 0 && (
-            <select
-              className="voice-select"
-              value={voiceId || ''}
-              onChange={(e) => onSelectVoice(e.target.value)}
-              data-testid="voice-select"
-              disabled={busy}
-              title="Voice"
-            >
-              {voices.map((v) => (
-                <option key={v.voice_id} value={v.voice_id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                className="voice-select"
+                value={voiceId || ''}
+                onChange={(e) => onSelectVoice(e.target.value)}
+                data-testid="voice-select"
+                disabled={busy}
+                title="Voice"
+              >
+                {voices.map((v) => (
+                  <option key={v.voice_id} value={v.voice_id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn ghost voice-preview-btn"
+                onClick={previewCurrent}
+                disabled={busy || !voiceId}
+                title="Play a sample of this voice"
+                data-testid="voice-preview-btn"
+              >
+                {previewing === voiceId ? '■' : '▶'}
+              </button>
+            </>
           )}
           <span className="dim" style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: '0.06em' }}>
             Press Enter to send · Shift+Enter for a new line

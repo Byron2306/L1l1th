@@ -128,26 +128,32 @@ def _pose_prompt(pose: Optional[str]) -> Optional[str]:
     entry = POSES.get(pose)
     return entry["prompt"] if entry else pose
 
-# Quality boosters
+# Quality boosters — anatomy-focused positive tags reduce deformity risk
+# even on providers (like Pollinations Flux URL API) that ignore negative prompts.
 QUALITY_POSITIVE = (
     "masterpiece, best quality, extremely detailed, "
-    "beautiful detailed eyes, intricate details, "
-    "perfect lighting, professional illustration, "
+    "beautiful detailed eyes, symmetric face, correct anatomy, "
+    "well-proportioned body, five fingers per hand, natural pose, "
+    "intricate details, perfect lighting, professional illustration, "
     "sharp focus, vibrant colors, high contrast, "
     "anime style, detailed skin texture"
 )
 
-# STRONG negative prompt to prevent warping/deformation
+# STRONG negative prompt to prevent warping/deformation (used by providers
+# that accept a negative prompt: HF Space, Animagine, AI Horde).
 QUALITY_NEGATIVE = (
     "lowres, bad anatomy, bad hands, text, error, missing fingers, "
     "extra digit, fewer digits, cropped, worst quality, low quality, "
     "normal quality, jpeg artifacts, signature, watermark, username, "
     "blurry, bad feet, mutated, deformed, ugly, duplicate, "
     "morbid, mutilated, extra fingers, fused fingers, too many fingers, "
+    "six fingers, seven fingers, four fingers, mangled fingers, "
     "long neck, poorly drawn hands, poorly drawn feet, poorly drawn face, "
+    "asymmetric face, cross-eyed, wall-eyed, wrong eyes, mismatched eyes, "
     "out of frame, extra limbs, disfigured, gross proportions, "
     "malformed limbs, missing arms, missing legs, extra arms, extra legs, "
-    "bad proportions, cross-eyed, body out of frame, "
+    "extra hands, missing hands, twisted hands, tangled limbs, "
+    "bad proportions, body out of frame, floating limbs, disconnected limbs, "
     "3d, render, cgi, doll, cartoon, low detail, "
     "monochrome, flat color, sketch, simple background, "
     "child, underage, loli, shota, nude, naked, nipples, "
@@ -282,8 +288,8 @@ class HuggingFaceImageGenerator:
                 float(strength),    # strength (default 0.32 = ref-dominant)
                 768,                # width
                 1152,               # height
-                24,                 # steps
-                5.5,                # guidance_scale
+                30,                 # steps (bumped for cleaner anatomy)
+                6.5,                # guidance_scale
                 used_seed,          # seed
                 api_name="/generate_reference",
             )
@@ -315,8 +321,8 @@ class HuggingFaceImageGenerator:
                 QUALITY_NEGATIVE,   # negative_prompt
                 768,                # width
                 1152,               # height
-                24,                 # steps
-                5.5,                # guidance_scale
+                30,                 # steps (bumped from 24 for cleaner anatomy)
+                6.5,                # guidance_scale (bumped from 5.5 for stronger prompt adherence)
                 used_seed,          # seed
                 api_name="/generate",
             )
@@ -385,11 +391,22 @@ class HuggingFaceImageGenerator:
                                reference_url: Optional[str] = None) -> Optional[bytes]:
         try:
             import urllib.parse
-            encoded = urllib.parse.quote(prompt)
+            # Pollinations Flux ignores negative_prompt (URL API). Bake anti-deformity
+            # anchors into the positive prompt so anatomy stays clean.
+            anti_deform = (
+                "highly detailed, anatomically correct, symmetric face, "
+                "well-formed hands with five fingers, proper limb proportions, "
+                "sharp clean line-art, no distortion"
+            )
+            enriched = f"{prompt}, {anti_deform}"
+            encoded = urllib.parse.quote(enriched)
             seed_qs = f"&seed={seed}" if seed is not None else ""
-            # img2img via ?image=<public URL>. Ignored if URL not reachable.
             ref_qs = f"&image={urllib.parse.quote(reference_url, safe='')}" if reference_url else ""
-            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&enhance=true&model=flux{seed_qs}{ref_qs}"
+            url = (
+                f"https://image.pollinations.ai/prompt/{encoded}"
+                f"?width=768&height=1024&nologo=true&nofeed=true&enhance=true&model=flux"
+                f"{seed_qs}{ref_qs}"
+            )
             r = requests.get(
                 url,
                 timeout=90,
