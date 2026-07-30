@@ -381,6 +381,35 @@ export default function App() {
     } catch { setSpeaking(false); _stopAudioAnalysis(); }
   };
 
+  const previewVoice = (url) => {
+    return new Promise((resolve) => {
+      try {
+        const el = audioRef.current;
+        if (!el || !url) return resolve();
+        el.src = url;
+        setSpeaking(true);
+        const onEnd = () => {
+          setSpeaking(false);
+          _stopAudioAnalysis();
+          el.onended = null;
+          el.onpause = null;
+          resolve();
+        };
+        el.onended = onEnd;
+        el.onpause = onEnd;
+        el.play().then(() => _startAudioAnalysis()).catch(() => {
+          setSpeaking(false);
+          _stopAudioAnalysis();
+          resolve();
+        });
+      } catch {
+        setSpeaking(false);
+        _stopAudioAnalysis();
+        resolve();
+      }
+    });
+  };
+
   const sendMessage = async (text) => {
     setMessages((m) => [...m, { role: 'user', text }]);
     setBusy(true);
@@ -599,6 +628,7 @@ export default function App() {
           voices={voices}
           voiceId={voiceId}
           onSelectVoice={selectVoice}
+          onPreviewVoice={previewVoice}
         />
       </div>
 
