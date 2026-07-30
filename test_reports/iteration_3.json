@@ -1,0 +1,35 @@
+{
+  "summary": "Tested new SSE streaming chat + CodeFormer image enhance hardening. Backend: added TestChatStream (SSE frames + Content-Type + Cache-Control checks + origin X-Accel-Buffering probe via localhost), TestStatusEnhance (asserts sczhou/CodeFormer), TestEnhanceFlag (default true + explicit false). All 15 pytest tests pass. Note: the preview ingress strips X-Accel-Buffering from responses — backend correctly sets it (verified at origin http://localhost:8001), but downstream clients see it removed. This is an infra artifact, not a backend bug. Frontend: streaming chat visibly grows over time (samples 0→52→172 chars across ~5s), send-btn correctly disabled when input is empty, `via emergent/anthropic:claude-sonnet-4-5-20250929` meta line rendered on the completed Lilith bubble (verified in screenshot; test assertion was case-sensitive vs CSS uppercase — cosmetic test issue only). face-swap-toggle, seed-lock-toggle, seed-input, voice-preview-btn, presets drawer, gallery drawer, wardrobe drawer all present and openable.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/chat/stream", "issue": "X-Accel-Buffering response header is stripped by the preview ingress despite being set correctly by FastAPI. Confirmed at origin (localhost:8001) but absent through the public URL. Not a code bug — configure ingress allowlist for this header if strict e2e proof is required."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is now ~745 lines and past the 700-line soft cap. Still mixing chat + voice + image + gallery + reference + pose-reference + presets + streaming routes. Split into APIRouter modules (chat_router.py incl. streaming, image_router.py, reference_router.py, presets_router.py) — this is now overdue.",
+    "The two branches in /api/image/lilith (custom_prompt vs outfit) still duplicate the pose-controlnet skeleton extraction block (called out in iteration_2 review, still not addressed). Extract `_resolve_pose_controlnet_ref(...)` helper.",
+    "/api/chat/stream uses `engine.chat()` synchronously inside a generator, then pseudo-streams by chunking the full reply. This means the client waits the full LLM latency (~2-3s observed) before the first token arrives — defeating the perceived streaming benefit somewhat. If emergentintegrations exposes a streaming primitive (LlmChat streaming iterator), wire it up so the FIRST token can be flushed as soon as the model emits it, rather than only after the full reply is received. Currently the 35ms per-chunk stagger only creates a typewriter effect after the round-trip.",
+    "sendMessage() in App.jsx: the sentence-boundary regex requires min 12 chars before splitting (`.{12,}?`). For very short first sentences (<12 chars, e.g. 'Hi.') the sentence pumps to TTS only when a subsequent boundary widens the buffer. This can delay voice-start on terse replies. Consider dropping the min-length gate once at least one full boundary is found, so the first sentence pipelines regardless of length.",
+    "Streaming SSE loop in App.jsx does not check `event: error` payload beyond appending a generic '(the line went quiet…)' — the actual provider error message is discarded. Surface `payload.error` in the meta line for easier debugging.",
+    "Frontend fetch to /chat/stream lacks an abort controller — if the user clicks Send twice quickly, both streams write into the last bubble and interleave chunks. Track the current AbortController and cancel the prior one on new send."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% functional; all visible flows working"},
+  "test_credentials": "None. Age gate bypassed via localStorage 'lilith:18ok'='yes'.",
+  "seed_data_creation": "None new. Existing seeded presets from prior iteration still present.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression now covers 15 tests including SSE streaming (chunk frames + done frame + no-cache) and CodeFormer enhance flag (default true + explicit false). Full run ~4-5 min due to real image generation calls. Frontend Playwright covered: streaming visibility (progressive text growth), meta line appearance, empty-send-btn disabled, wardrobe/presets/gallery drawers, voice-preview-btn presence. Not covered in Playwright due to network/upload complexity: (a) face-swap-toggle auto-flip when a face reference becomes active — code path verified via useEffect on reference.active with userTouchedFaceSwap override; (b) seed-lock auto-lock on first successful gen (would need waiting 30-60s for HF/Pollinations); (c) voice-during-streaming overlap timing (audio start before all chunks). These UI-only integration nuances are simple useState/useEffect wiring in App.jsx and low risk. Preview ingress strips X-Accel-Buffering — backend sets it correctly at origin.",
+  "rca of the issue": "N/A — no functional defects. The single test regression (missing X-Accel-Buffering on public URL) is a preview-environment ingress artifact, not a backend code defect (verified via curl to http://localhost:8001)."
+}

@@ -133,10 +133,11 @@ def _pose_prompt(pose: Optional[str]) -> Optional[str]:
 QUALITY_POSITIVE = (
     "masterpiece, best quality, extremely detailed, "
     "beautiful detailed eyes, symmetric face, correct anatomy, "
-    "well-proportioned body, five fingers per hand, natural pose, "
-    "intricate details, perfect lighting, professional illustration, "
-    "sharp focus, vibrant colors, high contrast, "
-    "anime style, detailed skin texture"
+    "well-proportioned body, five fingers per hand, "
+    "perfectly rendered hands, natural finger joints, elegant fingers, "
+    "natural pose, intricate details, perfect lighting, "
+    "professional illustration, sharp focus, vibrant colors, high contrast, "
+    "anime style, detailed skin texture, crisp linework, sharp fine details"
 )
 
 # STRONG negative prompt to prevent warping/deformation (used by providers
@@ -145,14 +146,16 @@ QUALITY_NEGATIVE = (
     "lowres, bad anatomy, bad hands, text, error, missing fingers, "
     "extra digit, fewer digits, cropped, worst quality, low quality, "
     "normal quality, jpeg artifacts, signature, watermark, username, "
-    "blurry, bad feet, mutated, deformed, ugly, duplicate, "
+    "blurry, soft focus, out of focus, hazy, bad feet, mutated, deformed, ugly, duplicate, "
     "morbid, mutilated, extra fingers, fused fingers, too many fingers, "
-    "six fingers, seven fingers, four fingers, mangled fingers, "
+    "six fingers, seven fingers, four fingers, mangled fingers, bent fingers, "
+    "distorted hands, malformed hands, warped hands, extra hands, missing hands, "
+    "twisted hands, tangled limbs, claw hands, ugly fingers, "
     "long neck, poorly drawn hands, poorly drawn feet, poorly drawn face, "
     "asymmetric face, cross-eyed, wall-eyed, wrong eyes, mismatched eyes, "
+    "uneven eyes, lopsided face, crooked face, "
     "out of frame, extra limbs, disfigured, gross proportions, "
     "malformed limbs, missing arms, missing legs, extra arms, extra legs, "
-    "extra hands, missing hands, twisted hands, tangled limbs, "
     "bad proportions, body out of frame, floating limbs, disconnected limbs, "
     "3d, render, cgi, doll, cartoon, low detail, "
     "monochrome, flat color, sketch, simple background, "
@@ -285,11 +288,11 @@ class HuggingFaceImageGenerator:
                 reference_path,     # reference_image
                 prompt,             # prompt
                 QUALITY_NEGATIVE,   # negative_prompt
-                float(strength),    # strength (default 0.32 = ref-dominant)
+                float(strength),    # strength
                 768,                # width
                 1152,               # height
-                30,                 # steps (bumped for cleaner anatomy)
-                6.5,                # guidance_scale
+                40,                 # steps (bumped 30->40 for cleaner anatomy)
+                7.5,                # guidance_scale (7.5 sweet spot)
                 used_seed,          # seed
                 api_name="/generate_reference",
             )
@@ -321,8 +324,8 @@ class HuggingFaceImageGenerator:
                 QUALITY_NEGATIVE,   # negative_prompt
                 768,                # width
                 1152,               # height
-                30,                 # steps (bumped from 24 for cleaner anatomy)
-                6.5,                # guidance_scale (bumped from 5.5 for stronger prompt adherence)
+                40,                 # steps (bumped 30->40 for cleaner anatomy + fingers)
+                7.5,                # guidance_scale (clamped to sweet spot for style stability)
                 used_seed,          # seed
                 api_name="/generate",
             )
@@ -355,8 +358,8 @@ class HuggingFaceImageGenerator:
                 used_seed,                  # seed
                 832,                        # width
                 1216,                       # height
-                7.5,                        # guidance_scale (slightly higher for better adherence)
-                35,                         # steps (increased from 28 for quality)
+                7.5,                        # guidance_scale
+                40,                         # steps (bumped 35->40 for hands/anatomy)
                 "DPM++ 2M Karras",          # sampler
                 "832 x 1216",               # aspect_ratio
                 "Anime",                    # style_preset

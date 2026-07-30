@@ -20,7 +20,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 # Load .env from backend/
@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from services.eternal_ai_engine import get_eternal_engine  # noqa: E402
 from services.face_swap import get_face_swap_engine  # noqa: E402
 from services.gallery import get_gallery  # noqa: E402
+from services.image_enhancer import get_image_enhancer  # noqa: E402
 from services.lilith_elevenlabs_voice import get_voice_engine  # noqa: E402
 from services.lilith_image_generator import OUTFITS, POSES, SCENES, get_image_generator  # noqa: E402
 from services.pose_controlnet import get_pose_controlnet_engine  # noqa: E402
@@ -101,6 +102,7 @@ class LilithImageRequest(BaseModel):
     reference_strength: Optional[float] = Field(default=None, ge=0.05, le=0.95)
     use_face_swap: bool = Field(default=False)
     use_pose_controlnet: bool = Field(default=False)
+    use_enhance: bool = Field(default=True)  # CodeFormer face+upscale post-pass
 
 
 class SetGalleryReferenceRequest(BaseModel):
@@ -133,6 +135,7 @@ def api_status():
         "image": image.get_status(),
         "face_swap": get_face_swap_engine().get_status(),
         "pose_controlnet": get_pose_controlnet_engine().get_status(),
+        "enhance": get_image_enhancer().get_status(),
     }
 
 
@@ -147,6 +150,63 @@ def api_chat(req: ChatRequest):
         "timestamp": result.get("timestamp", datetime.now(timezone.utc).isoformat()),
         "session_id": req.session_id,
     }
+
+
+@app.post("/api/chat/stream")
+def api_chat_stream(req: ChatRequest):
+    """
+    Server-Sent Events streaming chat.
+
+    Emits `event: chunk` frames with `data: {text: "…"}` per token/word,
+    followed by a final `event: done` frame with `data: {provider, timestamp}`.
+    The frontend can render text as it arrives and pipe each completed sentence
+    to /api/voice/speak in parallel.
+    """
+    import json
+    import time as _time
+
+    engine = get_eternal_engine()
+
+    def _iter():
+        # emergentintegrations LlmChat doesn't expose streaming, so we fetch
+        # the full reply then chunk it word-by-word to give a typed-out feel.
+        result = engine.chat(req.message)
+        reply = (result.get("response") or "").strip()
+        provider = result.get("provider")
+        if not reply:
+            payload = json.dumps({"error": "empty_reply", "provider": provider})
+            yield f"event: error\ndata: {payload}\n\n"
+            return
+
+        # Split by whitespace but preserve the whitespace. Send small chunks
+        # (~2 words) at a lightly staggered pace.
+        tokens: list[str] = []
+        buf = ""
+        for ch in reply:
+            buf += ch
+            if ch == " " or ch == "\n":
+                tokens.append(buf)
+                buf = ""
+        if buf:
+            tokens.append(buf)
+
+        for i in range(0, len(tokens), 2):
+            chunk = "".join(tokens[i:i + 2])
+            payload = json.dumps({"text": chunk})
+            yield f"event: chunk\ndata: {payload}\n\n"
+            _time.sleep(0.035)
+
+        done = json.dumps({
+            "provider": provider,
+            "timestamp": result.get("timestamp", datetime.now(timezone.utc).isoformat()),
+            "session_id": req.session_id,
+        })
+        yield f"event: done\ndata: {done}\n\n"
+
+    return StreamingResponse(_iter(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+    })
 
 
 @app.post("/api/clear")
@@ -318,11 +378,22 @@ def api_image_lilith_post(req: LilithImageRequest):
             data = swapped
             used_face_swap = True
 
+    # Optional CodeFormer enhance pass: fixes face asymmetries, sharpens softness,
+    # and 2x upscales. Runs after face-swap so restoration operates on the final face.
+    used_enhance = False
+    if req.use_enhance:
+        enhanced = get_image_enhancer().enhance(data, upscale=2.0, fidelity=0.6)
+        if enhanced:
+            data = enhanced
+            used_enhance = True
+
     provider_label = image.last_provider or ""
     if used_pose_ctrl:
         provider_label = f"OpenPose skeleton → {provider_label}" if provider_label else "OpenPose skeleton"
     if used_face_swap:
         provider_label = f"{provider_label} + FaceSwap" if provider_label else "FaceSwap"
+    if used_enhance:
+        provider_label = f"{provider_label} + CodeFormer 2x" if provider_label else "CodeFormer 2x"
 
     entry = get_gallery().add(
         data,
@@ -343,6 +414,7 @@ def api_image_lilith_post(req: LilithImageRequest):
         "used_pose_reference": pose_ref_path is not None,
         "used_pose_controlnet": used_pose_ctrl,
         "used_face_swap": used_face_swap,
+        "used_enhance": used_enhance,
         "gallery_id": entry.id,
         "url": entry.to_public()["url"],
         "mime": entry.mime,

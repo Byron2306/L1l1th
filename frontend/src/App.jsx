@@ -267,6 +267,7 @@ export default function App() {
   // Fidelity boosts (Face-Swap + Pose ControlNet)
   const [useFaceSwap, setUseFaceSwap] = useState(false);
   const [usePoseControlnet, setUsePoseControlnet] = useState(false);
+  const [userTouchedFaceSwap, setUserTouchedFaceSwap] = useState(false);
 
   // Last generation context (used to save current setup as a preset)
   const [lastContext, setLastContext] = useState({
@@ -335,6 +336,14 @@ export default function App() {
     if (currentSeed != null) localStorage.setItem('lilith:seed', String(currentSeed));
   }, [seedLocked, currentSeed]);
 
+  // Auto face-swap: when a face reference becomes active, default the boost
+  // ON so her face stays consistent across outfits. Only auto-flip if the
+  // user hasn't manually overridden the toggle.
+  useEffect(() => {
+    if (userTouchedFaceSwap) return;
+    setUseFaceSwap(!!reference?.active);
+  }, [reference?.active, userTouchedFaceSwap]);
+
   const enterSite = () => {
     localStorage.setItem('lilith:18ok', 'yes');
     setGateOk(true);
@@ -385,16 +394,48 @@ export default function App() {
   };
 
   const playAudio = (b64) => {
+    return new Promise((resolve) => {
+      try {
+        const el = audioRef.current;
+        if (!el) return resolve();
+        el.src = `data:audio/mp3;base64,${b64}`;
+        setSpeaking(true);
+        const onEnd = () => {
+          setSpeaking(false);
+          _stopAudioAnalysis();
+          el.onended = null;
+          el.onpause = null;
+          resolve();
+        };
+        el.onended = onEnd;
+        el.onpause = onEnd;
+        el.play().then(() => _startAudioAnalysis()).catch(() => {
+          setSpeaking(false);
+          _stopAudioAnalysis();
+          resolve();
+        });
+      } catch {
+        setSpeaking(false);
+        _stopAudioAnalysis();
+        resolve();
+      }
+    });
+  };
+
+  // Fetch TTS for a sentence and return a resolver that starts playback.
+  // We fetch and play sequentially so sentences never overlap, but we
+  // pre-fetch the next while the current is playing.
+  const fetchTTS = async (sentence) => {
     try {
-      const el = audioRef.current;
-      if (!el) return;
-      el.src = `data:audio/mp3;base64,${b64}`;
-      setSpeaking(true);
-      const onEnd = () => { setSpeaking(false); _stopAudioAnalysis(); };
-      el.onended = onEnd;
-      el.onpause = onEnd;
-      el.play().then(() => _startAudioAnalysis()).catch(() => { setSpeaking(false); _stopAudioAnalysis(); });
-    } catch { setSpeaking(false); _stopAudioAnalysis(); }
+      const r = await fetch(`${API}/voice/speak`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: sentence, voice_id: voiceId || undefined }),
+      });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d.audio_base64 || null;
+    } catch { return null; }
   };
 
   const previewVoice = (url) => {
@@ -421,40 +462,123 @@ export default function App() {
   };
 
   const sendMessage = async (text) => {
-    setMessages((m) => [...m, { role: 'user', text }]);
+    setMessages((m) => [...m, { role: 'user', text }, { role: 'lilith', text: '', meta: null }]);
     setBusy(true);
+
+    // Sentence pipeline state (voice-per-sentence, played in order)
+    let carry = '';                // uncommitted text since the last sentence boundary
+    let voiceChain = Promise.resolve();  // sequential playback queue
+    const pumpSentence = (sentence) => {
+      if (!voiceOn || !sentence.trim()) return;
+      // Fetch TTS immediately (concurrent with the next chunks), then play
+      // strictly after the previous sentence's playback resolves.
+      const ttsPromise = fetchTTS(sentence.trim());
+      voiceChain = voiceChain.then(async () => {
+        const b64 = await ttsPromise;
+        if (b64) await playAudio(b64);
+      });
+    };
+    const flushOnBoundary = () => {
+      // Emit any complete sentence(s) in `carry`. Boundaries: . ? ! or newline
+      // followed by whitespace/end. Ignore boundaries mid-abbreviation lightly
+      // by requiring a min length (12 chars) before splitting.
+      while (true) {
+        const m = carry.match(/^(.{12,}?[.!?…]+["'”’)]*)(\s+|$)/);
+        if (!m) break;
+        const sentence = m[1];
+        pumpSentence(sentence);
+        carry = carry.slice(m[0].length);
+      }
+    };
+
+    const appendChunk = (chunk) => {
+      carry += chunk;
+      setMessages((m) => {
+        const copy = m.slice();
+        const last = copy[copy.length - 1];
+        if (last && last.role === 'lilith') {
+          copy[copy.length - 1] = { ...last, text: (last.text || '') + chunk };
+        }
+        return copy;
+      });
+      flushOnBoundary();
+    };
+
     try {
-      const res = await fetch(`${API}/chat`, {
+      const res = await fetch(`${API}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
-      const data = await res.json();
-      const reply = data.response || '…';
-      setChatProvider(data.provider || null);
-      setMessages((m) => [
-        ...m,
-        { role: 'lilith', text: reply, meta: data.provider ? `via ${data.provider}` : null },
-      ]);
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
-      if (voiceOn && reply) {
-        try {
-          const vr = await fetch(`${API}/voice/speak`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: reply, voice_id: voiceId || undefined }),
-          });
-          if (vr.ok) {
-            const vd = await vr.json();
-            if (vd.audio_base64) playAudio(vd.audio_base64);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let provider = null;
+
+      // Parse SSE frames incrementally
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) !== -1) {
+          const frame = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const lines = frame.split('\n');
+          let event = 'message';
+          let dataStr = '';
+          for (const line of lines) {
+            if (line.startsWith('event:')) event = line.slice(6).trim();
+            else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
           }
-        } catch { /* voice failure silent */ }
+          if (!dataStr) continue;
+          let payload;
+          try { payload = JSON.parse(dataStr); } catch { continue; }
+          if (event === 'chunk' && typeof payload.text === 'string') {
+            appendChunk(payload.text);
+          } else if (event === 'done') {
+            provider = payload.provider || null;
+          } else if (event === 'error') {
+            appendChunk('(the line went quiet…)');
+          }
+        }
+      }
+
+      // Flush trailing text as a final sentence (no terminator required)
+      if (carry.trim()) {
+        pumpSentence(carry);
+        carry = '';
+      }
+      if (provider) {
+        setChatProvider(provider);
+        setMessages((m) => {
+          const copy = m.slice();
+          const last = copy[copy.length - 1];
+          if (last && last.role === 'lilith') {
+            copy[copy.length - 1] = { ...last, meta: `via ${provider}` };
+          }
+          return copy;
+        });
       }
     } catch {
-      setMessages((m) => [
-        ...m,
-        { role: 'lilith', text: '(the line went quiet for a moment…)', meta: 'connection error' },
-      ]);
+      setMessages((m) => {
+        // If we haven't received any text yet, mutate the empty bubble;
+        // otherwise append a new error bubble.
+        const copy = m.slice();
+        const last = copy[copy.length - 1];
+        if (last && last.role === 'lilith' && !last.text) {
+          copy[copy.length - 1] = {
+            role: 'lilith',
+            text: '(the line went quiet for a moment…)',
+            meta: 'connection error',
+          };
+          return copy;
+        }
+        return [...m, { role: 'lilith', text: '(the line went quiet for a moment…)', meta: 'connection error' }];
+      });
     } finally {
       setBusy(false);
     }
@@ -489,7 +613,12 @@ export default function App() {
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       const url = `${BACKEND}${data.url}`;
-      if (!seedLocked && data.seed != null) setCurrentSeed(data.seed);
+      if (!seedLocked && data.seed != null) {
+        setCurrentSeed(data.seed);
+        // Auto-lock the seed after the first successful gen so style stays
+        // consistent across follow-up outfits/scenes (item e — style drift).
+        setSeedLocked(true);
+      }
       setImageProvider(data.provider || null);
       setAvatarUrl(url);
       setLastContext({
@@ -507,6 +636,7 @@ export default function App() {
       if (data.used_reference) bits.push('ref');
       if (data.used_pose_controlnet) bits.push('pose-ctrl');
       if (data.used_face_swap) bits.push('face-swap');
+      if (data.used_enhance) bits.push('2x');
       bits.push(`seed ${data.seed}`);
       bits.push(data.provider);
       setMessages((m) => [
@@ -701,7 +831,7 @@ export default function App() {
         onUploadPoseReference={uploadPoseReference}
         onClearPoseReference={clearPoseReference}
         useFaceSwap={useFaceSwap}
-        onToggleFaceSwap={() => setUseFaceSwap((v) => !v)}
+        onToggleFaceSwap={() => { setUserTouchedFaceSwap(true); setUseFaceSwap((v) => !v); }}
         usePoseControlnet={usePoseControlnet}
         onTogglePoseControlnet={() => setUsePoseControlnet((v) => !v)}
       />

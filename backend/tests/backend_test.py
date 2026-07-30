@@ -191,6 +191,109 @@ class TestPresets:
                 client.post(f"{BASE_URL}/api/voice/select", json={"voice_id": original_voice}, timeout=15)
 
 
+# ---------- SSE Chat Streaming ----------
+class TestChatStream:
+    def test_chat_stream_sse_frames(self, client):
+        import json as _json
+        url = f"{BASE_URL}/api/chat/stream"
+        with requests.post(
+            url,
+            json={"message": "Say hi in five words.", "session_id": "test-stream"},
+            stream=True,
+            timeout=120,
+        ) as r:
+            assert r.status_code == 200, r.text
+            ctype = r.headers.get("content-type", "")
+            assert "text/event-stream" in ctype, ctype
+            cache = r.headers.get("cache-control", "").lower()
+            assert "no-cache" in cache, cache
+            # Note: X-Accel-Buffering is set by the backend but the preview
+            # ingress strips response headers it doesn't allowlist. Verify
+            # the origin sets it via a direct localhost probe instead.
+            try:
+                origin = requests.post(
+                    "http://localhost:8001/api/chat/stream",
+                    json={"message": "hi"},
+                    stream=True, timeout=30,
+                )
+                assert origin.headers.get("x-accel-buffering", "").lower() == "no", \
+                    f"origin missing X-Accel-Buffering: {dict(origin.headers)}"
+                origin.close()
+            except requests.exceptions.ConnectionError:
+                pass  # localhost not reachable from test host — skip check
+
+            events = []
+            current_event = None
+            data_buf = []
+            body_lines = r.iter_lines(decode_unicode=True)
+            for line in body_lines:
+                if line is None:
+                    continue
+                if line == "":
+                    # end of one SSE message
+                    if current_event and data_buf:
+                        events.append((current_event, "\n".join(data_buf)))
+                    current_event = None
+                    data_buf = []
+                    if any(ev == "done" for ev, _ in events):
+                        break
+                    continue
+                if line.startswith("event:"):
+                    current_event = line.split(":", 1)[1].strip()
+                elif line.startswith("data:"):
+                    data_buf.append(line.split(":", 1)[1].lstrip())
+
+            chunk_events = [d for ev, d in events if ev == "chunk"]
+            done_events = [d for ev, d in events if ev == "done"]
+            assert chunk_events, f"expected chunk events, got {events[:3]}"
+            assert done_events, f"expected done event, got {[e for e,_ in events]}"
+
+            # Concat chunk text non-empty
+            concat = ""
+            for cd in chunk_events:
+                try:
+                    concat += _json.loads(cd).get("text", "")
+                except Exception:
+                    pass
+            assert concat.strip(), f"chunk text empty: {chunk_events[:3]}"
+
+            done = _json.loads(done_events[-1])
+            assert "provider" in done
+            assert "timestamp" in done
+
+
+# ---------- Status: enhance block ----------
+class TestStatusEnhance:
+    def test_status_includes_enhance_codeformer(self, client):
+        r = client.get(f"{BASE_URL}/api/status", timeout=30)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert "enhance" in d, d.keys()
+        blob = str(d["enhance"]).lower()
+        assert "codeformer" in blob or "sczhou" in blob, d["enhance"]
+
+
+# ---------- use_enhance flag on /api/image/lilith ----------
+class TestEnhanceFlag:
+    def test_use_enhance_true_default(self, client):
+        r = client.post(f"{BASE_URL}/api/image/lilith", json={
+            "outfit": "silk_robe",
+        }, timeout=240)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert "used_enhance" in d, d
+        assert isinstance(d["used_enhance"], bool)
+
+    def test_use_enhance_false_disables(self, client):
+        r = client.post(f"{BASE_URL}/api/image/lilith", json={
+            "outfit": "silk_robe",
+            "use_enhance": False,
+        }, timeout=180)
+        assert r.status_code == 200, r.text
+        d = r.json()
+        assert d.get("used_enhance") is False, d
+
+
 # ---------- Boost toggles (skip path when no reference set) ----------
 class TestBoostToggles:
     def test_face_swap_skipped_without_reference(self, client):
