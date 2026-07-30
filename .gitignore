@@ -318,3 +318,9 @@ luciferos/src/openJdk-25/lib/modules
 # Environment files
 *.env
 *.env.*
+.env
+.env.*
+credentials.json
+*.pem
+*.key
+.credentials
