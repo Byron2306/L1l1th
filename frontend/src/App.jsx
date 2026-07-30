@@ -461,17 +461,26 @@ export default function App() {
     });
   };
 
+  const streamAbortRef = useRef(null);
+
   const sendMessage = async (text) => {
+    // Cancel any prior in-flight stream so double-sends don't interleave chunks.
+    if (streamAbortRef.current) {
+      try { streamAbortRef.current.abort(); } catch { /* noop */ }
+    }
+    const abort = new AbortController();
+    streamAbortRef.current = abort;
+
     setMessages((m) => [...m, { role: 'user', text }, { role: 'lilith', text: '', meta: null }]);
     setBusy(true);
 
     // Sentence pipeline state (voice-per-sentence, played in order)
     let carry = '';                // uncommitted text since the last sentence boundary
+    let firstSentenceSent = false; // once true, we drop the min-length gate so terse
+                                   // second/third sentences pipeline immediately
     let voiceChain = Promise.resolve();  // sequential playback queue
     const pumpSentence = (sentence) => {
       if (!voiceOn || !sentence.trim()) return;
-      // Fetch TTS immediately (concurrent with the next chunks), then play
-      // strictly after the previous sentence's playback resolves.
       const ttsPromise = fetchTTS(sentence.trim());
       voiceChain = voiceChain.then(async () => {
         const b64 = await ttsPromise;
@@ -480,13 +489,16 @@ export default function App() {
     };
     const flushOnBoundary = () => {
       // Emit any complete sentence(s) in `carry`. Boundaries: . ? ! or newline
-      // followed by whitespace/end. Ignore boundaries mid-abbreviation lightly
-      // by requiring a min length (12 chars) before splitting.
+      // followed by whitespace/end. Require 12+ chars for the FIRST sentence
+      // (helps skip abbreviations like "Mr." mid-name), then drop the gate.
       while (true) {
-        const m = carry.match(/^(.{12,}?[.!?…]+["'”’)]*)(\s+|$)/);
+        const minLen = firstSentenceSent ? 1 : 12;
+        const re = new RegExp(`^(.{${minLen},}?[.!?…]+["'”’)]*)(\\s+|$)`);
+        const m = carry.match(re);
         if (!m) break;
         const sentence = m[1];
         pumpSentence(sentence);
+        firstSentenceSent = true;
         carry = carry.slice(m[0].length);
       }
     };
@@ -509,6 +521,7 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
+        signal: abort.signal,
       });
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
@@ -563,7 +576,10 @@ export default function App() {
           return copy;
         });
       }
-    } catch {
+    } catch (err) {
+      // Aborted streams (double-send cancel) drop silently — the newer send
+      // will populate the bubble.
+      if (err && err.name === 'AbortError') return;
       setMessages((m) => {
         // If we haven't received any text yet, mutate the empty bubble;
         // otherwise append a new error bubble.
@@ -580,6 +596,7 @@ export default function App() {
         return [...m, { role: 'lilith', text: '(the line went quiet for a moment…)', meta: 'connection error' }];
       });
     } finally {
+      if (streamAbortRef.current === abort) streamAbortRef.current = null;
       setBusy(false);
     }
   };
