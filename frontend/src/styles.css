@@ -772,6 +772,90 @@ body::after {
   z-index: 2;
 }
 
+/* Reference (face anchor) panel */
+.ref-panel {
+  padding: 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(28, 22, 24, 0.4);
+  margin-bottom: 18px;
+}
+.ref-row { display: flex; gap: 14px; align-items: flex-start; }
+.ref-thumb {
+  width: 82px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 20px -4px rgba(201, 168, 117, 0.4);
+  flex-shrink: 0;
+}
+.ref-body { flex: 1; min-width: 0; }
+.ref-strength { margin-top: 10px; }
+.ref-slider {
+  width: 100%;
+  accent-color: var(--gold);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* Scene + pose selects */
+.axis-panel {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.axis-row { flex: 1; }
+.axis-row label { display: block; margin-bottom: 4px; }
+.axis-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(10, 7, 8, 0.6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ivory);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path fill='%23c9a875' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.axis-select:focus { border-color: var(--gold); }
+.axis-select option { background: var(--ink-2); color: var(--ivory); }
+
+/* Gallery star button + active-ref accent */
+.gallery-item.is-ref {
+  border-color: var(--gold);
+  box-shadow: 0 0 24px -6px rgba(201, 168, 117, 0.55);
+}
+.gallery-star {
+  position: absolute;
+  top: 6px; left: 6px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(10, 7, 8, 0.75);
+  backdrop-filter: blur(4px);
+  color: var(--ivory-dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+.gallery-star:hover { color: var(--gold); border-color: var(--gold); }
+.gallery-star.on {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: rgba(201, 168, 117, 0.14);
+  text-shadow: 0 0 10px var(--gold);
+}
+
 /* ---------- Utility ---------- */
 
 .hidden { display: none !important; }

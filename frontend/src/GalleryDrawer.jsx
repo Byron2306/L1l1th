@@ -9,9 +9,11 @@ export default function GalleryDrawer({
   api,
   open,
   onClose,
-  onSelect,   // (entry) => void
-  onDelete,   // (id) => Promise
-  refreshKey, // bump to re-fetch
+  onSelect,       // (entry) => void
+  onDelete,       // (id) => Promise
+  onSetReference, // (entry) => Promise
+  activeReferenceId,
+  refreshKey,
 }) {
   const [entries, setEntries] = useState(null);
 
@@ -51,28 +53,37 @@ export default function GalleryDrawer({
         )}
 
         <div className="gallery-grid" data-testid="gallery-grid">
-          {(entries || []).map((e) => (
-            <div key={e.id} className="gallery-item" data-testid={`gallery-item-${e.id}`}>
-              <button
-                className="gallery-thumb"
-                onClick={() => onSelect(e)}
-                title={`${e.label}${e.seed != null ? ' · seed ' + e.seed : ''}`}
-                data-testid={`gallery-thumb-${e.id}`}
-              >
-                <img src={`${api}/gallery/${e.id}`} alt={e.label} loading="lazy" />
-              </button>
-              <div className="gallery-meta">
-                <div className="gallery-label" title={e.label}>{e.label}</div>
-                {e.seed != null && <div className="gallery-seed">seed · {e.seed}</div>}
+          {(entries || []).map((e) => {
+            const isRef = activeReferenceId === e.id;
+            return (
+              <div key={e.id} className={`gallery-item${isRef ? ' is-ref' : ''}`} data-testid={`gallery-item-${e.id}`}>
+                <button
+                  className="gallery-thumb"
+                  onClick={() => onSelect(e)}
+                  title={`${e.label}${e.seed != null ? ' · seed ' + e.seed : ''}`}
+                  data-testid={`gallery-thumb-${e.id}`}
+                >
+                  <img src={`${api}/gallery/${e.id}`} alt={e.label} loading="lazy" />
+                </button>
+                <div className="gallery-meta">
+                  <div className="gallery-label" title={e.label}>{e.label}</div>
+                  {e.seed != null && <div className="gallery-seed">seed · {e.seed}</div>}
+                </div>
+                <button
+                  className={`gallery-star${isRef ? ' on' : ''}`}
+                  onClick={() => onSetReference(e)}
+                  title={isRef ? 'Current face reference' : 'Set as face reference'}
+                  data-testid={`gallery-star-${e.id}`}
+                >★</button>
+                <button
+                  className="gallery-del"
+                  onClick={() => removeEntry(e.id)}
+                  title="Remove"
+                  data-testid={`gallery-del-${e.id}`}
+                >×</button>
               </div>
-              <button
-                className="gallery-del"
-                onClick={() => removeEntry(e.id)}
-                title="Remove"
-                data-testid={`gallery-del-${e.id}`}
-              >×</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </aside>
     </>

@@ -55,25 +55,30 @@ Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`,
 |---|---|
 | Chat (multi-turn, Claude Sonnet 4.5) | ✅ live |
 | Voice (ElevenLabs) | ✅ live |
-| Image (ZeroGPU HF Space → Pollinations/Flux fallback) | ✅ live |
+| Image gen (HF Space → Pollinations/Flux → Animagine → AI Horde) | ✅ live |
 | Wardrobe picker (18 outfits, 4 categories) | ✅ live |
-| **Image Gallery** (scrolling grid, thumb → restore, delete) | ✅ live |
-| **Seed Lock** (pin same face across looks; adopted from gallery pick) | ✅ live |
-| **Custom Outfits** (free-text "describe her look") | ✅ live |
+| Image Gallery (scroll, thumb → restore, delete) | ✅ live |
+| Seed Lock (pin same face across looks) | ✅ live |
+| Custom Outfits (free-text) | ✅ live |
+| **Scene catalog** (16 scenes) | ✅ live |
+| **Pose catalog** (15 poses, text-based) | ✅ live |
+| **Face Reference (img2img)** — HF Space `/generate_reference` + Pollinations img2img fallback | ✅ live |
+| Face reference UI (gallery-star, upload, strength slider, clear) | ✅ live |
 | Age gate | ✅ localStorage-persisted |
 
 ## Backlog / P1
+- Persist chat + gallery + reference to Mongo (currently in-memory + `/tmp`)
+- Talking avatar — Web Audio API amplitude-driven pulse on the portrait
 - Voice preset picker (ElevenLabs voice IDs) in UI
-- Persist chat history to Mongo (currently in-memory per engine instance)
-- Wire animation engine for talking avatar
 - Telegram bot back under supervisor (safe subset only)
 
 ## Backlog / P2
+- ControlNet OpenPose reference (true pose-lock, requires ControlNet-capable provider)
 - Streaming SSE chat replies
 - Mobile layout polish
 - Multi-session support in UI
 - Rate limiting
-- Persist gallery beyond container lifetime (Mongo + object storage)
+- Object-storage-backed persistent gallery
 
 ## What I will NOT build
 - Explicit NSFW image generation (removing safety negative prompts, integrating unfiltered SD/Flux endpoints)

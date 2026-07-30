@@ -67,6 +67,67 @@ def _outfit_prompt(outfit: Optional[str]) -> str:
     # Allow free-form outfit strings too
     return outfit
 
+
+# ---------------------------------------------------------------------------
+# Scenes — environments / settings, appended to the prompt
+# ---------------------------------------------------------------------------
+
+SCENES: Dict[str, Dict[str, str]] = {
+    "candlelit_bedroom":   {"label": "Candlelit bedroom",     "prompt": "in a candlelit bedroom, silk sheets, warm amber lighting, rose petals scattered"},
+    "moonlit_balcony":     {"label": "Moonlit balcony",       "prompt": "on a moonlit stone balcony, city lights behind, cool blue tones, soft breeze in hair"},
+    "penthouse_skyline":   {"label": "Penthouse skyline",     "prompt": "in a modern penthouse, floor-to-ceiling windows, night skyline of a metropolis, ambient warm lamp light"},
+    "private_beach":       {"label": "Private beach at sunset","prompt": "on a private white-sand beach at sunset, golden hour, gentle waves, tropical palms in soft focus"},
+    "wine_cellar":         {"label": "Wine cellar",            "prompt": "in a stone wine cellar, oak barrels lining the walls, low warm lighting, holding a glass of red"},
+    "velvet_boudoir":      {"label": "Velvet boudoir",         "prompt": "in a velvet-draped boudoir, deep burgundy tones, gilded mirror, ornate chaise, candlelight"},
+    "opera_house":         {"label": "Opera house balcony",    "prompt": "in a grand opera house private balcony, red velvet curtains, chandeliers, gilded ornaments"},
+    "garden_at_dusk":      {"label": "Garden at dusk",         "prompt": "in a lush garden at dusk, string lights overhead, roses, warm twilight sky"},
+    "rooftop_pool":        {"label": "Rooftop pool at night",  "prompt": "beside a rooftop infinity pool at night, city skyline glowing, water reflections, cinematic lighting"},
+    "rainy_window":        {"label": "Rainy window",           "prompt": "sitting by a large window with rain streaming down, cozy warm interior, moody bluish light outside"},
+    "fireplace":           {"label": "By the fireplace",       "prompt": "beside a stone fireplace with roaring flames, thick fur throw, warm firelight glow on skin"},
+    "library":             {"label": "Old library",            "prompt": "in an old library, floor-to-ceiling wooden bookshelves, ladder, dust motes in a shaft of afternoon light"},
+    "ski_chalet":          {"label": "Ski chalet",             "prompt": "inside a cozy alpine ski chalet, exposed wooden beams, snow visible through the window, fireplace glow"},
+    "tropical_resort":     {"label": "Tropical resort suite",  "prompt": "in a luxurious tropical resort suite, open doors to the ocean, sheer curtains billowing, palm shadows"},
+    "victorian_bathroom":  {"label": "Victorian bathroom",     "prompt": "in an ornate victorian bathroom, clawfoot tub, brass fixtures, black-and-white tile, candlelit steam"},
+    "dressing_room":       {"label": "Vintage dressing room",  "prompt": "in a vintage dressing room, art deco vanity, hollywood mirror bulbs, fresh flowers, silk hanging"},
+}
+
+
+# ---------------------------------------------------------------------------
+# Poses — body language / composition, appended to the prompt
+# ---------------------------------------------------------------------------
+
+POSES: Dict[str, Dict[str, str]] = {
+    "portrait":            {"label": "Simple portrait",          "prompt": "upper body portrait, gentle smile, direct gaze at viewer, elegant posture"},
+    "over_shoulder":       {"label": "Over the shoulder",         "prompt": "looking back over her shoulder, sultry expression, hair sweeping to one side"},
+    "hands_on_hips":       {"label": "Hands on hips",              "prompt": "standing with hands on hips, confident stance, chin slightly tilted up"},
+    "leaning_wall":        {"label": "Leaning against a wall",     "prompt": "casually leaning against a wall, one leg crossed over the other, playful smirk"},
+    "sitting_crossed":     {"label": "Sitting cross-legged",       "prompt": "sitting cross-legged, hands resting on her knees, relaxed and inviting"},
+    "kneeling_silk":       {"label": "Kneeling on silk",           "prompt": "kneeling gracefully on silk sheets, hands on thighs, chest slightly forward, looking up at viewer"},
+    "lying_back":          {"label": "Lying on her back",          "prompt": "lying on her back, one knee bent upward, hair fanned out, arm raised above her head"},
+    "lying_stomach":       {"label": "Lying on her stomach",       "prompt": "lying on her stomach, propped on elbows, ankles crossed in the air behind her, soft smile"},
+    "seated_chair":        {"label": "Seated on a chair",           "prompt": "seated in an ornate chair, legs crossed elegantly, one arm draped over the backrest"},
+    "walking_toward":      {"label": "Walking toward viewer",       "prompt": "walking toward the camera, hips swaying, dynamic motion, one hand brushing hair back"},
+    "wine_pose":           {"label": "Holding wine glass",          "prompt": "holding a glass of red wine, sultry gaze over the rim of the glass, other hand at her side"},
+    "mirror_look":         {"label": "Looking in a mirror",         "prompt": "posing in front of a mirror, applying lipstick or adjusting an earring, viewer sees reflection"},
+    "hair_up":             {"label": "Arms up, hair up",             "prompt": "both arms raised to gather her hair up, back slightly arched, side profile"},
+    "seated_floor":        {"label": "Sitting on the floor",         "prompt": "sitting on the floor, knees to one side, one hand propping her up, tousled hair"},
+    "kissing_finger":      {"label": "Finger to lips",                "prompt": "one finger raised to her lips, playful shushing gesture, mischievous look in her eyes"},
+}
+
+
+def _scene_prompt(scene: Optional[str]) -> Optional[str]:
+    if not scene or scene == "none":
+        return None
+    entry = SCENES.get(scene)
+    return entry["prompt"] if entry else scene
+
+
+def _pose_prompt(pose: Optional[str]) -> Optional[str]:
+    if not pose or pose == "none":
+        return None
+    entry = POSES.get(pose)
+    return entry["prompt"] if entry else pose
+
 # Quality boosters
 QUALITY_POSITIVE = (
     "masterpiece, best quality, extremely detailed, "
@@ -131,18 +192,49 @@ class HuggingFaceImageGenerator:
     # ------------------------------------------------------------------
 
     def generate_lilith_image(self, outfit_style: str = "random",
-                              seed: Optional[int] = None) -> Optional[bytes]:
+                              seed: Optional[int] = None,
+                              scene: Optional[str] = None,
+                              pose: Optional[str] = None,
+                              reference_path: Optional[str] = None,
+                              reference_strength: float = 0.32) -> Optional[bytes]:
         outfit = _outfit_prompt(outfit_style)
-        prompt = f"{LILITH_BASE}, {outfit}, {QUALITY_POSITIVE}"
-        return self.generate_image(prompt, seed=seed)
+        parts = [LILITH_BASE, outfit]
+        pose_p = _pose_prompt(pose)
+        if pose_p:
+            parts.append(pose_p)
+        scene_p = _scene_prompt(scene)
+        if scene_p:
+            parts.append(scene_p)
+        parts.append(QUALITY_POSITIVE)
+        prompt = ", ".join(parts)
+        return self.generate_image(
+            prompt, seed=seed,
+            reference_path=reference_path, reference_strength=reference_strength,
+        )
 
     def generate_image(self, prompt: str, ensure_clothed: bool = True,
-                       seed: Optional[int] = None) -> Optional[bytes]:
+                       seed: Optional[int] = None,
+                       reference_path: Optional[str] = None,
+                       reference_strength: float = 0.32) -> Optional[bytes]:
         # Ensure quality tags
         if "masterpiece" not in prompt.lower():
             prompt = f"{prompt}, {QUALITY_POSITIVE}"
         if "anime" not in prompt.lower() and "1girl" not in prompt.lower():
             prompt = f"anime style, {prompt}"
+
+        # Reference-image path (img2img) — most face-consistent
+        if reference_path:
+            result = self._generate_space_reference(prompt, reference_path, reference_strength, seed=seed)
+            if result:
+                self.last_provider = "LILITH Space (Reference)"
+                return result
+            # Pollinations supports img2img via ?image=<url>
+            result = self._generate_pollinations(prompt, seed=seed, reference_url=reference_path)
+            if result:
+                self.last_provider = "Pollinations/Flux (Reference)"
+                return result
+            # If reference-only path fails entirely, fall through to txt2img
+            print("[IMAGE v2] Reference path failed, falling back to txt2img")
 
         # Try LILITH Space (user's private ZeroGPU, uncensored, best quality)
         result = self._generate_space(prompt, seed=seed)
@@ -168,6 +260,43 @@ class HuggingFaceImageGenerator:
             self.last_provider = "AI Horde"
             return result
 
+        return None
+
+    # ------------------------------------------------------------------
+    # LILITH Space — reference / img2img endpoint (best face fidelity)
+    # ------------------------------------------------------------------
+
+    def _generate_space_reference(self, prompt: str, reference_path: str,
+                                  strength: float, seed: Optional[int] = None) -> Optional[bytes]:
+        if not self.space_client:
+            self._connect_space()
+            if not self.space_client:
+                return None
+        try:
+            used_seed = seed if seed is not None else random.randint(1, 999999)
+            # Space accepts local filepath OR public URL for reference_image.
+            result = self.space_client.predict(
+                reference_path,     # reference_image
+                prompt,             # prompt
+                QUALITY_NEGATIVE,   # negative_prompt
+                float(strength),    # strength (default 0.32 = ref-dominant)
+                768,                # width
+                1152,               # height
+                24,                 # steps
+                5.5,                # guidance_scale
+                used_seed,          # seed
+                api_name="/generate_reference",
+            )
+            img_path = result[0] if isinstance(result, (list, tuple)) else result
+            if img_path and os.path.exists(str(img_path)):
+                with open(str(img_path), "rb") as f:
+                    data = f.read()
+                if len(data) > 1000:
+                    print(f"[IMAGE v2] LILITH Space (reference) generated {len(data)} bytes")
+                    return data
+        except Exception as e:
+            print(f"[IMAGE v2] LILITH Space reference error: {e}")
+            self.space_client = None
         return None
 
     # ------------------------------------------------------------------
@@ -252,12 +381,15 @@ class HuggingFaceImageGenerator:
     # Pollinations Image (uses Flux, free, reliable)
     # ------------------------------------------------------------------
 
-    def _generate_pollinations(self, prompt: str, seed: Optional[int] = None) -> Optional[bytes]:
+    def _generate_pollinations(self, prompt: str, seed: Optional[int] = None,
+                               reference_url: Optional[str] = None) -> Optional[bytes]:
         try:
             import urllib.parse
             encoded = urllib.parse.quote(prompt)
             seed_qs = f"&seed={seed}" if seed is not None else ""
-            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&enhance=true&model=flux{seed_qs}"
+            # img2img via ?image=<public URL>. Ignored if URL not reachable.
+            ref_qs = f"&image={urllib.parse.quote(reference_url, safe='')}" if reference_url else ""
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=768&height=1024&nologo=true&enhance=true&model=flux{seed_qs}{ref_qs}"
             r = requests.get(
                 url,
                 timeout=90,

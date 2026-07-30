@@ -212,6 +212,7 @@ export default function App() {
 
   const [seedLocked, setSeedLocked] = useState(false);
   const [currentSeed, setCurrentSeed] = useState(null); // int or null
+  const [reference, setReference] = useState(null); // { active, url, strength, gallery_id?, ... }
 
   const audioRef = useRef(null);
 
@@ -223,6 +224,10 @@ export default function App() {
       setSeedLocked(true);
       setCurrentSeed(savedSeed);
     }
+    // Load current reference from backend
+    fetch(`${API}/reference`).then((r) => r.json()).then((d) => {
+      setReference(d.active ? d : null);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -307,9 +312,9 @@ export default function App() {
 
   /**
    * Generate a portrait. `payload` is one of:
-   *   { outfit: 'micro_bikini_beach' }
-   *   { outfit: 'random' }
-   *   { custom_prompt: 'gold silk gown, opera house…' }
+   *   { outfit: 'micro_bikini_beach', scene?, pose? }
+   *   { outfit: 'random', scene?, pose? }
+   *   { custom_prompt: 'gold silk gown, opera house…', scene?, pose? }
    */
   const generatePortrait = async (payload) => {
     setAvatarBusy(true);
@@ -325,17 +330,24 @@ export default function App() {
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       const url = `${BACKEND}${data.url}`;
-      // If not seed-locked, still remember the seed that was used so the user can lock it later
       if (!seedLocked && data.seed != null) setCurrentSeed(data.seed);
       setImageProvider(data.provider || null);
       setAvatarUrl(url);
+      const bits = [
+        payload.custom_prompt ? 'custom' : (payload.outfit || 'random'),
+      ];
+      if (payload.scene) bits.push(payload.scene);
+      if (payload.pose) bits.push(payload.pose);
+      if (data.used_reference) bits.push('ref');
+      bits.push(`seed ${data.seed}`);
+      bits.push(data.provider);
       setMessages((m) => [
         ...m,
         {
           role: 'lilith',
           text: 'How do I look, darling? 💋',
           imageUrl: url,
-          meta: `${payload.custom_prompt ? 'custom' : 'outfit'} · seed ${data.seed} · ${data.provider}`,
+          meta: bits.filter(Boolean).join(' · '),
         },
       ]);
       setGalleryRefresh((k) => k + 1);
@@ -347,6 +359,47 @@ export default function App() {
     } finally {
       setAvatarBusy(false);
     }
+  };
+
+  // --- Reference management -------------------------------------------------
+
+  const setReferenceFromGallery = async (entry) => {
+    try {
+      const r = await fetch(`${API}/reference/gallery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery_id: entry.id, strength: 0.32 }),
+      });
+      const d = await r.json();
+      if (d.active) setReference(d);
+    } catch {}
+  };
+
+  const uploadReference = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const r = await fetch(`${API}/reference/upload`, { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.active) setReference(d);
+    } catch {}
+  };
+
+  const clearReference = async () => {
+    try { await fetch(`${API}/reference`, { method: 'DELETE' }); } catch {}
+    setReference(null);
+  };
+
+  const setReferenceStrength = async (strength) => {
+    try {
+      const r = await fetch(`${API}/reference/strength`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strength }),
+      });
+      const d = await r.json();
+      if (d.active) setReference(d);
+    } catch {}
   };
 
   const galleryDelete = async (id) => {
@@ -401,6 +454,7 @@ export default function App() {
 
       <WardrobeDrawer
         api={API}
+        backend={BACKEND}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onPick={generatePortrait}
@@ -409,6 +463,10 @@ export default function App() {
         currentSeed={currentSeed}
         onToggleSeedLock={() => setSeedLocked((v) => !v)}
         onSetSeed={(n) => setCurrentSeed(n)}
+        reference={reference}
+        onClearReference={clearReference}
+        onSetReferenceStrength={setReferenceStrength}
+        onUploadReference={uploadReference}
       />
 
       <GalleryDrawer
@@ -417,6 +475,8 @@ export default function App() {
         onClose={() => setGalleryOpen(false)}
         onSelect={galleryPick}
         onDelete={galleryDelete}
+        onSetReference={setReferenceFromGallery}
+        activeReferenceId={reference?.gallery_id || null}
         refreshKey={galleryRefresh}
       />
 
