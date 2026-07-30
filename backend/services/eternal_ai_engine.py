@@ -207,6 +207,15 @@ class EternalAIEngine:
         self._lock = threading.Lock()
         self._emergent_chat = None
         self._emergent_session_id = hashlib.md5(f"{time.time()}{id(self)}".encode()).hexdigest()[:12]
+        # Load persisted chat history from Mongo (best-effort)
+        try:
+            from services.db import sessions_col
+            doc = sessions_col().find_one({"session_id": "default"}, {"_id": 0, "messages": 1})
+            if doc and isinstance(doc.get("messages"), list):
+                self.conversation_history = doc["messages"][-(self.max_history * 2):]
+                print(f"[ETERNAL v2] Restored {len(self.conversation_history)} messages from DB")
+        except Exception:
+            pass
         print("[ETERNAL v2] Engine initialized — Emergent primary, Pollinations/HF/g4f fallback")
 
     # ------------------------------------------------------------------
@@ -261,6 +270,17 @@ class EternalAIEngine:
                     session_id=self._emergent_session_id,
                     system_message=LILITH_SYSTEM_PROMPT,
                 ).with_model(EMERGENT_PROVIDER, EMERGENT_MODEL)
+                # Seed with persisted history (last 12 turns) so the model
+                # has full context after a backend restart. LlmChat's
+                # `messages` attribute is a plain list of {role, content}.
+                try:
+                    for m in self.conversation_history[-12:]:
+                        role = m.get("role")
+                        content = m.get("content", "")
+                        if role in ("user", "assistant") and content:
+                            self._emergent_chat.messages.append({"role": role, "content": content})
+                except Exception as _e:
+                    print(f"[ETERNAL] history seed skipped: {_e}")
 
             import asyncio as _asyncio
 
@@ -599,6 +619,21 @@ class EternalAIEngine:
         # Trim history to keep memory bounded
         if len(self.conversation_history) > self.max_history * 2:
             self.conversation_history = self.conversation_history[-(self.max_history * 2):]
+        # Persist to Mongo (best-effort — never break chat if DB is down)
+        try:
+            from services.db import sessions_col
+            import time as _time
+            sessions_col().update_one(
+                {"session_id": "default"},
+                {"$set": {
+                    "session_id": "default",
+                    "messages": self.conversation_history,
+                    "updated_at": _time.time(),
+                }},
+                upsert=True,
+            )
+        except Exception as _e:
+            pass
 
     def _make_response(self, result: Dict) -> Dict:
         return {
@@ -615,6 +650,13 @@ class EternalAIEngine:
 
     def clear_history(self):
         self.conversation_history.clear()
+        self._emergent_chat = None  # force re-seed on next call
+        # Wipe persisted session too
+        try:
+            from services.db import sessions_col
+            sessions_col().delete_one({"session_id": "default"})
+        except Exception:
+            pass
 
     def get_history(self) -> List[Dict]:
         return self.conversation_history.copy()

@@ -27,10 +27,13 @@ export default function WardrobeDrawer({
   currentSeed,
   onToggleSeedLock,
   onSetSeed,
-  reference,               // { active, url, strength } or null
+  reference,               // face ref
   onClearReference,
   onSetReferenceStrength,
-  onUploadReference,       // (File) => void
+  onUploadReference,
+  poseReference,           // pose ref
+  onUploadPoseReference,
+  onClearPoseReference,
 }) {
   const [outfits, setOutfits] = useState(null);
   const [scenes, setScenes] = useState([]);
@@ -75,6 +78,11 @@ export default function WardrobeDrawer({
   const onUploadChange = (e) => {
     const f = e.target.files?.[0];
     if (f) onUploadReference(f);
+    e.target.value = '';
+  };
+  const onPoseUploadChange = (e) => {
+    const f = e.target.files?.[0];
+    if (f) onUploadPoseReference(f);
     e.target.value = '';
   };
 
@@ -134,6 +142,47 @@ export default function WardrobeDrawer({
               <label className="btn ghost" style={{ display: 'inline-block', marginTop: 10, cursor: 'pointer' }}>
                 Upload reference…
                 <input type="file" accept="image/*" hidden onChange={onUploadChange} data-testid="ref-upload" />
+              </label>
+            </>
+          )}
+        </div>
+
+        {/* --- Pose reference --- */}
+        <div className="ref-panel" data-testid="pose-ref-panel">
+          <div className="cat-label" style={{ marginBottom: 10 }}>Pose Reference</div>
+          {poseReference?.active ? (
+            <div className="ref-row">
+              <img
+                className="ref-thumb"
+                src={`${backend}${poseReference.url}`}
+                alt="pose reference"
+                data-testid="pose-ref-thumb"
+              />
+              <div className="ref-body">
+                <div className="tiny gold">Active</div>
+                <div className="dim serif italic" style={{ fontSize: 12, marginTop: 2 }}>
+                  Body pose will follow this photo.
+                </div>
+                <div className="dim" style={{ fontSize: 10, marginTop: 6, letterSpacing: '0.06em' }}>
+                  Beta: pose is hinted via prompt. Full ControlNet OpenPose coming later.
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                  <label className="btn ghost" style={{ cursor: 'pointer' }}>
+                    Replace…
+                    <input type="file" accept="image/*" hidden onChange={onPoseUploadChange} data-testid="pose-ref-upload" />
+                  </label>
+                  <button className="btn ghost" onClick={onClearPoseReference} data-testid="pose-ref-clear">Clear</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="dim serif italic" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                Upload a photo whose body position you want her to mimic.
+              </div>
+              <label className="btn ghost" style={{ display: 'inline-block', marginTop: 10, cursor: 'pointer' }}>
+                Upload pose…
+                <input type="file" accept="image/*" hidden onChange={onPoseUploadChange} data-testid="pose-ref-upload" />
               </label>
             </>
           )}

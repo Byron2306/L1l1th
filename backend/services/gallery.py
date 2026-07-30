@@ -1,21 +1,22 @@
 """
-In-memory + on-disk image gallery.
-
-Entries are stored newest-first. Image bytes live on disk under
-/tmp/lilith_gallery/ (survives backend restart within the container's uptime
-but is intentionally ephemeral — not user data we should persist forever).
+Persistent image gallery.
+- Metadata: MongoDB `gallery_entries`.
+- Image bytes: /app/data/gallery/<id>.<ext> (survives restarts).
+- Loads existing entries from Mongo on startup.
 """
 from __future__ import annotations
 
 import os
 import time
 import uuid
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
 from typing import List, Optional
 
-GALLERY_DIR = Path(os.environ.get("LILITH_GALLERY_DIR", "/tmp/lilith_gallery"))
+from services.db import gallery_col
+
+GALLERY_DIR = Path(os.environ.get("LILITH_GALLERY_DIR", "/app/data/gallery"))
 GALLERY_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -37,7 +38,7 @@ def _mime_for(ext: str) -> str:
 class GalleryEntry:
     id: str
     ext: str
-    label: str          # short human label — outfit id or truncated custom prompt
+    label: str
     outfit: Optional[str]
     prompt: Optional[str]
     seed: Optional[int]
@@ -68,10 +69,30 @@ class GalleryEntry:
             "url": f"/api/gallery/{self.id}",
         }
 
+    def to_mongo(self) -> dict:
+        return {
+            "id": self.id,
+            "ext": self.ext,
+            "label": self.label,
+            "outfit": self.outfit,
+            "prompt": self.prompt,
+            "seed": self.seed,
+            "provider": self.provider,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_mongo(cls, doc: dict) -> "GalleryEntry":
+        return cls(
+            id=doc["id"], ext=doc["ext"], label=doc.get("label", ""),
+            outfit=doc.get("outfit"), prompt=doc.get("prompt"),
+            seed=doc.get("seed"), provider=doc.get("provider"),
+            created_at=doc.get("created_at", time.time()),
+        )
+
 
 class Gallery:
-    def __init__(self, max_entries: int = 200):
-        self._entries: List[GalleryEntry] = []
+    def __init__(self, max_entries: int = 500):
         self._lock = Lock()
         self._max_entries = max_entries
 
@@ -81,51 +102,43 @@ class Gallery:
         ext = _sniff_ext(data)
         entry = GalleryEntry(
             id=uuid.uuid4().hex[:12],
-            ext=ext,
-            label=label[:80],
-            outfit=outfit,
-            prompt=prompt,
-            seed=seed,
-            provider=provider,
+            ext=ext, label=label[:120],
+            outfit=outfit, prompt=prompt, seed=seed, provider=provider,
             created_at=time.time(),
         )
         entry.path.write_bytes(data)
 
         with self._lock:
-            self._entries.insert(0, entry)
-            # Prune old entries (LRU-ish, by insertion order)
-            if len(self._entries) > self._max_entries:
-                dead = self._entries[self._max_entries:]
-                self._entries = self._entries[: self._max_entries]
-                for e in dead:
-                    try:
-                        e.path.unlink(missing_ok=True)
-                    except Exception:
-                        pass
+            gallery_col().insert_one(entry.to_mongo())
+            # Cap total count — delete oldest excess
+            total = gallery_col().count_documents({})
+            if total > self._max_entries:
+                excess = total - self._max_entries
+                oldest = list(gallery_col().find().sort("created_at", 1).limit(excess))
+                for doc in oldest:
+                    e = GalleryEntry.from_mongo(doc)
+                    try: e.path.unlink(missing_ok=True)
+                    except Exception: pass
+                    gallery_col().delete_one({"id": e.id})
         return entry
 
     def list(self) -> List[dict]:
-        with self._lock:
-            return [e.to_public() for e in self._entries]
+        docs = list(gallery_col().find({}, {"_id": 0}).sort("created_at", -1))
+        return [GalleryEntry.from_mongo(d).to_public() for d in docs]
 
     def get(self, entry_id: str) -> Optional[GalleryEntry]:
-        with self._lock:
-            for e in self._entries:
-                if e.id == entry_id:
-                    return e
-        return None
+        doc = gallery_col().find_one({"id": entry_id}, {"_id": 0})
+        return GalleryEntry.from_mongo(doc) if doc else None
 
     def delete(self, entry_id: str) -> bool:
         with self._lock:
-            for i, e in enumerate(self._entries):
-                if e.id == entry_id:
-                    self._entries.pop(i)
-                    try:
-                        e.path.unlink(missing_ok=True)
-                    except Exception:
-                        pass
-                    return True
-        return False
+            entry = self.get(entry_id)
+            if not entry:
+                return False
+            try: entry.path.unlink(missing_ok=True)
+            except Exception: pass
+            gallery_col().delete_one({"id": entry_id})
+            return True
 
 
 _gallery: Optional[Gallery] = None

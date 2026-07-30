@@ -52,15 +52,16 @@ class LilithVoiceEngine:
             except Exception as e:
                 print(f"[LILITH VOICE] ElevenLabs init error: {e}")
     
-    def generate_speech(self, text: str) -> Optional[str]:
+    def generate_speech(self, text: str, voice_id: Optional[str] = None) -> Optional[str]:
         """
         Generate speech audio from text.
         Returns base64-encoded MP3 audio.
+        `voice_id` overrides the default voice for this call.
         """
         # Try ElevenLabs first
         if self.elevenlabs_client:
             try:
-                audio_data = self._generate_elevenlabs(text)
+                audio_data = self._generate_elevenlabs(text, voice_id=voice_id or self.voice_id)
                 if audio_data:
                     return base64.b64encode(audio_data).decode('utf-8')
             except Exception as e:
@@ -77,7 +78,7 @@ class LilithVoiceEngine:
         
         return None
     
-    def _generate_elevenlabs(self, text: str) -> Optional[bytes]:
+    def _generate_elevenlabs(self, text: str, voice_id: Optional[str] = None) -> Optional[bytes]:
         """Generate audio using ElevenLabs API"""
         if not self.elevenlabs_client:
             return None
@@ -86,7 +87,7 @@ class LilithVoiceEngine:
             # Use the text_to_speech.convert method
             audio_generator = self.elevenlabs_client.text_to_speech.convert(
                 text=text,
-                voice_id=self.voice_id,
+                voice_id=voice_id or self.voice_id,
                 model_id="eleven_multilingual_v2",
                 voice_settings={
                     "stability": 0.5,
@@ -146,6 +147,30 @@ class LilithVoiceEngine:
             "voice_id": self.voice_id,
             "primary": "ElevenLabs" if self.elevenlabs_client else "Edge TTS"
         }
+
+    def set_default_voice(self, voice_id: str) -> None:
+        self.voice_id = voice_id
+
+    def list_voices(self) -> list:
+        """Return the available ElevenLabs voices for this account."""
+        if not self.elevenlabs_client:
+            return []
+        try:
+            result = self.elevenlabs_client.voices.get_all()
+            items = []
+            for v in getattr(result, "voices", []) or []:
+                items.append({
+                    "voice_id": getattr(v, "voice_id", None),
+                    "name": getattr(v, "name", None),
+                    "labels": getattr(v, "labels", {}) or {},
+                    "category": getattr(v, "category", None),
+                    "preview_url": getattr(v, "preview_url", None),
+                    "description": getattr(v, "description", None),
+                })
+            return items
+        except Exception as e:
+            print(f"[LILITH VOICE] list_voices error: {e}")
+            return []
 
 
 # Singleton instance

@@ -40,14 +40,30 @@ function AvatarSide({
   imageUrl,
   imageLoading,
   speaking,
+  audioLevel = 0,
   provider,
   currentSeed,
   onOpenWardrobe,
   onOpenGallery,
 }) {
+  // Scale up to ~1.03 at peak amplitude; brightness up to 1.15
+  const scale = 1 + audioLevel * 0.03;
+  const brightness = 1 + audioLevel * 0.15;
+  const glow = 30 + audioLevel * 90;
+  const frameStyle = speaking
+    ? {
+        transform: `scale(${scale})`,
+        filter: `brightness(${brightness})`,
+        boxShadow: `0 0 ${glow}px -5px rgba(198, 127, 138, ${0.4 + audioLevel * 0.5})`,
+      }
+    : undefined;
   return (
     <section className="avatar-side" data-testid="avatar-side">
-      <div className={`avatar-frame ${speaking ? 'speaking' : ''}`} data-testid="avatar-frame">
+      <div
+        className={`avatar-frame ${speaking ? 'speaking' : ''}`}
+        style={frameStyle}
+        data-testid="avatar-frame"
+      >
         <span className="gold-corner tl" />
         <span className="gold-corner tr" />
         <span className="gold-corner bl" />
@@ -104,7 +120,7 @@ function AvatarSide({
 // Chat side
 // ---------------------------------------------------------------------------
 
-function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear }) {
+function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear, voices, voiceId, onSelectVoice }) {
   const [text, setText] = useState('');
   const listRef = useRef(null);
 
@@ -181,6 +197,22 @@ function ChatSide({ messages, onSend, busy, voiceOn, onToggleVoice, onClear }) {
             <span className="dot" />
             Voice {voiceOn ? 'On' : 'Off'}
           </button>
+          {voiceOn && voices && voices.length > 0 && (
+            <select
+              className="voice-select"
+              value={voiceId || ''}
+              onChange={(e) => onSelectVoice(e.target.value)}
+              data-testid="voice-select"
+              disabled={busy}
+              title="Voice"
+            >
+              {voices.map((v) => (
+                <option key={v.voice_id} value={v.voice_id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          )}
           <span className="dim" style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: '0.06em' }}>
             Press Enter to send · Shift+Enter for a new line
           </span>
@@ -212,7 +244,20 @@ export default function App() {
 
   const [seedLocked, setSeedLocked] = useState(false);
   const [currentSeed, setCurrentSeed] = useState(null); // int or null
-  const [reference, setReference] = useState(null); // { active, url, strength, gallery_id?, ... }
+  const [reference, setReference] = useState(null);
+  const [poseReference, setPoseReference] = useState(null);
+
+  // Voice picker
+  const [voices, setVoices] = useState([]);
+  const [voiceId, setVoiceId] = useState(null);
+  const [showVoicePicker, setShowVoicePicker] = useState(false);
+
+  // Talking-avatar audio reactivity
+  const [audioLevel, setAudioLevel] = useState(0);
+  const audioCtxRef = useRef(null);
+  const analyserRef = useRef(null);
+  const sourceRef = useRef(null);
+  const rafRef = useRef(null);
 
   const audioRef = useRef(null);
 
@@ -227,6 +272,14 @@ export default function App() {
     // Load current reference from backend
     fetch(`${API}/reference`).then((r) => r.json()).then((d) => {
       setReference(d.active ? d : null);
+    }).catch(() => {});
+    fetch(`${API}/pose_reference`).then((r) => r.json()).then((d) => {
+      setPoseReference(d.active ? d : null);
+    }).catch(() => {});
+    // Load voice list + current
+    fetch(`${API}/voice/list`).then((r) => r.json()).then((d) => {
+      setVoices(d.voices || []);
+      setVoiceId(d.current || null);
     }).catch(() => {});
   }, []);
 
@@ -250,15 +303,61 @@ export default function App() {
     setGateOk(true);
   };
 
+  const _stopAudioAnalysis = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    setAudioLevel(0);
+  };
+
+  const _startAudioAnalysis = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      if (!sourceRef.current) {
+        // MediaElementSource can only be created ONCE per element
+        sourceRef.current = ctx.createMediaElementSource(el);
+        analyserRef.current = ctx.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.6;
+        sourceRef.current.connect(analyserRef.current);
+        analyserRef.current.connect(ctx.destination);
+      }
+      const analyser = analyserRef.current;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        // Emphasize the mid range (voice band ~200-2000Hz)
+        let sum = 0, count = 0;
+        for (let i = 4; i < 40; i++) { sum += data[i]; count++; }
+        const avg = sum / count / 255; // 0..1
+        setAudioLevel(avg);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) {
+      // Audio graph failed — fail silently, playback still works
+      console.warn('audio analysis failed', e);
+    }
+  };
+
   const playAudio = (b64) => {
     try {
       const el = audioRef.current;
       if (!el) return;
       el.src = `data:audio/mp3;base64,${b64}`;
       setSpeaking(true);
-      el.play().catch(() => setSpeaking(false));
-      el.onended = () => setSpeaking(false);
-    } catch { setSpeaking(false); }
+      const onEnd = () => { setSpeaking(false); _stopAudioAnalysis(); };
+      el.onended = onEnd;
+      el.onpause = onEnd;
+      el.play().then(() => _startAudioAnalysis()).catch(() => { setSpeaking(false); _stopAudioAnalysis(); });
+    } catch { setSpeaking(false); _stopAudioAnalysis(); }
   };
 
   const sendMessage = async (text) => {
@@ -283,7 +382,7 @@ export default function App() {
           const vr = await fetch(`${API}/voice/speak`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: reply }),
+            body: JSON.stringify({ text: reply, voice_id: voiceId || undefined }),
           });
           if (vr.ok) {
             const vd = await vr.json();
@@ -402,6 +501,21 @@ export default function App() {
     } catch {}
   };
 
+  // Pose reference
+  const uploadPoseReference = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const r = await fetch(`${API}/pose_reference/upload`, { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.active) setPoseReference(d);
+    } catch {}
+  };
+  const clearPoseReference = async () => {
+    try { await fetch(`${API}/pose_reference`, { method: 'DELETE' }); } catch {}
+    setPoseReference(null);
+  };
+
   const galleryDelete = async (id) => {
     try { await fetch(`${API}/gallery/${id}`, { method: 'DELETE' }); }
     catch {}
@@ -428,6 +542,17 @@ export default function App() {
     ]);
   };
 
+  const selectVoice = async (id) => {
+    setVoiceId(id);
+    try {
+      await fetch(`${API}/voice/select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice_id: id }),
+      });
+    } catch {}
+  };
+
   if (!gateOk) return <AgeGate onEnter={enterSite} />;
 
   return (
@@ -437,6 +562,7 @@ export default function App() {
           imageUrl={avatarUrl}
           imageLoading={avatarBusy}
           speaking={speaking}
+          audioLevel={audioLevel}
           provider={imageProvider || chatProvider}
           currentSeed={seedLocked ? currentSeed : null}
           onOpenWardrobe={() => setDrawerOpen(true)}
@@ -449,6 +575,9 @@ export default function App() {
           voiceOn={voiceOn}
           onToggleVoice={() => setVoiceOn((v) => !v)}
           onClear={clearHistory}
+          voices={voices}
+          voiceId={voiceId}
+          onSelectVoice={selectVoice}
         />
       </div>
 
@@ -467,6 +596,9 @@ export default function App() {
         onClearReference={clearReference}
         onSetReferenceStrength={setReferenceStrength}
         onUploadReference={uploadReference}
+        poseReference={poseReference}
+        onUploadPoseReference={uploadPoseReference}
+        onClearPoseReference={clearPoseReference}
       />
 
       <GalleryDrawer

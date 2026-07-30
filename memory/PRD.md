@@ -53,32 +53,33 @@ Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`,
 ## Status (verified end-to-end)
 | Feature | Status |
 |---|---|
-| Chat (multi-turn, Claude Sonnet 4.5) | ✅ live |
-| Voice (ElevenLabs) | ✅ live |
+| Chat (multi-turn, Claude Sonnet 4.5, restart-persistent) | ✅ live |
+| Voice (ElevenLabs + Edge TTS fallback) | ✅ live |
+| **Voice Picker** (34 ElevenLabs voices, choice persisted) | ✅ live |
 | Image gen (HF Space → Pollinations/Flux → Animagine → AI Horde) | ✅ live |
 | Wardrobe picker (18 outfits, 4 categories) | ✅ live |
-| Image Gallery (scroll, thumb → restore, delete) | ✅ live |
-| Seed Lock (pin same face across looks) | ✅ live |
+| Image Gallery (persistent, scroll, thumb → restore, delete, star) | ✅ live |
+| Seed Lock | ✅ live |
 | Custom Outfits (free-text) | ✅ live |
-| **Scene catalog** (16 scenes) | ✅ live |
-| **Pose catalog** (15 poses, text-based) | ✅ live |
-| **Face Reference (img2img)** — HF Space `/generate_reference` + Pollinations img2img fallback | ✅ live |
-| Face reference UI (gallery-star, upload, strength slider, clear) | ✅ live |
+| Scene catalog (16 scenes) | ✅ live |
+| Pose catalog (15 text poses) | ✅ live |
+| Face Reference (img2img via HF `/generate_reference` or Pollinations) | ✅ live |
+| **Pose Reference upload** (BETA — prompt hint; ControlNet backend upgrade P2) | ✅ live |
+| **Talking Avatar** (Web Audio API → avatar scale/brightness/glow pulse) | ✅ live |
+| **Persistence** — Mongo `chat_sessions` / `gallery_entries` / `system_state`; files under `/app/data/gallery/` and `/app/data/references/` | ✅ live |
 | Age gate | ✅ localStorage-persisted |
 
 ## Backlog / P1
-- Persist chat + gallery + reference to Mongo (currently in-memory + `/tmp`)
-- Talking avatar — Web Audio API amplitude-driven pulse on the portrait
-- Voice preset picker (ElevenLabs voice IDs) in UI
 - Telegram bot back under supervisor (safe subset only)
 
 ## Backlog / P2
-- ControlNet OpenPose reference (true pose-lock, requires ControlNet-capable provider)
+- **ControlNet OpenPose** — upgrade the pose reference from prompt-hint to true skeleton-guided generation
+- Face-swap post-processing (InSwapper128) as an additional fidelity boost across providers
 - Streaming SSE chat replies
 - Mobile layout polish
 - Multi-session support in UI
 - Rate limiting
-- Object-storage-backed persistent gallery
+- Move image files to object storage for cross-container persistence
 
 ## What I will NOT build
 - Explicit NSFW image generation (removing safety negative prompts, integrating unfiltered SD/Flux endpoints)
