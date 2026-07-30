@@ -28,6 +28,8 @@ def _ensure_indexes(db: Database) -> None:
     db.gallery_entries.create_index([("created_at", -1)])
     db.chat_sessions.create_index("session_id", unique=True)
     db.system_state.create_index("key", unique=True)
+    db.presets.create_index("id", unique=True)
+    db.presets.create_index([("created_at", -1)])
 
 
 def gallery_col() -> Collection:
@@ -40,3 +42,7 @@ def sessions_col() -> Collection:
 
 def state_col() -> Collection:
     return get_db().system_state
+
+
+def presets_col() -> Collection:
+    return get_db().presets

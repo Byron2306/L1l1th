@@ -34,6 +34,10 @@ export default function WardrobeDrawer({
   poseReference,           // pose ref
   onUploadPoseReference,
   onClearPoseReference,
+  useFaceSwap,
+  onToggleFaceSwap,
+  usePoseControlnet,
+  onTogglePoseControlnet,
 }) {
   const [outfits, setOutfits] = useState(null);
   const [scenes, setScenes] = useState([]);
@@ -65,7 +69,13 @@ export default function WardrobeDrawer({
 
   if (!open) return null;
 
-  const wrapPick = (extra) => onPick({ ...extra, scene: scene || null, pose: pose || null });
+  const wrapPick = (extra) => onPick({
+    ...extra,
+    scene: scene || null,
+    pose: pose || null,
+    use_face_swap: !!useFaceSwap,
+    use_pose_controlnet: !!usePoseControlnet,
+  });
   const submitCustom = () => {
     const t = customText.trim();
     if (!t || busy) return;
@@ -164,7 +174,7 @@ export default function WardrobeDrawer({
                   Body pose will follow this photo.
                 </div>
                 <div className="dim" style={{ fontSize: 10, marginTop: 6, letterSpacing: '0.06em' }}>
-                  Beta: pose is hinted via prompt. Full ControlNet OpenPose coming later.
+                  Enable "Pose ControlNet" boost below to follow the skeleton exactly.
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                   <label className="btn ghost" style={{ cursor: 'pointer' }}>
@@ -186,6 +196,36 @@ export default function WardrobeDrawer({
               </label>
             </>
           )}
+        </div>
+
+        {/* --- Boost toggles (Face-Swap + Pose ControlNet) --- */}
+        <div className="boost-panel" data-testid="boost-panel">
+          <div className="cat-label" style={{ marginBottom: 10 }}>Fidelity Boosts</div>
+          <div className="boost-row">
+            <button
+              className={`toggle ${useFaceSwap ? 'on' : ''}`}
+              onClick={onToggleFaceSwap}
+              data-testid="face-swap-toggle"
+              disabled={!reference?.active}
+              title={reference?.active ? 'Overlay face reference exactly onto the generated image' : 'Add a Face Reference to enable'}
+            >
+              <span className="dot" />
+              Face-Swap {useFaceSwap ? 'On' : 'Off'}
+            </button>
+            <button
+              className={`toggle ${usePoseControlnet ? 'on' : ''}`}
+              onClick={onTogglePoseControlnet}
+              data-testid="pose-controlnet-toggle"
+              disabled={!poseReference?.active}
+              title={poseReference?.active ? 'Extract a real OpenPose skeleton and guide generation' : 'Upload a Pose Reference to enable'}
+            >
+              <span className="dot" />
+              Pose ControlNet {usePoseControlnet ? 'On' : 'Off'}
+            </button>
+          </div>
+          <div className="dim" style={{ fontSize: 11, lineHeight: 1.5, marginTop: 8 }}>
+            Boosts run on remote HF Spaces after your primary generator. Slower (+15-40s), but the face and body match your references much more strictly.
+          </div>
         </div>
 
         {/* --- Seed lock --- */}

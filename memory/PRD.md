@@ -72,15 +72,18 @@ Everything offensive: `attack_server`, `luciferos/`, `openclaw/`, `kernel_src/`,
 ## Recent changes (Feb 2026)
 - **Image quality** — tightened positive/negative prompts, bumped HF Space steps 24→30 and guidance 5.5→6.5, and baked anti-deformity anchors into the Pollinations Flux fallback (which ignores negative prompts) to fix reported deformities.
 - **Voice Preview button** — `/api/voice/list` now returns `preview_url` per voice; a ▶/■ preview button next to the voice dropdown plays the ElevenLabs sample. Cross-origin preview URLs bypass the WebAudio analyser to avoid CORS warnings.
+- **Presets Library** — new Mongo collection `presets` + full CRUD (`GET/POST/DELETE /api/presets`, `POST /api/presets/:id/apply`, `GET /api/presets/:id/thumbnail`). Preserves outfit, custom prompt, scene, pose, seed, voice, and snapshots the current face + pose references so a preset survives later reference changes. Seeded with 8 starter looks: Rooftop Date, Evening at Home, Beach Sunset, Wine Cellar Confession, Rainy Night In, Alpine Escape, Opera Box, Sunday Morning. New `PresetsDrawer.jsx` opens via a "Presets" button in the avatar side.
+- **Face-Swap Boost** — new `services/face_swap.py` uses remote HF Space `felixrosberg/face-swap`. Runs after primary generation whenever the toggle is on and a face reference is set. No local disk usage.
+- **Pose "ControlNet"** — new `services/pose_controlnet.py`. Because every public ControlNet OpenPose HF Space was broken as of Feb 2026, we compose two remote calls: (1) `SJTU-TES/OpenPose` extracts a clean OpenPose skeleton from the user's pose photo, (2) that skeleton is fed to the user's own LILITH ZeroGPU Space `/generate_reference` at strength 0.62 so the pose dominates. Face fidelity can be layered back on via the face-swap boost, giving a real pose+face pipeline.
 - Regression covered by `/app/backend/tests/backend_test.py` (voice list/select/speak, chat, image gen).
 
 ## Backlog / P1
 - Telegram bot back under supervisor (safe subset only)
-- **Face-Swap Boost (InsightFace / InSwapper128)** — deferred: local install adds ~1GB and disk is at 83%. Options for later: (a) run against a remote HF Space, (b) prune before installing locally.
+- Watch HF Space stability — if `SJTU-TES/OpenPose` or `felixrosberg/face-swap` go down, add secondary fallbacks (env `POSE_OPENPOSE_SPACE`, `FACESWAP_SPACE`)
 
 ## Backlog / P2
-- **Presets** — save a full setup (face reference + voice + seed + favourite scenes) as a named preset ("Evening at Home", "Rooftop Date") to load in one tap
-- **ControlNet OpenPose** — upgrade pose reference from prompt-hint to true skeleton-guided generation
+- Real ControlNet endpoint on the user's own ZeroGPU space (`/generate_pose_ctrl`) for perfect pose fidelity without the skeleton-as-reference hack
+- Streaming SSE chat replies
 - Streaming SSE chat replies
 - Mobile layout polish
 - Multi-session support in UI

@@ -1,0 +1,25 @@
+{
+  "summary": "Tested new Presets Library, Face-Swap Boost, and Pose ControlNet features on both backend (11/11 pytest passing) and frontend (Playwright). Backend: /api/presets seeds 8 starter presets, create/apply/delete work, apply switches active voice, /api/status exposes face_swap + pose_controlnet blocks, and both boost flags safely skip (used_*=false) when their reference is missing. Frontend: age gate bypass -> Presets drawer opens -> 8 starter cards visible -> save-current disabled until name typed then enabled -> new card appears on save -> delete removes card after confirm. Wardrobe drawer shows new Fidelity Boosts panel with face-swap-toggle and pose-controlnet-toggle correctly gated by whether the corresponding reference is active.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py has grown to ~670 lines and now mixes chat + voice + image + gallery + reference + pose-reference + presets routes. Strongly recommend splitting into APIRouter modules (presets_router.py, image_router.py, reference_router.py) — approaching the 700-line soft limit.",
+    "Duplicate code between the custom_prompt and non-custom_prompt branches inside /api/image/lilith (pose-controlnet skeleton extraction block is copy-pasted). Extract a helper _resolve_pose_controlnet_ref(pose_ref_path, ref_path, ref_strength) to DRY it up.",
+    "PresetStore.list()/get()/create() do Mongo I/O but are declared as sync methods called from async FastAPI routes; PyMongo is blocking so under load this ties up the event loop. Non-blocking for now given single-user app, but consider motor for future.",
+    "PresetsDrawer.jsx uses window.confirm() for delete confirmation — works but is browser-native and inconsistent with the rest of the styled UI. Consider a themed confirm dialog.",
+    "seed_starter_presets() uses estimated_document_count() to decide whether to seed — this is race-prone if two workers boot simultaneously; acceptable here (single worker), but note it."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100%"},
+  "test_credentials": "None. Age gate bypassed with localStorage 'lilith:18ok'='yes'.",
+  "seed_data_creation": "Server auto-seeds 8 starter presets on first startup via seed_starter_presets(). Tests create ephemeral TEST_ prefixed presets which are deleted in their own teardown.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite covers voice, chat, image, status (with face_swap + pose_controlnet), presets CRUD+apply, and boost-skip behavior when references absent. Run: `pytest /app/backend/tests/backend_test.py -v` (~100s incl. an image gen call to Pollinations Flux fallback). Frontend Playwright coverage: age gate, presets open/save/delete, wardrobe boost panel visibility and disabled-state gating. NOTE: face-swap/pose-controlnet toggles' disabled state depends on live face/pose reference — set/clear via DELETE /api/reference and DELETE /api/pose_reference before asserting. End-to-end face-swap + pose-controlnet through remote HF Spaces was NOT triggered during this run (would require uploading real face + pose photos and 60-90s latency each); backend correctly skips when refs absent, and prior connectivity checks by main agent verified both spaces respond.",
+  "rca of the issue": "N/A — all 11 backend endpoints and every UI flow described in the review request behaved as designed."
+}

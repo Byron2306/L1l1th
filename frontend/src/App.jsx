@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import WardrobeDrawer from './WardrobeDrawer.jsx';
 import GalleryDrawer from './GalleryDrawer.jsx';
+import PresetsDrawer from './PresetsDrawer.jsx';
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND}/api`;
@@ -45,6 +46,7 @@ function AvatarSide({
   currentSeed,
   onOpenWardrobe,
   onOpenGallery,
+  onOpenPresets,
 }) {
   // Scale up to ~1.03 at peak amplitude; brightness up to 1.15
   const scale = 1 + audioLevel * 0.03;
@@ -107,6 +109,9 @@ function AvatarSide({
       <div className="avatar-actions">
         <button className="btn primary" onClick={onOpenWardrobe} data-testid="open-wardrobe-btn">
           Wardrobe
+        </button>
+        <button className="btn" onClick={onOpenPresets} data-testid="open-presets-btn">
+          Presets
         </button>
         <button className="btn" onClick={onOpenGallery} data-testid="open-gallery-btn">
           Gallery
@@ -255,7 +260,18 @@ export default function App() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
   const [galleryRefresh, setGalleryRefresh] = useState(0);
+  const [presetsRefresh, setPresetsRefresh] = useState(0);
+
+  // Fidelity boosts (Face-Swap + Pose ControlNet)
+  const [useFaceSwap, setUseFaceSwap] = useState(false);
+  const [usePoseControlnet, setUsePoseControlnet] = useState(false);
+
+  // Last generation context (used to save current setup as a preset)
+  const [lastContext, setLastContext] = useState({
+    outfit: null, custom_prompt: null, scene: null, pose: null, galleryId: null,
+  });
 
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -476,12 +492,21 @@ export default function App() {
       if (!seedLocked && data.seed != null) setCurrentSeed(data.seed);
       setImageProvider(data.provider || null);
       setAvatarUrl(url);
+      setLastContext({
+        outfit: payload.custom_prompt ? null : (payload.outfit || null),
+        custom_prompt: payload.custom_prompt || null,
+        scene: payload.scene || null,
+        pose: payload.pose || null,
+        galleryId: data.gallery_id || null,
+      });
       const bits = [
         payload.custom_prompt ? 'custom' : (payload.outfit || 'random'),
       ];
       if (payload.scene) bits.push(payload.scene);
       if (payload.pose) bits.push(payload.pose);
       if (data.used_reference) bits.push('ref');
+      if (data.used_pose_controlnet) bits.push('pose-ctrl');
+      if (data.used_face_swap) bits.push('face-swap');
       bits.push(`seed ${data.seed}`);
       bits.push(data.provider);
       setMessages((m) => [
@@ -597,6 +622,36 @@ export default function App() {
     } catch {}
   };
 
+  const applyPreset = async (result) => {
+    const apply = result?.apply || {};
+    // Sync UI state
+    if (apply.voice_id) setVoiceId(apply.voice_id);
+    if (typeof apply.seed === 'number') {
+      setCurrentSeed(apply.seed);
+      setSeedLocked(true);
+    }
+    // Refresh live references (backend already updated them)
+    try {
+      const [rf, rp] = await Promise.all([
+        fetch(`${API}/reference`).then((r) => r.json()),
+        fetch(`${API}/pose_reference`).then((r) => r.json()),
+      ]);
+      setReference(rf.active ? rf : null);
+      setPoseReference(rp.active ? rp : null);
+    } catch {}
+    setPresetsOpen(false);
+    // Immediately generate a fresh portrait with this preset
+    const payload = {};
+    if (apply.custom_prompt) payload.custom_prompt = apply.custom_prompt;
+    else if (apply.outfit) payload.outfit = apply.outfit;
+    else payload.outfit = 'random';
+    if (apply.scene) payload.scene = apply.scene;
+    if (apply.pose) payload.pose = apply.pose;
+    payload.use_face_swap = useFaceSwap;
+    payload.use_pose_controlnet = usePoseControlnet;
+    generatePortrait(payload);
+  };
+
   if (!gateOk) return <AgeGate onEnter={enterSite} />;
 
   return (
@@ -611,6 +666,7 @@ export default function App() {
           currentSeed={seedLocked ? currentSeed : null}
           onOpenWardrobe={() => setDrawerOpen(true)}
           onOpenGallery={() => setGalleryOpen(true)}
+          onOpenPresets={() => { setPresetsRefresh((k) => k + 1); setPresetsOpen(true); }}
         />
         <ChatSide
           messages={messages}
@@ -644,6 +700,27 @@ export default function App() {
         poseReference={poseReference}
         onUploadPoseReference={uploadPoseReference}
         onClearPoseReference={clearPoseReference}
+        useFaceSwap={useFaceSwap}
+        onToggleFaceSwap={() => setUseFaceSwap((v) => !v)}
+        usePoseControlnet={usePoseControlnet}
+        onTogglePoseControlnet={() => setUsePoseControlnet((v) => !v)}
+      />
+
+      <PresetsDrawer
+        api={API}
+        backend={BACKEND}
+        open={presetsOpen}
+        onClose={() => setPresetsOpen(false)}
+        onApply={applyPreset}
+        currentOutfit={lastContext.outfit}
+        currentCustomPrompt={lastContext.custom_prompt}
+        currentScene={lastContext.scene}
+        currentPose={lastContext.pose}
+        currentSeed={seedLocked ? currentSeed : null}
+        currentVoiceId={voiceId}
+        currentReferenceStrength={reference?.strength ?? 0.32}
+        lastGalleryId={lastContext.galleryId}
+        refreshKey={presetsRefresh}
       />
 
       <GalleryDrawer

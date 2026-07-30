@@ -30,9 +30,12 @@ load_dotenv(Path(__file__).parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent))
 
 from services.eternal_ai_engine import get_eternal_engine  # noqa: E402
+from services.face_swap import get_face_swap_engine  # noqa: E402
 from services.gallery import get_gallery  # noqa: E402
 from services.lilith_elevenlabs_voice import get_voice_engine  # noqa: E402
 from services.lilith_image_generator import OUTFITS, POSES, SCENES, get_image_generator  # noqa: E402
+from services.pose_controlnet import get_pose_controlnet_engine  # noqa: E402
+from services.presets import PRESETS_DIR, get_preset_store, seed_starter_presets  # noqa: E402
 from services.reference import get_pose_reference_store, get_reference_store  # noqa: E402
 
 app = FastAPI(title="Lilith Companion API", version="1.0.0")
@@ -56,6 +59,13 @@ def _restore_state() -> None:
             get_voice_engine().set_default_voice(doc["voice_id"])
     except Exception:
         pass
+    # Seed starter presets on first boot
+    try:
+        added = seed_starter_presets()
+        if added:
+            print(f"[STARTUP] seeded {added} starter presets")
+    except Exception as e:
+        print(f"[STARTUP] preset seeding skipped: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +99,8 @@ class LilithImageRequest(BaseModel):
     seed: Optional[int] = Field(default=None, ge=0, le=2**32 - 1)
     use_reference: bool = Field(default=True)
     reference_strength: Optional[float] = Field(default=None, ge=0.05, le=0.95)
+    use_face_swap: bool = Field(default=False)
+    use_pose_controlnet: bool = Field(default=False)
 
 
 class SetGalleryReferenceRequest(BaseModel):
@@ -119,6 +131,8 @@ def api_status():
         "chat": engine.get_stats(),
         "voice": voice.get_status(),
         "image": image.get_status(),
+        "face_swap": get_face_swap_engine().get_status(),
+        "pose_controlnet": get_pose_controlnet_engine().get_status(),
     }
 
 
@@ -250,18 +264,39 @@ def api_image_lilith_post(req: LilithImageRequest):
         if scene_frag: parts.append(scene_frag)
         parts.append(QUALITY_POSITIVE)
         prompt = ", ".join(parts)
+        used_pose_ctrl = False
+        gen_ref_path = ref_path
+        gen_ref_strength = ref_strength
+        if req.use_pose_controlnet and pose_ref_path:
+            skeleton = get_pose_controlnet_engine().extract_skeleton(pose_ref_path)
+            if skeleton:
+                # Use the extracted skeleton as the img2img reference at high
+                # strength so the pose dominates. Face fidelity is then layered
+                # back on top via face-swap post-processing.
+                gen_ref_path = skeleton
+                gen_ref_strength = 0.62
+                used_pose_ctrl = True
         data = image.generate_image(
             prompt, seed=seed,
-            reference_path=ref_path, reference_strength=ref_strength,
+            reference_path=gen_ref_path, reference_strength=gen_ref_strength,
         )
         label = req.custom_prompt.strip()[:60]
         outfit_used = None
     else:
         outfit_id = (req.outfit or "random").strip()
+        used_pose_ctrl = False
+        gen_ref_path = ref_path
+        gen_ref_strength = ref_strength
+        if req.use_pose_controlnet and pose_ref_path:
+            skeleton = get_pose_controlnet_engine().extract_skeleton(pose_ref_path)
+            if skeleton:
+                gen_ref_path = skeleton
+                gen_ref_strength = 0.62
+                used_pose_ctrl = True
         data = image.generate_lilith_image(
             outfit_style=outfit_id, seed=seed,
             scene=req.scene, pose=req.pose,
-            reference_path=ref_path, reference_strength=ref_strength,
+            reference_path=gen_ref_path, reference_strength=gen_ref_strength,
         )
         entry_meta = OUTFITS.get(outfit_id)
         label_bits = [entry_meta["label"] if entry_meta else outfit_id]
@@ -274,23 +309,40 @@ def api_image_lilith_post(req: LilithImageRequest):
     if not data:
         raise HTTPException(status_code=503, detail="Image generation failed")
 
+    # Optional face-swap post-processing (requires an active face reference).
+    # Runs on top of whatever we just generated — including pose-ControlNet output.
+    used_face_swap = False
+    if req.use_face_swap and ref_path:
+        swapped = get_face_swap_engine().swap(data, ref_path)
+        if swapped:
+            data = swapped
+            used_face_swap = True
+
+    provider_label = image.last_provider or ""
+    if used_pose_ctrl:
+        provider_label = f"OpenPose skeleton → {provider_label}" if provider_label else "OpenPose skeleton"
+    if used_face_swap:
+        provider_label = f"{provider_label} + FaceSwap" if provider_label else "FaceSwap"
+
     entry = get_gallery().add(
         data,
         label=label,
         outfit=outfit_used,
         prompt=prompt,
         seed=seed,
-        provider=image.last_provider,
+        provider=provider_label or image.last_provider,
     )
     return {
         "success": True,
-        "provider": image.last_provider,
+        "provider": provider_label or image.last_provider,
         "seed": seed,
         "outfit": outfit_used,
         "scene": req.scene,
         "pose": req.pose,
         "used_reference": ref_path is not None,
         "used_pose_reference": pose_ref_path is not None,
+        "used_pose_controlnet": used_pose_ctrl,
+        "used_face_swap": used_face_swap,
         "gallery_id": entry.id,
         "url": entry.to_public()["url"],
         "mime": entry.mime,
@@ -481,5 +533,141 @@ def api_root():
             "POST /api/voice/speak",
             "POST /api/image/generate",
             "GET  /api/image/lilith?outfit=random",
+            "GET  /api/presets",
+            "POST /api/presets",
+            "POST /api/presets/{id}/apply",
+            "DELETE /api/presets/{id}",
         ],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Presets
+# ---------------------------------------------------------------------------
+
+class PresetCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=80)
+    outfit: Optional[str] = Field(default=None, max_length=200)
+    custom_prompt: Optional[str] = Field(default=None, max_length=600)
+    scene: Optional[str] = Field(default=None, max_length=200)
+    pose: Optional[str] = Field(default=None, max_length=200)
+    seed: Optional[int] = Field(default=None, ge=0, le=2**32 - 1)
+    voice_id: Optional[str] = Field(default=None, max_length=64)
+    reference_strength: float = Field(default=0.32, ge=0.05, le=0.95)
+    favorite_scenes: Optional[list] = Field(default=None)
+    # If true, also snapshot the currently-active face + pose reference
+    include_face_reference: bool = Field(default=True)
+    include_pose_reference: bool = Field(default=True)
+    # Optional gallery entry id used as the thumbnail
+    thumbnail_gallery_id: Optional[str] = Field(default=None, max_length=64)
+
+
+@app.get("/api/presets")
+def api_presets_list():
+    presets = get_preset_store().list()
+    return {"count": len(presets), "presets": [p.to_public() for p in presets]}
+
+
+@app.post("/api/presets")
+def api_presets_create(req: PresetCreateRequest):
+    face_src: Optional[str] = None
+    pose_src: Optional[str] = None
+    if req.include_face_reference:
+        fr = get_reference_store().get()
+        face_src = fr.local_path() if fr else None
+    if req.include_pose_reference:
+        pr = get_pose_reference_store().get()
+        pose_src = pr.local_path() if pr else None
+
+    thumb_bytes: Optional[bytes] = None
+    if req.thumbnail_gallery_id:
+        entry = get_gallery().get(req.thumbnail_gallery_id)
+        if entry and entry.path.exists():
+            thumb_bytes = entry.path.read_bytes()
+
+    preset = get_preset_store().create(
+        name=req.name,
+        outfit=req.outfit,
+        custom_prompt=req.custom_prompt,
+        scene=req.scene,
+        pose=req.pose,
+        seed=req.seed,
+        voice_id=req.voice_id,
+        reference_strength=req.reference_strength,
+        face_ref_src=face_src,
+        pose_ref_src=pose_src,
+        thumbnail_bytes=thumb_bytes,
+        favorite_scenes=req.favorite_scenes or [],
+    )
+    return preset.to_public()
+
+
+@app.delete("/api/presets/{preset_id}")
+def api_presets_delete(preset_id: str):
+    ok = get_preset_store().delete(preset_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    return {"success": True}
+
+
+@app.get("/api/presets/{preset_id}/thumbnail")
+def api_presets_thumbnail(preset_id: str):
+    store = get_preset_store()
+    p = store.thumbnail_path(preset_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="No thumbnail")
+    return Response(content=p.read_bytes(), media_type=store.thumbnail_mime(preset_id))
+
+
+@app.post("/api/presets/{preset_id}/apply")
+def api_presets_apply(preset_id: str):
+    """
+    Load a preset into the live state:
+      - switches active voice (persisted)
+      - restores face/pose reference from the preset's snapshot
+      - returns the outfit/scene/pose/seed the frontend should use for the next generation
+    """
+    preset = get_preset_store().get(preset_id)
+    if not preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+
+    # Voice
+    if preset.voice_id:
+        try:
+            get_voice_engine().set_default_voice(preset.voice_id)
+            from services.db import state_col
+            state_col().update_one(
+                {"key": "voice_id"},
+                {"$set": {"key": "voice_id", "voice_id": preset.voice_id}},
+                upsert=True,
+            )
+        except Exception:
+            pass
+
+    # Face + pose references (snapshot -> live)
+    if preset.face_ref_path and Path(preset.face_ref_path).exists():
+        try:
+            data = Path(preset.face_ref_path).read_bytes()
+            get_reference_store().set_upload(data, strength=preset.reference_strength)
+        except Exception:
+            pass
+    if preset.pose_ref_path and Path(preset.pose_ref_path).exists():
+        try:
+            data = Path(preset.pose_ref_path).read_bytes()
+            get_pose_reference_store().set_upload(data)
+        except Exception:
+            pass
+
+    return {
+        "success": True,
+        "preset": preset.to_public(),
+        "apply": {
+            "outfit": preset.outfit,
+            "custom_prompt": preset.custom_prompt,
+            "scene": preset.scene,
+            "pose": preset.pose,
+            "seed": preset.seed,
+            "voice_id": preset.voice_id,
+            "reference_strength": preset.reference_strength,
+        },
     }
