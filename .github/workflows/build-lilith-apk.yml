@@ -6,39 +6,63 @@ on:
     paths:
       - 'apk-build/**'
       - '.github/workflows/build-lilith-apk.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'apk-build/**'
-      - '.github/workflows/build-lilith-apk.yml'
+      - 'APK_BUILD_NOTE.txt'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   apk:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Prepare Android and Gradle
+      - name: Clone source
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git clone --depth 1 --branch "$GITHUB_REF_NAME" \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" source
+
+      - name: Prepare Android SDK and Gradle
+        run: |
+          set -euxo pipefail
+          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          export PATH="$JAVA_HOME/bin:$PATH"
           java -version
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
-          curl -fL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager | head -n 1)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+
+          curl -fL --retry 4 https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp
 
-      - name: Build debug APK
-        run: /tmp/gradle-8.9/bin/gradle -p apk-build :app:assembleDebug
-
-      - name: Collect APK
+      - name: Build signed debug APK
         run: |
+          set -euxo pipefail
+          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          /tmp/gradle-8.9/bin/gradle -p source/apk-build --no-daemon :app:assembleDebug
           mkdir -p dist
-          cp apk-build/app/build/outputs/apk/debug/app-debug.apk dist/LILITH-Canon-Android.apk
+          cp source/apk-build/app/build/outputs/apk/debug/app-debug.apk dist/LILITH-Canon-Android.apk
           sha256sum dist/LILITH-Canon-Android.apk > dist/LILITH-Canon-Android.apk.sha256
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: LILITH-Canon-Android
-          path: dist/*
+      - name: Publish APK branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          cd source
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout --orphan apk-artifacts
+          git rm -rf .
+          mkdir -p apk
+          cp ../dist/LILITH-Canon-Android.apk apk/
+          cp ../dist/LILITH-Canon-Android.apk.sha256 apk/
+          printf 'Built from %s on %s\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > apk/BUILD.txt
+          git add apk
+          git commit -m 'Publish LILITH Android APK'
+          git push --force origin HEAD:apk-artifacts
