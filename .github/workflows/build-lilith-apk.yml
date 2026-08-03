@@ -7,6 +7,12 @@ on:
       - 'apk-build/**'
       - '.github/workflows/build-lilith-apk.yml'
       - 'APK_BUILD_NOTE.txt'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'apk-build/**'
+      - '.github/workflows/build-lilith-apk.yml'
+      - 'APK_BUILD_NOTE.txt'
   workflow_dispatch:
 
 permissions:
@@ -20,7 +26,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git clone --depth 1 --branch "$GITHUB_REF_NAME" \
+          set -euxo pipefail
+          REF="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git clone --depth 1 --branch "$REF" \
             "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" source
 
       - name: Prepare Android SDK and Gradle
@@ -50,6 +58,7 @@ jobs:
           sha256sum dist/LILITH-Canon-Android.apk > dist/LILITH-Canon-Android.apk.sha256
 
       - name: Publish APK branch
+        if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
