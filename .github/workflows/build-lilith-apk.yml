@@ -1,0 +1,44 @@
+name: Build LILITH APK
+
+on:
+  push:
+    branches: [ main, lilith-apk-build ]
+    paths:
+      - 'apk-build/**'
+      - '.github/workflows/build-lilith-apk.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'apk-build/**'
+      - '.github/workflows/build-lilith-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Android and Gradle
+        run: |
+          java -version
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+          curl -fL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+
+      - name: Build debug APK
+        run: /tmp/gradle-8.9/bin/gradle -p apk-build :app:assembleDebug
+
+      - name: Collect APK
+        run: |
+          mkdir -p dist
+          cp apk-build/app/build/outputs/apk/debug/app-debug.apk dist/LILITH-Canon-Android.apk
+          sha256sum dist/LILITH-Canon-Android.apk > dist/LILITH-Canon-Android.apk.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LILITH-Canon-Android
+          path: dist/*
