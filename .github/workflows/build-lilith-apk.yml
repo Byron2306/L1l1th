@@ -20,54 +20,58 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone source
+      - name: Build and publish diagnostics
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euxo pipefail
+          set -u
           REF="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          git clone --depth 1 --branch "$REF" \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" source
+          git clone --depth 1 --branch "$REF" "https://github.com/${GITHUB_REPOSITORY}.git" source
 
-      - name: Prepare Android SDK and Gradle
-        run: |
-          set -euxo pipefail
-          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
-          export PATH="$JAVA_HOME/bin:$PATH"
-          java -version
-          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager | head -n 1)"
-          test -n "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
-          curl -fL --retry 4 https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp
+          set +e
+          (
+            set -euxo pipefail
+            export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+            export PATH="$JAVA_HOME/bin:$PATH"
+            java -version
 
-      - name: Build signed debug APK
-        run: |
-          set -euxo pipefail
-          export JAVA_HOME="${JAVA_HOME_17_X64:-$JAVA_HOME}"
-          export PATH="$JAVA_HOME/bin:$PATH"
-          /tmp/gradle-8.9/bin/gradle -p source/apk-build --no-daemon :app:assembleDebug
-          mkdir -p dist
-          cp source/apk-build/app/build/outputs/apk/debug/app-debug.apk dist/LILITH-Canon-Android.apk
-          sha256sum dist/LILITH-Canon-Android.apk > dist/LILITH-Canon-Android.apk.sha256
+            SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+            SDKMANAGER="$(find "$SDK_ROOT" -type f -name sdkmanager | head -n 1)"
+            test -n "$SDKMANAGER"
+            yes | "$SDKMANAGER" --licenses >/dev/null || true
+            "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
 
-      - name: Publish APK branch
-        if: github.event_name != 'pull_request'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euxo pipefail
-          cd source
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git checkout --orphan apk-artifacts
-          git rm -rf .
-          mkdir -p apk
-          cp ../dist/LILITH-Canon-Android.apk apk/
-          cp ../dist/LILITH-Canon-Android.apk.sha256 apk/
-          printf 'Built from %s on %s\n' "$GITHUB_SHA" "$(date -u +%FT%TZ)" > apk/BUILD.txt
-          git add apk
-          git commit -m 'Publish LILITH Android APK'
-          git push --force origin HEAD:apk-artifacts
+            curl -fL --retry 4 https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /tmp
+
+            /tmp/gradle-8.9/bin/gradle -p source/apk-build --no-daemon :app:assembleDebug
+            mkdir -p dist
+            cp source/apk-build/app/build/outputs/apk/debug/app-debug.apk dist/LILITH-Canon-Android.apk
+            sha256sum dist/LILITH-Canon-Android.apk > dist/LILITH-Canon-Android.apk.sha256
+          ) > build.log 2>&1
+          STATUS=$?
+          set -e
+
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            cd source
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git checkout --orphan apk-artifacts
+            git rm -rf .
+            mkdir -p apk
+            cp ../build.log apk/build.log
+            printf 'status=%s\nsource=%s\nbuilt_at=%s\n' "$STATUS" "$GITHUB_SHA" "$(date -u +%FT%TZ)" > apk/BUILD.txt
+            if [ -f ../dist/LILITH-Canon-Android.apk ]; then
+              cp ../dist/LILITH-Canon-Android.apk apk/
+              cp ../dist/LILITH-Canon-Android.apk.sha256 apk/
+            fi
+            git add apk
+            git commit -m 'Publish LILITH Android APK diagnostics'
+            set +x
+            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git push --force origin HEAD:apk-artifacts
+          else
+            cat build.log
+          fi
+
+          exit "$STATUS"
